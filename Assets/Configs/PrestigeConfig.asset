@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 694e3c3b876d4c34881dc488ccc53a9f, type: 3}
+  m_Name: PrestigeConfig
+  m_EditorClassIdentifier:
+  MinWaveForPrestige: 20
+  MaxPrestigeCount: 0
+  BaseMultiplierPerPrestige: 1.5
+  MaxPermanentMultiplier: 100
+  StatsAmplifiedByPrestige:
+  - 0
+  - 6

@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="HUD.uss" />
+    <ui:VisualElement name="hud-root" class="hud-root">
+
+        <!-- Top-left: HP Bar -->
+        <ui:VisualElement name="hp-panel" class="hp-panel">
+            <ui:Label name="hp-label" text="HP" class="hud-label-small" />
+            <ui:VisualElement name="hp-bar-container" class="hp-bar-container">
+                <ui:VisualElement name="hp-bar-delay" class="hp-bar-delay" />
+                <ui:VisualElement name="hp-bar-fill" class="hp-bar-fill" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- Top-center: Timer + Wave number + upgrade progress pips -->
+        <ui:VisualElement name="wave-panel" class="wave-panel">
+            <ui:Label name="timer-label" text="2:00" class="hud-label-timer" />
+            <ui:Label name="wave-label" text="WAVE 1" class="hud-label-wave" />
+            <ui:VisualElement name="upgrade-pips" class="upgrade-pips" />
+        </ui:VisualElement>
+
+        <!-- Top-right: Gold counter + ETA -->
+        <ui:VisualElement name="gold-panel" class="gold-panel">
+            <ui:Label name="gold-icon" text="◆" class="hud-label-gold-icon" />
+            <ui:Label name="gold-label" text="0" class="hud-label-gold" />
+            <ui:Label name="eta-label" text="" class="hud-label-eta" style="display: none;" />
+        </ui:VisualElement>
+
+        <!-- Bottom-center: Prestige button — hidden until balance pass -->
+        <ui:Button name="prestige-button" text="PRESTIGE" class="prestige-button" style="display: none;" />
+
+    </ui:VisualElement>
+</ui:UXML>

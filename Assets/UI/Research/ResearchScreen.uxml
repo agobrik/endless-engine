@@ -1,0 +1,39 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="ResearchScreen.uss" />
+    <ui:VisualElement name="research-root" class="research-root">
+
+        <ui:VisualElement name="research-panel" class="research-panel">
+
+            <!-- Header -->
+            <ui:VisualElement name="research-header" class="research-header">
+                <ui:Label name="title-label" text="RESEARCH" class="research-title" />
+                <ui:Button name="close-button" text="✕" class="btn-close" />
+            </ui:VisualElement>
+
+            <!-- Active research progress bar -->
+            <ui:VisualElement name="active-bar-row" class="active-bar-row">
+                <ui:Label name="active-label" text="IDLE" class="active-label" />
+                <ui:VisualElement name="progress-track" class="progress-track">
+                    <ui:VisualElement name="progress-fill" class="progress-fill" />
+                </ui:VisualElement>
+                <ui:Label name="progress-text" text="0 / 0" class="progress-text" />
+            </ui:VisualElement>
+
+            <!-- Queue display -->
+            <ui:VisualElement name="queue-row" class="queue-row">
+                <ui:Label text="QUEUE:" class="queue-label" />
+                <ui:Label name="queue-display" text="—" class="queue-display" />
+            </ui:VisualElement>
+
+            <!-- Tier tabs -->
+            <ui:VisualElement name="tier-bar" class="tier-bar" />
+
+            <!-- Node grid for selected tier -->
+            <ui:ScrollView name="nodes-scroll" class="nodes-scroll"
+                vertical-scroller-visibility="Auto">
+                <ui:VisualElement name="nodes-grid" class="nodes-grid" />
+            </ui:ScrollView>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

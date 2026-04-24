@@ -1,0 +1,1316 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d58ff2365c1e302439e2efe5c1f67d72, type: 3}
+  m_Name: UpgradeTreeConfig
+  m_EditorClassIdentifier: 
+  Nodes:
+  - NodeId: awakening
+    DisplayName: Awakening
+    Description: The spark. +10% gold, +5% passive income.
+    Category: 0
+    AffectedStat: 10
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 1
+    BaseCost: 0
+    CostScalingFactor: 1
+    PrerequisiteNodeIDs: []
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 10
+    GridY: 7
+  - NodeId: prod_gen_tune
+    DisplayName: Generator Tune
+    Description: Generators spin 10% faster.
+    Category: 0
+    AffectedStat: 15
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 120
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - awakening
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 9
+    GridY: 6
+  - NodeId: prod_gen_speed_1
+    DisplayName: Efficiency I
+    Description: +15% generator speed.
+    Category: 0
+    AffectedStat: 15
+    EffectPerRank: 0.15
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - prod_gen_tune
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 7
+    GridY: 6
+  - NodeId: prod_gen_speed_2
+    DisplayName: Efficiency II
+    Description: +20% generator speed.
+    Category: 0
+    AffectedStat: 15
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 2000
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - prod_gen_speed_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 5
+    GridY: 6
+  - NodeId: prod_gen_overdrive
+    DisplayName: Overdrive
+    Description: +30% generator speed.
+    Category: 0
+    AffectedStat: 15
+    EffectPerRank: 0.3
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 8000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - prod_gen_speed_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 3
+    GridY: 6
+  - NodeId: prod_double_gen
+    DisplayName: Double Tick
+    Description: +3% double-tick chance.
+    Category: 0
+    AffectedStat: 21
+    EffectPerRank: 0.03
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 800
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - prod_gen_overdrive
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 2
+    GridY: 4
+  - NodeId: prod_cascade
+    DisplayName: Cascade
+    Description: +6% double-tick chance.
+    Category: 0
+    AffectedStat: 21
+    EffectPerRank: 0.06
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 5000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - prod_double_gen
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 1
+    GridY: 2
+  - NodeId: prod_run_passive_1
+    DisplayName: Run Passive I
+    Description: +10% passive income during runs.
+    Category: 0
+    AffectedStat: 17
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 300
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - prod_gen_tune
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 9
+    GridY: 4
+  - NodeId: prod_run_passive_2
+    DisplayName: Run Passive II
+    Description: +20% passive income during runs.
+    Category: 0
+    AffectedStat: 17
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 1500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - prod_run_passive_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 7
+    GridY: 4
+  - NodeId: prod_run_passive_3
+    DisplayName: Passive Mastery
+    Description: +35% passive income during runs.
+    Category: 0
+    AffectedStat: 17
+    EffectPerRank: 0.35
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 6000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - prod_run_passive_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 5
+    GridY: 4
+  - NodeId: prod_offline_1
+    DisplayName: Offline Yield I
+    Description: +5% gold while offline.
+    Category: 0
+    AffectedStat: 16
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 200
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - prod_run_passive_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 9
+    GridY: 2
+  - NodeId: prod_offline_2
+    DisplayName: Offline Yield II
+    Description: +10% offline gold.
+    Category: 0
+    AffectedStat: 16
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 1000
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - prod_offline_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 7
+    GridY: 2
+  - NodeId: prod_offline_3
+    DisplayName: Offline Vault
+    Description: +20% offline yield cap.
+    Category: 0
+    AffectedStat: 16
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 4000
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - prod_offline_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 5
+    GridY: 2
+  - NodeId: prod_run_duration_1
+    DisplayName: Extended Run I
+    Description: +10s run duration.
+    Category: 0
+    AffectedStat: 20
+    EffectPerRank: 10
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 250
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - prod_gen_overdrive
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 3
+    GridY: 4
+  - NodeId: prod_run_duration_2
+    DisplayName: Extended Run II
+    Description: +20s run duration.
+    Category: 0
+    AffectedStat: 20
+    EffectPerRank: 20
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 1200
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - prod_run_duration_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 1
+    GridY: 4
+  - NodeId: prod_starting_gold_1
+    DisplayName: Starting Gold I
+    Description: +50 gold at run start.
+    Category: 0
+    AffectedStat: 19
+    EffectPerRank: 50
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 150
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - prod_run_duration_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 3
+    GridY: 2
+  - NodeId: prod_starting_gold_2
+    DisplayName: Starting Gold II
+    Description: +100 gold at run start.
+    Category: 0
+    AffectedStat: 19
+    EffectPerRank: 100
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 600
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - prod_starting_gold_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 1
+    GridY: 0
+  - NodeId: cbt_sharp_edge
+    DisplayName: Sharp Edge
+    Description: +8 attack damage.
+    Category: 1
+    AffectedStat: 0
+    EffectPerRank: 8
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 100
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - awakening
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 11
+    GridY: 6
+  - NodeId: cbt_dmg_1
+    DisplayName: Battle-Hardened I
+    Description: +12 attack damage.
+    Category: 1
+    AffectedStat: 0
+    EffectPerRank: 12
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_sharp_edge
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 13
+    GridY: 6
+  - NodeId: cbt_dmg_2
+    DisplayName: Battle-Hardened II
+    Description: +18 attack damage.
+    Category: 1
+    AffectedStat: 0
+    EffectPerRank: 18
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 2000
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_dmg_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 15
+    GridY: 6
+  - NodeId: cbt_apex
+    DisplayName: Apex Predator
+    Description: +30 attack damage.
+    Category: 1
+    AffectedStat: 0
+    EffectPerRank: 30
+    EffectType: 0
+    MaxRank: 3
+    BaseCost: 8000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - cbt_dmg_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 17
+    GridY: 6
+  - NodeId: cbt_atkspd_1
+    DisplayName: Swift Strikes I
+    Description: +8% attack speed.
+    Category: 1
+    AffectedStat: 1
+    EffectPerRank: 0.08
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 150
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_sharp_edge
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 11
+    GridY: 4
+  - NodeId: cbt_atkspd_2
+    DisplayName: Swift Strikes II
+    Description: +12% attack speed.
+    Category: 1
+    AffectedStat: 1
+    EffectPerRank: 0.12
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 700
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_atkspd_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 13
+    GridY: 4
+  - NodeId: cbt_atkspd_3
+    DisplayName: Swift Strikes III
+    Description: +18% attack speed.
+    Category: 1
+    AffectedStat: 1
+    EffectPerRank: 0.18
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 2500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_atkspd_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 15
+    GridY: 4
+  - NodeId: cbt_blur
+    DisplayName: Blur Speed
+    Description: +28% attack speed.
+    Category: 1
+    AffectedStat: 1
+    EffectPerRank: 0.28
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 8000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - cbt_atkspd_3
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 17
+    GridY: 4
+  - NodeId: cbt_crit_1
+    DisplayName: Critical Eye I
+    Description: +3% crit chance.
+    Category: 1
+    AffectedStat: 3
+    EffectPerRank: 0.03
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 200
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_atkspd_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 11
+    GridY: 2
+  - NodeId: cbt_crit_2
+    DisplayName: Critical Eye II
+    Description: +5% crit chance.
+    Category: 1
+    AffectedStat: 3
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 900
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_crit_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 13
+    GridY: 2
+  - NodeId: cbt_deadeye
+    DisplayName: Deadeye
+    Description: +8% crit chance.
+    Category: 1
+    AffectedStat: 3
+    EffectPerRank: 0.08
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 5000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - cbt_crit_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 15
+    GridY: 2
+  - NodeId: cbt_range_1
+    DisplayName: Long Reach I
+    Description: +10% attack range.
+    Category: 1
+    AffectedStat: 2
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 300
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_dmg_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 17
+    GridY: 2
+  - NodeId: cbt_range_2
+    DisplayName: Long Reach II
+    Description: +20% attack range.
+    Category: 1
+    AffectedStat: 2
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 1200
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_range_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 19
+    GridY: 2
+  - NodeId: cbt_aoe_1
+    DisplayName: Blast Radius I
+    Description: +10% area damage.
+    Category: 1
+    AffectedStat: 5
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 400
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_range_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 19
+    GridY: 4
+  - NodeId: cbt_aoe_2
+    DisplayName: Blast Radius II
+    Description: +20% area damage.
+    Category: 1
+    AffectedStat: 5
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 1800
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - cbt_aoe_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 19
+    GridY: 6
+  - NodeId: cbt_shockwave
+    DisplayName: Shockwave
+    Description: +35% area damage.
+    Category: 1
+    AffectedStat: 5
+    EffectPerRank: 0.35
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 6000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - cbt_range_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 19
+    GridY: 0
+  - NodeId: cbt_combo
+    DisplayName: Combo Breaker
+    Description: +5% combo multiplier.
+    Category: 1
+    AffectedStat: 13
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 500
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - cbt_atkspd_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 17
+    GridY: 0
+  - NodeId: eco_opportunist
+    DisplayName: Opportunist
+    Description: +10% gold from all sources.
+    Category: 3
+    AffectedStat: 10
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 100
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - awakening
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 9
+    GridY: 8
+  - NodeId: eco_gold_drop_1
+    DisplayName: Looter I
+    Description: +15% gold from enemies.
+    Category: 3
+    AffectedStat: 10
+    EffectPerRank: 0.15
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - eco_opportunist
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 7
+    GridY: 8
+  - NodeId: eco_gold_drop_2
+    DisplayName: Looter II
+    Description: +20% gold from enemies.
+    Category: 3
+    AffectedStat: 10
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 2000
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - eco_gold_drop_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 5
+    GridY: 8
+  - NodeId: eco_gold_rush
+    DisplayName: Gold Rush
+    Description: +30% gold from enemies.
+    Category: 3
+    AffectedStat: 10
+    EffectPerRank: 0.3
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 8000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - eco_gold_drop_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 3
+    GridY: 8
+  - NodeId: eco_pickup_1
+    DisplayName: Magnet I
+    Description: +15% gold pickup range.
+    Category: 3
+    AffectedStat: 11
+    EffectPerRank: 0.15
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 150
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - eco_opportunist
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 9
+    GridY: 10
+  - NodeId: eco_pickup_2
+    DisplayName: Magnet II
+    Description: +30% gold pickup range.
+    Category: 3
+    AffectedStat: 11
+    EffectPerRank: 0.3
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 700
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - eco_pickup_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 7
+    GridY: 10
+  - NodeId: eco_vacuum
+    DisplayName: Vacuum Field
+    Description: +50% gold pickup range.
+    Category: 3
+    AffectedStat: 11
+    EffectPerRank: 0.5
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 5000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - eco_pickup_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 5
+    GridY: 10
+  - NodeId: eco_run_reward_1
+    DisplayName: Bonus Reward I
+    Description: +10% end-of-run gold.
+    Category: 3
+    AffectedStat: 12
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 200
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - eco_pickup_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 7
+    GridY: 12
+  - NodeId: eco_run_reward_2
+    DisplayName: Bonus Reward II
+    Description: +20% end-of-run gold.
+    Category: 3
+    AffectedStat: 12
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 900
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - eco_run_reward_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 5
+    GridY: 12
+  - NodeId: eco_jackpot
+    DisplayName: Jackpot
+    Description: +35% end-of-run gold.
+    Category: 3
+    AffectedStat: 12
+    EffectPerRank: 0.35
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 6000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - eco_run_reward_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 3
+    GridY: 12
+  - NodeId: eco_combo_1
+    DisplayName: Combo Economist I
+    Description: +5% gold per combo.
+    Category: 3
+    AffectedStat: 13
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 300
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - eco_gold_rush
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 3
+    GridY: 10
+  - NodeId: eco_combo_2
+    DisplayName: Combo Economist II
+    Description: +10% gold per combo.
+    Category: 3
+    AffectedStat: 13
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 1300
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - eco_combo_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 1
+    GridY: 10
+  - NodeId: eco_interest_1
+    DisplayName: Compound Interest I
+    Description: +1% current gold/sec.
+    Category: 3
+    AffectedStat: 10
+    EffectPerRank: 0.01
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 2000
+    CostScalingFactor: 1.8
+    PrerequisiteNodeIDs:
+    - eco_combo_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 1
+    GridY: 12
+  - NodeId: eco_interest_2
+    DisplayName: Compound Interest II
+    Description: +2% current gold/sec.
+    Category: 3
+    AffectedStat: 10
+    EffectPerRank: 0.02
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 8000
+    CostScalingFactor: 1.8
+    PrerequisiteNodeIDs:
+    - eco_interest_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 1
+    GridY: 14
+  - NodeId: sur_hardened
+    DisplayName: Hardened
+    Description: +30 max HP.
+    Category: 2
+    AffectedStat: 6
+    EffectPerRank: 30
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 100
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - cbt_sharp_edge
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 11
+    GridY: 8
+  - NodeId: sur_hp_1
+    DisplayName: Fortitude I
+    Description: +50 max HP.
+    Category: 2
+    AffectedStat: 6
+    EffectPerRank: 50
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 500
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - sur_hardened
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 13
+    GridY: 8
+  - NodeId: sur_hp_2
+    DisplayName: Fortitude II
+    Description: +80 max HP.
+    Category: 2
+    AffectedStat: 6
+    EffectPerRank: 80
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 2000
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - sur_hp_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 15
+    GridY: 8
+  - NodeId: sur_colossus
+    DisplayName: Colossus
+    Description: +150 max HP.
+    Category: 2
+    AffectedStat: 6
+    EffectPerRank: 150
+    EffectType: 0
+    MaxRank: 3
+    BaseCost: 8000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - sur_hp_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 17
+    GridY: 8
+  - NodeId: sur_dr_1
+    DisplayName: Iron Skin I
+    Description: +3% damage reduction.
+    Category: 2
+    AffectedStat: 8
+    EffectPerRank: 0.03
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 150
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - sur_hardened
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 11
+    GridY: 10
+  - NodeId: sur_dr_2
+    DisplayName: Iron Skin II
+    Description: +5% damage reduction.
+    Category: 2
+    AffectedStat: 8
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 700
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - sur_dr_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 13
+    GridY: 10
+  - NodeId: sur_dr_3
+    DisplayName: Iron Skin III
+    Description: +8% damage reduction.
+    Category: 2
+    AffectedStat: 8
+    EffectPerRank: 0.08
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 2500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - sur_dr_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 15
+    GridY: 10
+  - NodeId: sur_impenetrable
+    DisplayName: Impenetrable
+    Description: +12% damage reduction.
+    Category: 2
+    AffectedStat: 8
+    EffectPerRank: 0.12
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 7000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - sur_dr_3
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 17
+    GridY: 10
+  - NodeId: sur_movespd_1
+    DisplayName: Fleet Foot I
+    Description: +5% move speed.
+    Category: 2
+    AffectedStat: 7
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 120
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - sur_dr_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 11
+    GridY: 12
+  - NodeId: sur_movespd_2
+    DisplayName: Fleet Foot II
+    Description: +10% move speed.
+    Category: 2
+    AffectedStat: 7
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 550
+    CostScalingFactor: 1.4
+    PrerequisiteNodeIDs:
+    - sur_movespd_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 13
+    GridY: 12
+  - NodeId: sur_phantom
+    DisplayName: Phantom Step
+    Description: +25% move speed.
+    Category: 2
+    AffectedStat: 7
+    EffectPerRank: 0.25
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 9000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - sur_movespd_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 15
+    GridY: 12
+  - NodeId: sur_regen_1
+    DisplayName: Regeneration I
+    Description: +1 HP/sec.
+    Category: 2
+    AffectedStat: 9
+    EffectPerRank: 1
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 200
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - sur_hp_2
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 17
+    GridY: 12
+  - NodeId: sur_regen_2
+    DisplayName: Regeneration II
+    Description: +2 HP/sec.
+    Category: 2
+    AffectedStat: 9
+    EffectPerRank: 2
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 900
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - sur_regen_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 19
+    GridY: 10
+  - NodeId: sur_lifedrain_1
+    DisplayName: Life Drain I
+    Description: +3 HP per kill.
+    Category: 2
+    AffectedStat: 9
+    EffectPerRank: 3
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 500
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - sur_colossus
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 19
+    GridY: 8
+  - NodeId: sur_lifedrain_2
+    DisplayName: Life Drain II
+    Description: +5 HP per kill.
+    Category: 2
+    AffectedStat: 9
+    EffectPerRank: 5
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 2000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - sur_lifedrain_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 19
+    GridY: 12
+  - NodeId: engine_efficiency
+    DisplayName: Engine Efficiency
+    Description: +10% gen speed AND +10% gold.
+    Category: 0
+    AffectedStat: 15
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 3000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - prod_gen_speed_1
+    - eco_gold_drop_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 5
+    GridY: 7
+  - NodeId: blood_money
+    DisplayName: Blood Money
+    Description: +15% gold from kills.
+    Category: 3
+    AffectedStat: 10
+    EffectPerRank: 0.15
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 4000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - eco_opportunist
+    - sur_hardened
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 10
+    GridY: 9
+  - NodeId: idle_guardian
+    DisplayName: Idle Guardian
+    Description: +5% DR AND +1 HP/sec.
+    Category: 2
+    AffectedStat: 8
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 5000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - sur_dr_2
+    - sur_regen_1
+    PrestigeGateRequirement: 0
+    SelectionWeight: 50
+    GridX: 15
+    GridY: 14
+  - NodeId: pre_long_game
+    DisplayName: The Long Game
+    Description: +10% prestige multiplier.
+    Category: 4
+    AffectedStat: 18
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 500
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - prod_run_passive_1
+    - eco_opportunist
+    - cbt_sharp_edge
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 10
+    GridY: 11
+  - NodeId: pre_surge_1
+    DisplayName: Prestige Surge I
+    Description: +15% prestige multiplier.
+    Category: 4
+    AffectedStat: 18
+    EffectPerRank: 0.15
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 2500
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - pre_long_game
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 8
+    GridY: 11
+  - NodeId: pre_surge_2
+    DisplayName: Prestige Surge II
+    Description: +20% prestige multiplier.
+    Category: 4
+    AffectedStat: 18
+    EffectPerRank: 0.2
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 10000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - pre_surge_1
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 6
+    GridY: 13
+  - NodeId: pre_apex
+    DisplayName: Prestige Apex
+    Description: +30% prestige multiplier.
+    Category: 4
+    AffectedStat: 18
+    EffectPerRank: 0.3
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 25000
+    CostScalingFactor: 1.8
+    PrerequisiteNodeIDs:
+    - pre_surge_2
+    PrestigeGateRequirement: 3
+    SelectionWeight: 50
+    GridX: 4
+    GridY: 15
+  - NodeId: pre_head_start_1
+    DisplayName: Head Start I
+    Description: +200 starting gold after prestige.
+    Category: 4
+    AffectedStat: 19
+    EffectPerRank: 200
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 800
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - pre_long_game
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 12
+    GridY: 11
+  - NodeId: pre_head_start_2
+    DisplayName: Head Start II
+    Description: +400 starting gold after prestige.
+    Category: 4
+    AffectedStat: 19
+    EffectPerRank: 400
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 3500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - pre_head_start_1
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 14
+    GridY: 13
+  - NodeId: pre_grand_start
+    DisplayName: Grand Head Start
+    Description: +1000 starting gold after prestige.
+    Category: 4
+    AffectedStat: 19
+    EffectPerRank: 1000
+    EffectType: 0
+    MaxRank: 3
+    BaseCost: 15000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - pre_head_start_2
+    PrestigeGateRequirement: 2
+    SelectionWeight: 50
+    GridX: 16
+    GridY: 15
+  - NodeId: pre_retainer_1
+    DisplayName: Retainer I
+    Description: +5% gen speed retained.
+    Category: 4
+    AffectedStat: 15
+    EffectPerRank: 0.05
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 1500
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - pre_long_game
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 10
+    GridY: 13
+  - NodeId: pre_retainer_2
+    DisplayName: Retainer II
+    Description: +10% gen speed retained.
+    Category: 4
+    AffectedStat: 15
+    EffectPerRank: 0.1
+    EffectType: 1
+    MaxRank: 3
+    BaseCost: 6000
+    CostScalingFactor: 1.7
+    PrerequisiteNodeIDs:
+    - pre_retainer_1
+    PrestigeGateRequirement: 2
+    SelectionWeight: 50
+    GridX: 8
+    GridY: 13
+  - NodeId: pre_vet_runs_1
+    DisplayName: Veteran Runs I
+    Description: +15% run gold reward.
+    Category: 4
+    AffectedStat: 12
+    EffectPerRank: 0.15
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 1000
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - pre_head_start_1
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 12
+    GridY: 13
+  - NodeId: pre_vet_runs_2
+    DisplayName: Veteran Runs II
+    Description: +25% run gold reward.
+    Category: 4
+    AffectedStat: 12
+    EffectPerRank: 0.25
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 4500
+    CostScalingFactor: 1.5
+    PrerequisiteNodeIDs:
+    - pre_vet_runs_1
+    PrestigeGateRequirement: 2
+    SelectionWeight: 50
+    GridX: 14
+    GridY: 15
+  - NodeId: pre_warrior_legacy
+    DisplayName: Warrior's Legacy
+    Description: +20 attack damage (permanent).
+    Category: 4
+    AffectedStat: 0
+    EffectPerRank: 20
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 3000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - pre_surge_2
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 6
+    GridY: 15
+  - NodeId: pre_survivor_legacy
+    DisplayName: Survivor's Legacy
+    Description: +100 max HP (permanent).
+    Category: 4
+    AffectedStat: 6
+    EffectPerRank: 100
+    EffectType: 0
+    MaxRank: 5
+    BaseCost: 3000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - pre_retainer_2
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 8
+    GridY: 15
+  - NodeId: pre_builder_legacy
+    DisplayName: Builder's Legacy
+    Description: +15% gen speed (permanent).
+    Category: 4
+    AffectedStat: 15
+    EffectPerRank: 0.15
+    EffectType: 1
+    MaxRank: 5
+    BaseCost: 4000
+    CostScalingFactor: 1.6
+    PrerequisiteNodeIDs:
+    - pre_vet_runs_2
+    PrestigeGateRequirement: 1
+    SelectionWeight: 50
+    GridX: 12
+    GridY: 15
+  - NodeId: pre_ascension
+    DisplayName: Ascension
+    Description: +50% all prestige bonuses.
+    Category: 4
+    AffectedStat: 18
+    EffectPerRank: 0.5
+    EffectType: 1
+    MaxRank: 1
+    BaseCost: 50000
+    CostScalingFactor: 2
+    PrerequisiteNodeIDs:
+    - pre_apex
+    - pre_grand_start
+    PrestigeGateRequirement: 5
+    SelectionWeight: 50
+    GridX: 10
+    GridY: 17

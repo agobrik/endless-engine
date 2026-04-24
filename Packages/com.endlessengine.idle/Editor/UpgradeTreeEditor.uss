@@ -1,0 +1,14 @@
+.edge {
+    --edge-width: 2;
+    --edge-color: rgba(180, 180, 180, 0.6);
+    --edge-color-selected: rgba(255, 255, 255, 0.9);
+    --ghost-edge-color: rgba(180, 180, 180, 0.2);
+}
+
+.edge > .edge-control {
+    --control-point-ratio: 0;
+}
+
+.fa-icon {
+    -unity-font: url("../Fonts/fa-solid-900.ttf");
+}

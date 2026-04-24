@@ -1,0 +1,14 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UpgradeCardOverlay.uss" />
+    <ui:VisualElement name="overlay-root" class="overlay-root">
+
+        <ui:VisualElement name="overlay-panel" class="overlay-panel">
+            <ui:Label name="overlay-title" text="CHOOSE AN UPGRADE" class="overlay-title" />
+
+            <!-- Card container — cards injected at runtime -->
+            <ui:VisualElement name="card-container" class="card-container" />
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

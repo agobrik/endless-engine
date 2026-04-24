@@ -1,0 +1,24 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="EventBannerOverlay.uss" />
+
+    <!-- Shown at top of HUD when one or more events are active -->
+    <ui:VisualElement name="event-banner-root" class="event-banner-root" style="display: none;">
+
+        <ui:VisualElement name="event-banner" class="event-banner">
+
+            <ui:Label name="event-icon" text="★" class="event-icon" />
+
+            <ui:VisualElement name="event-info" class="event-info">
+                <ui:Label name="event-name-label"    text="Event Name"    class="event-name-label" />
+                <ui:Label name="event-timer-label"   text="Ends in: --"  class="event-timer-label" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="event-bonuses" class="event-bonuses">
+                <ui:Label name="income-bonus-label"   text="" class="bonus-label income-bonus" />
+                <ui:Label name="research-bonus-label" text="" class="bonus-label research-bonus" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

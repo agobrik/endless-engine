@@ -1,0 +1,145 @@
+/* ── BuildingGridScreen.uss ── */
+
+.building-root {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.building-panel {
+    width: 500px;
+    max-height: 580px;
+    background-color: rgba(10, 10, 20, 0.96);
+    border-color: rgba(255, 200, 80, 0.35);
+    border-width: 1px;
+    border-radius: 6px;
+    flex-direction: column;
+}
+
+/* ── Header ── */
+
+.building-header {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom-color: rgba(255, 200, 80, 0.2);
+    border-bottom-width: 1px;
+}
+
+.building-title {
+    font-size: 14px;
+    color: rgba(255, 200, 80, 0.9);
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    flex-grow: 1;
+}
+
+.building-count-label {
+    font-size: 11px;
+    color: rgba(160, 160, 160, 0.7);
+    margin-right: 12px;
+}
+
+.building-close-btn {
+    font-size: 14px;
+    color: rgba(200, 200, 200, 0.7);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    cursor: link;
+    padding: 0 4px;
+}
+
+/* ── Scroll ── */
+
+.building-scroll {
+    flex-grow: 1;
+    padding: 8px;
+}
+
+.building-list {
+    flex-direction: column;
+}
+
+/* ── Building row (generated at runtime) ── */
+
+.building-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 10px 12px;
+    margin-bottom: 4px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.03);
+    border-color: rgba(255, 200, 80, 0.15);
+    border-width: 1px;
+}
+
+.building-row:hover {
+    background-color: rgba(255, 200, 80, 0.06);
+    border-color: rgba(255, 200, 80, 0.35);
+}
+
+.building-row-name {
+    font-size: 13px;
+    color: rgba(220, 220, 220, 0.9);
+    -unity-font-style: bold;
+    flex-grow: 1;
+}
+
+.building-row-production {
+    font-size: 11px;
+    color: rgba(255, 200, 80, 0.75);
+    margin-right: 8px;
+}
+
+.building-row-count {
+    font-size: 11px;
+    color: rgba(140, 140, 140, 0.7);
+    width: 52px;
+    -unity-text-align: upper-right;
+    margin-right: 8px;
+}
+
+.building-action-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    cursor: link;
+    margin-left: 4px;
+    border-width: 1px;
+}
+
+.building-place-btn {
+    color: rgba(255, 200, 80, 0.9);
+    background-color: rgba(255, 200, 80, 0.1);
+    border-color: rgba(255, 200, 80, 0.4);
+}
+
+.building-place-btn:disabled {
+    color: rgba(140, 140, 140, 0.5);
+    background-color: rgba(255, 255, 255, 0.02);
+    border-color: rgba(140, 140, 140, 0.2);
+}
+
+.building-upgrade-btn {
+    color: rgba(100, 200, 255, 0.9);
+    background-color: rgba(100, 200, 255, 0.08);
+    border-color: rgba(100, 200, 255, 0.3);
+}
+
+.building-remove-btn {
+    color: rgba(255, 100, 100, 0.8);
+    background-color: rgba(255, 100, 100, 0.06);
+    border-color: rgba(255, 100, 100, 0.25);
+}
+
+/* ── Place failed toast ── */
+
+.building-error-label {
+    font-size: 11px;
+    color: rgba(255, 100, 100, 0.85);
+    padding: 6px 16px;
+    -unity-text-align: upper-center;
+    display: none;
+}

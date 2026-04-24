@@ -1,0 +1,21 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="UpgradeScreen.uss" />
+
+    <ui:VisualElement name="upgrade-root" class="upgrade-root">
+
+        <ui:VisualElement name="page-topbar" class="page-topbar">
+            <ui:Button name="back-button" text="&lt; BACK" class="page-back-button" />
+            <ui:Label name="page-title" text="UPGRADES" class="page-title" />
+            <ui:VisualElement class="page-gold-display">
+                <ui:Label name="gold-label" text="0" class="page-gold-label" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- overflow:hidden viewport — no ScrollView, avoids contentContainer clipping bug -->
+        <ui:VisualElement name="tree-viewport" class="tree-viewport">
+            <!-- tree-canvas: position:absolute, panned via left/top from C# -->
+            <ui:VisualElement name="tree-canvas" class="tree-canvas" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

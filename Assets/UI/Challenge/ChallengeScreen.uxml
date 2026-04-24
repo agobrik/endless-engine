@@ -1,0 +1,45 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="ChallengeScreen.uss" />
+    <ui:VisualElement name="challenge-root" class="challenge-root">
+
+        <ui:VisualElement name="challenge-panel" class="challenge-panel">
+
+            <!-- Header -->
+            <ui:VisualElement name="challenge-header" class="challenge-header">
+                <ui:Label name="title-label" text="CHALLENGES" class="challenge-title" />
+                <ui:Button name="close-button" text="✕" class="btn-close" />
+            </ui:VisualElement>
+
+            <!-- Body: list + preview side by side -->
+            <ui:VisualElement name="challenge-body" class="challenge-body">
+
+                <!-- Challenge list -->
+                <ui:ScrollView name="challenge-list-scroll" class="challenge-list-scroll"
+                    vertical-scroller-visibility="AlwaysVisible">
+                    <ui:VisualElement name="challenge-list" class="challenge-list" />
+                </ui:ScrollView>
+
+                <!-- Preview panel (right side) -->
+                <ui:VisualElement name="preview-panel" class="preview-panel">
+                    <ui:Label name="preview-title"       text="Select a challenge" class="preview-title" />
+                    <ui:Label name="preview-description" text=""  class="preview-desc" />
+
+                    <ui:Label text="MODIFIERS" class="preview-section-label" />
+                    <ui:VisualElement name="modifier-list" class="modifier-list" />
+
+                    <ui:Label text="VICTORY CONDITION" class="preview-section-label" />
+                    <ui:Label name="preview-condition" text="—" class="preview-condition" />
+
+                    <ui:Label text="REWARD" class="preview-section-label" />
+                    <ui:Label name="preview-reward" text="—" class="preview-reward" />
+
+                    <ui:VisualElement name="preview-buttons" class="preview-buttons">
+                        <ui:Button name="activate-button" text="ACTIVATE" class="btn-activate" />
+                        <ui:Button name="cancel-button"   text="NO CHALLENGE" class="btn-cancel" />
+                    </ui:VisualElement>
+                </ui:VisualElement>
+
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

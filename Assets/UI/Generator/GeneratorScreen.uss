@@ -1,0 +1,158 @@
+/* GeneratorScreen Stylesheet — Endless Engine */
+
+.generator-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(13, 13, 20, 0.88);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.generator-panel {
+    flex-direction: column;
+    background-color: rgba(28, 28, 38, 0.97);
+    border-width: 1px;
+    border-color: rgba(255, 107, 53, 0.4);
+    border-radius: 12px;
+    padding: 0;
+    width: 560px;
+    max-height: 680px;
+}
+
+/* ── Header ──────────────────────────────────────────── */
+
+.panel-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px 24px;
+    border-bottom-width: 1px;
+    border-color: rgba(255, 107, 53, 0.2);
+}
+
+.panel-title {
+    color: rgb(255, 107, 53);
+    font-size: 22px;
+    -unity-font-style: bold;
+    letter-spacing: 4px;
+    flex-grow: 1;
+}
+
+.total-yield-label {
+    color: rgba(232, 230, 217, 0.6);
+    font-size: 15px;
+    letter-spacing: 1px;
+    margin-right: 16px;
+}
+
+.close-button {
+    background-color: transparent;
+    border-width: 0;
+    color: rgba(232, 230, 217, 0.5);
+    font-size: 20px;
+    padding: 4px 8px;
+    width: 32px;
+    height: 32px;
+}
+
+.close-button:hover {
+    color: rgb(255, 107, 53);
+}
+
+/* ── Generator List ──────────────────────────────────── */
+
+.generator-list {
+    flex-grow: 1;
+    padding: 8px 0;
+}
+
+/* ── Generator Row ───────────────────────────────────── */
+
+.generator-row {
+    flex-direction: row;
+    align-items: center;
+    padding: 14px 24px;
+    border-bottom-width: 1px;
+    border-color: rgba(232, 230, 217, 0.06);
+    transition-duration: 0.1s;
+    transition-property: background-color;
+}
+
+.generator-row:hover {
+    background-color: rgba(255, 107, 53, 0.05);
+}
+
+.generator-row.locked {
+    opacity: 0.35;
+}
+
+.generator-info {
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.generator-name {
+    color: rgb(232, 230, 217);
+    font-size: 15px;
+    -unity-font-style: bold;
+}
+
+.generator-desc {
+    color: rgba(232, 230, 217, 0.5);
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+.generator-yield {
+    color: rgba(255, 107, 53, 0.8);
+    font-size: 12px;
+    margin-top: 3px;
+}
+
+.generator-count {
+    color: rgb(232, 230, 217);
+    font-size: 28px;
+    -unity-font-style: bold;
+    min-width: 48px;
+    -unity-text-align: middle-center;
+    margin-right: 16px;
+}
+
+.generator-buy-btn {
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(255, 107, 53, 0.12);
+    border-color: rgba(255, 107, 53, 0.5);
+    border-width: 1px;
+    border-radius: 6px;
+    padding: 8px 16px;
+    min-width: 110px;
+    transition-duration: 0.1s;
+    transition-property: background-color;
+}
+
+.generator-buy-btn:hover {
+    background-color: rgba(255, 107, 53, 0.25);
+}
+
+.generator-buy-btn:disabled {
+    opacity: 0.3;
+}
+
+.buy-btn-label {
+    color: rgb(232, 230, 217);
+    font-size: 12px;
+    -unity-font-style: bold;
+    letter-spacing: 1px;
+}
+
+.buy-btn-cost {
+    color: rgb(255, 107, 53);
+    font-size: 13px;
+    -unity-font-style: bold;
+    margin-top: 2px;
+}

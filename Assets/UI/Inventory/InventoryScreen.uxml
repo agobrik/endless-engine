@@ -1,0 +1,38 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="InventoryScreen.uss" />
+
+    <ui:VisualElement name="inventory-root" class="inventory-root" style="display: none;">
+
+        <ui:VisualElement name="inventory-panel" class="inventory-panel">
+
+            <ui:VisualElement name="inventory-header" class="inventory-header">
+                <ui:Label name="inventory-title" text="INVENTORY" class="inventory-title" />
+                <ui:Label name="slot-count-label" text="0 / 20" class="slot-count-label" />
+                <ui:Button name="close-button" text="✕" class="inventory-close-btn" />
+            </ui:VisualElement>
+
+            <!-- Sort / filter bar -->
+            <ui:VisualElement name="filter-bar" class="filter-bar">
+                <ui:Button name="filter-all"       text="All"       class="filter-btn active" />
+                <ui:Button name="filter-equipment" text="Equipment" class="filter-btn" />
+                <ui:Button name="filter-consumable" text="Consumable" class="filter-btn" />
+                <ui:Button name="filter-material"  text="Material"  class="filter-btn" />
+            </ui:VisualElement>
+
+            <!-- Item grid -->
+            <ui:ScrollView name="inventory-scroll" class="inventory-scroll">
+                <ui:VisualElement name="inventory-grid" class="inventory-grid" />
+            </ui:ScrollView>
+
+            <!-- Tooltip panel (shown on hover) -->
+            <ui:VisualElement name="item-tooltip" class="item-tooltip" style="display: none;">
+                <ui:Label name="tooltip-name"  text="Item Name"  class="tooltip-name" />
+                <ui:Label name="tooltip-rarity" text="Common"    class="tooltip-rarity" />
+                <ui:Label name="tooltip-count" text="×1"         class="tooltip-count" />
+                <ui:Label name="tooltip-desc"  text="Description." class="tooltip-desc" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

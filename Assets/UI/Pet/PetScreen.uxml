@@ -1,0 +1,27 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="PetScreen.uss" />
+
+    <ui:VisualElement name="pet-root" class="pet-root" style="display: none;">
+
+        <ui:VisualElement name="pet-panel" class="pet-panel">
+
+            <ui:VisualElement name="pet-header" class="pet-header">
+                <ui:Label name="pet-title" text="COMPANIONS" class="pet-title" />
+                <ui:Button name="close-button" text="✕" class="pet-close-btn" />
+            </ui:VisualElement>
+
+            <!-- Active effects summary -->
+            <ui:VisualElement name="active-effects-bar" class="active-effects-bar">
+                <ui:Label name="active-pet-name" text="No companion equipped" class="active-pet-name" />
+                <ui:Label name="active-effects-label" text="" class="active-effects-label" />
+            </ui:VisualElement>
+
+            <!-- Pet list -->
+            <ui:ScrollView name="pet-scroll" class="pet-scroll">
+                <ui:VisualElement name="pet-list" class="pet-list" />
+            </ui:ScrollView>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

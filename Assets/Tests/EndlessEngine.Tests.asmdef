@@ -1,0 +1,27 @@
+{
+    "name": "EndlessEngine.Tests",
+    "rootNamespace": "EndlessEngine.Tests",
+    "references": [
+        "EndlessEngine.Runtime",
+        "Unity.InputSystem",
+        "Unity.InputSystem.TestFramework",
+        "com.unity.nuget.newtonsoft-json"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

@@ -1,0 +1,167 @@
+// Tests for Story S1-10: Config Layer — SO Immutability Roslyn Analyzer
+// Type: Logic (Unit/EditMode)
+// Story: production/epics/config-layer/story-004-so-immutability-analyzer.md
+//
+// These tests verify that:
+//   (1) AC-CFG-05: Assigning a SO field in a non-Editor assembly emits ENDLESSENG001
+//   (2) Redeclaring a [NonOverridable] member in a subclass emits ENDLESSENG002
+//   (3) Read access to SO fields does NOT trigger ENDLESSENG001
+//   (4) Editor assembly assignments do NOT trigger ENDLESSENG001
+//
+// Note: Roslyn analyzer tests run outside Unity's test runner via NUnit directly.
+// This file exercises the analyzer source using Microsoft.CodeAnalysis.Testing.
+//
+// To run: standard NUnit runner (dotnet test) — NOT Unity Test Runner.
+// The analyzer project lives at:
+//   tools/analyzers/EndlessEngine.Analyzers/EndlessEngine.Analyzers/
+
+using System.Threading.Tasks;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.CSharp.Testing;
+using Microsoft.CodeAnalysis.Diagnostics;
+using Microsoft.CodeAnalysis.Testing;
+using Microsoft.CodeAnalysis.Testing.Verifiers;
+using NUnit.Framework;
+using EndlessEngine.Analyzers;
+
+namespace EndlessEngine.Tests.Unit.ConfigLayer
+{
+    // Convenience type alias for CSharpAnalyzerTest
+    using SOFieldAnalyzerTest = CSharpAnalyzerTest<SOFieldAssignmentAnalyzer, NUnitVerifier>;
+    using NonOverridableAnalyzerTest = CSharpAnalyzerTest<NonOverridableFieldAnalyzer, NUnitVerifier>;
+
+    /// <summary>
+    /// Roslyn analyzer tests for SO immutability rules (S1-10 / Story 004).
+    /// </summary>
+    [TestFixture]
+    public class SOImmutabilityAnalyzerTests
+    {
+        // ── AC-CFG-05: ENDLESSENG001 — SO field assignment in non-Editor assembly ──
+
+        [Test]
+        [Description("AC-CFG-05: Assigning a SO field in runtime assembly emits ENDLESSENG001.")]
+        public async Task SOFieldAssignment_InRuntimeAssembly_EmitsDiagnostic()
+        {
+            const string source = @"
+using UnityEngine;
+namespace MyGame {
+    public class EnemyConfig : ScriptableObject { public float BaseHP; }
+    public class SomeSystem {
+        public void BadWrite(EnemyConfig cfg) {
+            cfg.{|#0:BaseHP|} = 99f;
+        }
+    }
+}";
+            var test = new SOFieldAnalyzerTest
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(SOFieldAssignmentAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+                        .WithLocation(0)
+                        .WithArguments("BaseHP", "EnemyConfig"),
+                },
+            };
+            await test.RunAsync();
+        }
+
+        [Test]
+        [Description("AC-CFG-05: Reading a SO field does NOT emit ENDLESSENG001.")]
+        public async Task SOFieldRead_InRuntimeAssembly_NoDiagnostic()
+        {
+            const string source = @"
+using UnityEngine;
+namespace MyGame {
+    public class EnemyConfig : ScriptableObject { public float BaseHP; }
+    public class SomeSystem {
+        public float GoodRead(EnemyConfig cfg) {
+            return cfg.BaseHP; // read only — no diagnostic
+        }
+    }
+}";
+            var test = new SOFieldAnalyzerTest
+            {
+                TestCode = source,
+                // No expected diagnostics
+            };
+            await test.RunAsync();
+        }
+
+        [Test]
+        [Description("AC-CFG-05: Assigning a plain class field (not SO) does NOT emit ENDLESSENG001.")]
+        public async Task PlainClassFieldAssignment_NoDiagnostic()
+        {
+            const string source = @"
+namespace MyGame {
+    public class PlainData { public float Value; }
+    public class SomeSystem {
+        public void Write(PlainData data) {
+            data.Value = 5f; // not an SO — fine
+        }
+    }
+}";
+            var test = new SOFieldAnalyzerTest
+            {
+                TestCode = source,
+            };
+            await test.RunAsync();
+        }
+
+        // ── ENDLESSENG002 — NonOverridable member redeclaration ───────────────────
+
+        [Test]
+        [Description("NonOverridable: Redeclaring [NonOverridable] field in SO subclass emits ENDLESSENG002.")]
+        public async Task NonOverridableField_Redeclared_EmitsDiagnostic()
+        {
+            const string source = @"
+using System;
+using UnityEngine;
+namespace EndlessEngine.Config { public sealed class NonOverridableAttribute : Attribute { } }
+namespace MyGame {
+    using EndlessEngine.Config;
+    public class BaseConfig : ScriptableObject {
+        [NonOverridable] public int SchemaVersion;
+    }
+    public class SubConfig : BaseConfig {
+        public int {|#0:SchemaVersion|}; // redeclares NonOverridable — diagnostic expected
+    }
+}";
+            var test = new NonOverridableAnalyzerTest
+            {
+                TestCode = source,
+                ExpectedDiagnostics =
+                {
+                    new DiagnosticResult(NonOverridableFieldAnalyzer.DiagnosticId, DiagnosticSeverity.Error)
+                        .WithLocation(0)
+                        .WithArguments("SchemaVersion", "BaseConfig", "SubConfig"),
+                },
+            };
+            await test.RunAsync();
+        }
+
+        [Test]
+        [Description("NonOverridable: Subclass declaring a different field name is fine.")]
+        public async Task NonOverridableField_NewFieldInSubclass_NoDiagnostic()
+        {
+            const string source = @"
+using System;
+using UnityEngine;
+namespace EndlessEngine.Config { public sealed class NonOverridableAttribute : Attribute { } }
+namespace MyGame {
+    using EndlessEngine.Config;
+    public class BaseConfig : ScriptableObject {
+        [NonOverridable] public int SchemaVersion;
+    }
+    public class SubConfig : BaseConfig {
+        public float NewField; // different name — fine
+    }
+}";
+            var test = new NonOverridableAnalyzerTest
+            {
+                TestCode = source,
+            };
+            await test.RunAsync();
+        }
+    }
+}

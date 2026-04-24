@@ -1,0 +1,22 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="BuildingGridScreen.uss" />
+
+    <ui:VisualElement name="building-root" class="building-root" style="display: none;">
+
+        <ui:VisualElement name="building-panel" class="building-panel">
+
+            <ui:VisualElement name="building-header" class="building-header">
+                <ui:Label name="building-title" text="BUILDINGS" class="building-title" />
+                <ui:Label name="building-count-label" text="0 placed" class="building-count-label" />
+                <ui:Button name="close-button" text="✕" class="building-close-btn" />
+            </ui:VisualElement>
+
+            <!-- Building list -->
+            <ui:ScrollView name="building-scroll" class="building-scroll">
+                <ui:VisualElement name="building-list" class="building-list" />
+            </ui:ScrollView>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

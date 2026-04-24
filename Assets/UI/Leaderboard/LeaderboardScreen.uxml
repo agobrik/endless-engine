@@ -1,0 +1,37 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="LeaderboardScreen.uss" />
+
+    <ui:VisualElement name="lb-root" class="lb-root" style="display: none;">
+
+        <ui:VisualElement name="lb-panel" class="lb-panel">
+
+            <ui:VisualElement name="lb-header" class="lb-header">
+                <ui:Label name="lb-title" text="LEADERBOARD" class="lb-title" />
+                <ui:Button name="close-button" text="✕" class="lb-close-btn" />
+            </ui:VisualElement>
+
+            <!-- Board selector -->
+            <ui:VisualElement name="board-selector" class="board-selector" />
+
+            <!-- Score table -->
+            <ui:VisualElement name="lb-table-header" class="lb-table-header">
+                <ui:Label text="#"      class="lb-col-rank" />
+                <ui:Label text="Player" class="lb-col-name" />
+                <ui:Label text="Score"  class="lb-col-score" />
+                <ui:Label text="Date"   class="lb-col-date" />
+            </ui:VisualElement>
+
+            <ui:ScrollView name="lb-scroll" class="lb-scroll">
+                <ui:VisualElement name="lb-rows" class="lb-rows" />
+            </ui:ScrollView>
+
+            <!-- Submit score -->
+            <ui:VisualElement name="lb-submit-bar" class="lb-submit-bar">
+                <ui:TextField name="player-name-field" value="Player" class="lb-name-field" />
+                <ui:Button name="submit-btn" text="Submit Score" class="lb-submit-btn" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

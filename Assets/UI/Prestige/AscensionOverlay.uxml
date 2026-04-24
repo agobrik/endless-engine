@@ -1,0 +1,35 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="PrestigeOverlay.uss" />
+    <Style src="AscensionOverlay.uss" />
+
+    <ui:VisualElement name="ascension-overlay-root" class="prestige-overlay-root" style="display: none;">
+
+        <ui:VisualElement name="ascension-panel" class="prestige-panel ascension-panel">
+
+            <!-- Dynamic title set at runtime: "PRESTIGE", "ASCEND", etc. -->
+            <ui:Label name="ascension-title" text="ASCEND" class="prestige-title ascension-title" />
+
+            <!-- Layer selector: tab buttons for each available layer -->
+            <ui:VisualElement name="layer-tabs" class="layer-tabs" />
+
+            <!-- Preview section: current vs new multiplier -->
+            <ui:VisualElement name="preview-section" class="preview-section">
+                <ui:Label name="layer-count-label"   text="Ascension 0"          class="preview-label" />
+                <ui:Label name="current-mult-label"  text="Current cascade: 1.0×" class="preview-label" />
+                <ui:Label name="new-mult-label"      text="After: 1.2×"           class="preview-label-highlight" />
+                <ui:Label name="currency-reward-label" text=""                    class="preview-label-reward" style="display: none;" />
+                <ui:Label name="gate-status-label"   text=""                      class="preview-label-warning" />
+            </ui:VisualElement>
+
+            <!-- Reset scope notice -->
+            <ui:Label name="reset-scope-label" text="Resets: Gold, Upgrades, Wave" class="reset-scope-label" />
+
+            <ui:VisualElement name="button-row" class="button-row">
+                <ui:Button name="cancel-button"  text="CANCEL"  class="prestige-btn-cancel" />
+                <ui:Button name="confirm-button" text="CONFIRM" class="prestige-btn-confirm" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

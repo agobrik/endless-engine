@@ -1,0 +1,36 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="ExportDialog.uss" />
+
+    <ui:VisualElement name="export-root" class="export-root" style="display: none;">
+
+        <ui:VisualElement name="export-panel" class="export-panel">
+
+            <ui:VisualElement name="export-header" class="export-header">
+                <ui:Label name="export-title" text="EXPORT / IMPORT" class="export-title" />
+                <ui:Button name="close-button" text="✕" class="export-close-btn" />
+            </ui:VisualElement>
+
+            <!-- Export section -->
+            <ui:VisualElement name="export-section" class="dialog-section">
+                <ui:Label text="Export Save" class="section-label" />
+                <ui:Label name="export-hint" text="Copies your save as a code to clipboard." class="hint-label" />
+                <ui:Button name="export-btn" text="Export to Code" class="export-action-btn" />
+                <ui:Label name="export-success-label" text="Copied to clipboard!" class="success-label" style="display: none;" />
+            </ui:VisualElement>
+
+            <!-- Divider -->
+            <ui:VisualElement class="divider" />
+
+            <!-- Import section -->
+            <ui:VisualElement name="import-section" class="dialog-section">
+                <ui:Label text="Import Save" class="section-label" />
+                <ui:Label name="import-hint" text="Paste your export code below, then click Import." class="hint-label" />
+                <ui:TextField name="import-code-field" multiline="true" class="import-code-field" />
+                <ui:Button name="import-btn" text="Import Save" class="import-action-btn" />
+                <ui:Label name="import-error-label" text="" class="error-label" style="display: none;" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

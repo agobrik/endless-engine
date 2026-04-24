@@ -1,0 +1,187 @@
+/* ── MilestoneOverlay.uss ── Achievement popup + milestone log ── */
+
+.milestone-overlay-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+}
+
+/* ── Achievement toast ──────────────────────────────────────── */
+
+.achievement-toast {
+    position: absolute;
+    top: 80px;
+    right: 16px;
+    width: 320px;
+    background-color: rgba(10, 10, 20, 0.92);
+    border-color: rgba(255, 200, 50, 0.7);
+    border-width: 1px;
+    border-radius: 6px;
+    padding: 10px 14px;
+    pointer-events: none;
+    opacity: 0;
+    translate: 340px 0;
+    transition-property: translate, opacity;
+    transition-duration: 0.35s;
+    transition-timing-function: ease-out;
+}
+
+.achievement-toast.toast-visible {
+    opacity: 1;
+    translate: 0 0;
+}
+
+.toast-header {
+    font-size: 10px;
+    color: rgba(255, 200, 50, 0.9);
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    margin-bottom: 6px;
+}
+
+.toast-body {
+    flex-direction: row;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.toast-icon {
+    width: 40px;
+    height: 40px;
+    background-color: rgba(255, 200, 50, 0.15);
+    border-radius: 4px;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+.toast-text {
+    flex-grow: 1;
+}
+
+.toast-name {
+    font-size: 14px;
+    color: rgb(240, 240, 240);
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.toast-description {
+    font-size: 11px;
+    color: rgba(200, 200, 200, 0.8);
+    white-space: normal;
+}
+
+.toast-reward {
+    font-size: 12px;
+    color: rgba(100, 220, 100, 0.9);
+    -unity-font-style: bold;
+    margin-top: 4px;
+}
+
+/* ── Milestone log panel ────────────────────────────────────── */
+
+.milestone-log-panel {
+    position: absolute;
+    top: 80px;
+    right: 16px;
+    width: 340px;
+    max-height: 480px;
+    background-color: rgba(10, 10, 20, 0.95);
+    border-color: rgba(255, 200, 50, 0.5);
+    border-width: 1px;
+    border-radius: 6px;
+    padding: 0;
+    pointer-events: auto;
+}
+
+.log-header {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-bottom-color: rgba(255, 200, 50, 0.3);
+    border-bottom-width: 1px;
+}
+
+.log-title {
+    font-size: 13px;
+    color: rgba(255, 200, 50, 0.9);
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+}
+
+.log-close-button {
+    font-size: 14px;
+    color: rgba(200, 200, 200, 0.8);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    padding: 0 4px;
+    cursor: link;
+}
+
+.log-scroll {
+    flex-grow: 1;
+    padding: 8px;
+}
+
+.log-list {
+    flex-direction: column;
+}
+
+/* ── Log entry (generated at runtime) ───────────────────────── */
+
+.log-entry {
+    flex-direction: row;
+    align-items: center;
+    padding: 8px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.log-entry.completed {
+    background-color: rgba(255, 200, 50, 0.08);
+}
+
+.log-entry-icon {
+    width: 32px;
+    height: 32px;
+    background-color: rgba(255, 200, 50, 0.1);
+    border-radius: 3px;
+    margin-right: 8px;
+    flex-shrink: 0;
+}
+
+.log-entry-icon.completed {
+    background-color: rgba(255, 200, 50, 0.25);
+}
+
+.log-entry-text {
+    flex-grow: 1;
+}
+
+.log-entry-name {
+    font-size: 12px;
+    color: rgb(220, 220, 220);
+    -unity-font-style: bold;
+}
+
+.log-entry-name.completed {
+    color: rgba(255, 200, 50, 0.9);
+}
+
+.log-entry-desc {
+    font-size: 10px;
+    color: rgba(160, 160, 160, 0.8);
+    white-space: normal;
+}
+
+.log-entry-check {
+    font-size: 16px;
+    color: rgba(100, 220, 100, 0.9);
+    margin-left: 8px;
+    flex-shrink: 0;
+}

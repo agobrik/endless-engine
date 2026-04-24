@@ -1,0 +1,27 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="MainMenu.uss" />
+    <ui:VisualElement name="menu-root" class="menu-root">
+
+        <!-- Logo / Title -->
+        <ui:VisualElement name="title-block" class="title-block">
+            <ui:Label name="game-title" text="ENDLESS" class="title-main" />
+            <ui:Label name="game-subtitle" text="ENGINE" class="title-sub" />
+        </ui:VisualElement>
+
+        <!-- Passive income display -->
+        <ui:VisualElement name="income-block" class="income-block">
+            <ui:Label name="gold-label" text="◆ 0" class="menu-gold-label" />
+            <ui:Label name="income-rate-label" text="+0/sec" class="menu-income-rate" />
+        </ui:VisualElement>
+
+        <!-- Main buttons -->
+        <ui:VisualElement name="button-block" class="button-block">
+            <ui:Button name="start-run-button" text="START RUN" class="btn-primary" />
+            <ui:Button name="upgrades-button" text="UPGRADES" class="btn-secondary" />
+            <ui:Button name="generators-button" text="GENERATORS" class="btn-secondary" />
+            <!-- Prestige button — hidden until balance pass. Toolset feature, not core to this game. -->
+            <ui:Button name="prestige-button" text="PRESTIGE" class="btn-prestige" style="display: none;" />
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

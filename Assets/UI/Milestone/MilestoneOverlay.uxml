@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="MilestoneOverlay.uss" />
+
+    <!-- Achievement popup toast — slides in from top-right, auto-dismisses after 3 s -->
+    <ui:VisualElement name="milestone-overlay-root" class="milestone-overlay-root" style="display: none;">
+
+        <!-- Achievement popup toast -->
+        <ui:VisualElement name="achievement-toast" class="achievement-toast">
+            <ui:Label name="toast-header" text="ACHIEVEMENT UNLOCKED" class="toast-header" />
+            <ui:VisualElement name="toast-body" class="toast-body">
+                <ui:VisualElement name="toast-icon" class="toast-icon" />
+                <ui:VisualElement name="toast-text" class="toast-text">
+                    <ui:Label name="toast-name" text="Milestone Name" class="toast-name" />
+                    <ui:Label name="toast-description" text="Description here." class="toast-description" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label name="toast-reward" text="+1,000 Gold" class="toast-reward" />
+        </ui:VisualElement>
+
+        <!-- Milestone log panel (full list, opened by HUD button) -->
+        <ui:VisualElement name="milestone-log-panel" class="milestone-log-panel" style="display: none;">
+            <ui:VisualElement name="log-header" class="log-header">
+                <ui:Label name="log-title" text="ACHIEVEMENTS" class="log-title" />
+                <ui:Button name="log-close-button" text="✕" class="log-close-button" />
+            </ui:VisualElement>
+            <ui:ScrollView name="log-scroll" class="log-scroll">
+                <ui:VisualElement name="log-list" class="log-list" />
+            </ui:ScrollView>
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,159 @@
+/* UpgradeScreen */
+
+.upgrade-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(8, 8, 16);
+    flex-direction: column;
+}
+
+.page-topbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 32px;
+    padding-right: 32px;
+    height: 56px;
+    background-color: rgb(12, 12, 22);
+    border-bottom-width: 2px;
+    border-bottom-color: rgba(255, 107, 53, 0.30);
+    flex-shrink: 0;
+}
+
+.page-back-button {
+    background-color: transparent;
+    border-width: 1px;
+    border-color: rgba(255, 107, 53, 0.30);
+    border-radius: 6px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    padding-left: 16px;
+    padding-right: 16px;
+    color: rgba(232, 230, 217, 0.70);
+    font-size: 13px;
+    -unity-font-style: bold;
+}
+
+.page-back-button:hover {
+    background-color: rgba(255, 107, 53, 0.10);
+    border-color: rgba(255, 107, 53, 0.70);
+    color: rgb(255, 107, 53);
+}
+
+.page-title {
+    color: rgb(232, 230, 217);
+    font-size: 20px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-center;
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
+.page-gold-display {
+    background-color: rgba(255, 185, 53, 0.08);
+    border-width: 1px;
+    border-color: rgba(255, 185, 53, 0.25);
+    border-radius: 6px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    padding-left: 14px;
+    padding-right: 14px;
+}
+
+.page-gold-label {
+    color: rgb(255, 185, 53);
+    font-size: 14px;
+    -unity-font-style: bold;
+}
+
+/* Clipping viewport — fills remaining space below topbar */
+.tree-viewport {
+    flex-grow: 1;
+    min-height: 0;
+    overflow: hidden;
+}
+
+/* Canvas is position:absolute — panned by setting left/top from C# */
+.tree-canvas {
+    position: absolute;
+    background-color: rgb(8, 8, 16);
+    overflow: visible;
+}
+
+.line-layer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.node-tooltip {
+    position: absolute;
+    width: 220px;
+    max-width: 220px;
+    flex-direction: column;
+    background-color: rgb(10, 10, 20);
+    border-width: 1px;
+    border-color: rgba(255, 107, 53, 0.60); /* overridden per-node in C# */
+    border-radius: 8px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    padding-left: 14px;
+    padding-right: 14px;
+    overflow: hidden;
+}
+
+.tt-name {
+    color: rgb(232, 230, 217);
+    font-size: 14px;
+    -unity-font-style: bold;
+    white-space: normal;
+    -unity-text-align: upper-left;
+    margin-bottom: 6px;
+    border-bottom-width: 1px;
+    border-bottom-color: rgba(255, 107, 53, 0.25);
+    padding-bottom: 6px;
+}
+
+.tt-effect {
+    color: rgb(255, 107, 53);
+    font-size: 13px;
+    -unity-font-style: bold;
+    white-space: normal;
+    -unity-text-align: upper-left;
+    margin-bottom: 5px;
+}
+
+.tt-rank {
+    color: rgba(232, 230, 217, 0.65);
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.tt-cost {
+    color: rgb(255, 185, 53);
+    font-size: 13px;
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.tt-cost.tt-cost-locked {
+    color: rgba(180, 180, 180, 0.45);
+}
+
+.tt-cost.tt-cost-cant {
+    color: rgba(220, 80, 80, 0.90);
+}
+
+.tt-prereq {
+    color: rgba(220, 80, 80, 0.90);
+    font-size: 13px;
+    -unity-font-style: bold;
+    white-space: normal;
+    margin-top: 6px;
+}

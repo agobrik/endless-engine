@@ -1,0 +1,176 @@
+/* ── InventoryScreen.uss ── Item grid panel ── */
+
+.inventory-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0, 0, 0, 0.6);
+}
+
+.inventory-panel {
+    width: 480px;
+    max-height: 560px;
+    background-color: rgba(10, 10, 20, 0.96);
+    border-color: rgba(100, 200, 255, 0.4);
+    border-width: 1px;
+    border-radius: 6px;
+    flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────── */
+
+.inventory-header {
+    flex-direction: row;
+    align-items: center;
+    padding: 12px 16px;
+    border-bottom-color: rgba(100, 200, 255, 0.2);
+    border-bottom-width: 1px;
+}
+
+.inventory-title {
+    font-size: 14px;
+    color: rgba(100, 200, 255, 0.9);
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    flex-grow: 1;
+}
+
+.slot-count-label {
+    font-size: 11px;
+    color: rgba(160, 160, 160, 0.7);
+    margin-right: 12px;
+}
+
+.inventory-close-btn {
+    font-size: 14px;
+    color: rgba(200, 200, 200, 0.7);
+    background-color: rgba(0, 0, 0, 0);
+    border-width: 0;
+    cursor: link;
+    padding: 0 4px;
+}
+
+/* ── Filter bar ──────────────────────────────────────────── */
+
+.filter-bar {
+    flex-direction: row;
+    padding: 8px 16px;
+    border-bottom-color: rgba(100, 200, 255, 0.1);
+    border-bottom-width: 1px;
+}
+
+.filter-btn {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 3px;
+    margin-right: 4px;
+    color: rgba(180, 180, 180, 0.7);
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+    cursor: link;
+}
+
+.filter-btn.active {
+    color: rgba(100, 200, 255, 0.95);
+    background-color: rgba(100, 200, 255, 0.12);
+    border-color: rgba(100, 200, 255, 0.4);
+}
+
+/* ── Scroll + Grid ────────────────────────────────────────── */
+
+.inventory-scroll {
+    flex-grow: 1;
+    padding: 12px;
+}
+
+.inventory-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+/* ── Item slot (generated at runtime) ────────────────────── */
+
+.item-slot {
+    width: 64px;
+    height: 64px;
+    margin: 4px;
+    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+    border-width: 1px;
+    align-items: center;
+    justify-content: center;
+    cursor: link;
+}
+
+.item-slot:hover {
+    border-color: rgba(100, 200, 255, 0.5);
+    background-color: rgba(100, 200, 255, 0.08);
+}
+
+.item-slot.rarity-common    { border-color: rgba(180, 180, 180, 0.3); }
+.item-slot.rarity-uncommon  { border-color: rgba(80, 200, 80, 0.5); }
+.item-slot.rarity-rare      { border-color: rgba(80, 120, 255, 0.6); }
+.item-slot.rarity-epic      { border-color: rgba(160, 60, 220, 0.7); }
+.item-slot.rarity-legendary { border-color: rgba(255, 165, 0, 0.8); }
+
+.item-slot-icon {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+}
+
+.item-slot-count {
+    font-size: 10px;
+    color: rgba(220, 220, 220, 0.9);
+    -unity-font-style: bold;
+    -unity-text-align: lower-right;
+    position: absolute;
+    bottom: 2px;
+    right: 4px;
+}
+
+/* ── Tooltip ─────────────────────────────────────────────── */
+
+.item-tooltip {
+    position: absolute;
+    bottom: 80px;
+    left: 16px;
+    width: 200px;
+    background-color: rgba(8, 8, 18, 0.97);
+    border-radius: 4px;
+    border-color: rgba(100, 200, 255, 0.3);
+    border-width: 1px;
+    padding: 10px 12px;
+    pointer-events: none;
+}
+
+.tooltip-name {
+    font-size: 13px;
+    color: rgb(220, 220, 220);
+    -unity-font-style: bold;
+    margin-bottom: 2px;
+}
+
+.tooltip-rarity {
+    font-size: 10px;
+    color: rgba(160, 160, 160, 0.8);
+    margin-bottom: 4px;
+}
+
+.tooltip-count {
+    font-size: 11px;
+    color: rgba(100, 200, 255, 0.85);
+    margin-bottom: 4px;
+}
+
+.tooltip-desc {
+    font-size: 10px;
+    color: rgba(160, 160, 160, 0.75);
+    white-space: normal;
+}

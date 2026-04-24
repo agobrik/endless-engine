@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="GeneratorScreen.uss" />
+    <ui:VisualElement name="generator-root" class="generator-root">
+
+        <ui:VisualElement name="generator-panel" class="generator-panel">
+
+            <!-- Header -->
+            <ui:VisualElement name="panel-header" class="panel-header">
+                <ui:Label text="GENERATORS" class="panel-title" />
+                <ui:Label name="total-yield-label" text="+0/sec" class="total-yield-label" />
+                <ui:Button name="close-button" text="✕" class="close-button" />
+            </ui:VisualElement>
+
+            <!-- Generator list -->
+            <ui:ScrollView name="generator-list" class="generator-list" />
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

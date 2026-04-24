@@ -1,0 +1,34 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="PostRun.uss" />
+    <ui:VisualElement name="postrun-root" class="postrun-root">
+
+        <ui:VisualElement name="postrun-panel" class="postrun-panel">
+
+            <!-- Header -->
+            <ui:Label name="title-label" text="RUN COMPLETE" class="postrun-title" />
+
+            <!-- Stats -->
+            <ui:VisualElement name="stats-block" class="stats-block">
+                <ui:VisualElement name="stat-row-gold" class="stat-row">
+                    <ui:Label text="GOLD EARNED" class="stat-label" />
+                    <ui:Label name="gold-earned-label" text="0" class="stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="stat-row-wave" class="stat-row">
+                    <ui:Label text="WAVES CLEARED" class="stat-label" />
+                    <ui:Label name="waves-cleared-label" text="0" class="stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="stat-row-total" class="stat-row">
+                    <ui:Label text="TOTAL GOLD" class="stat-label" />
+                    <ui:Label name="total-gold-label" text="0" class="stat-value stat-value-total" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+            <!-- Buttons -->
+            <ui:VisualElement name="postrun-buttons" class="postrun-buttons">
+                <ui:Button name="play-again-button" text="PLAY AGAIN" class="btn-primary" />
+                <ui:Button name="return-menu-button" text="MAIN MENU" class="btn-secondary" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

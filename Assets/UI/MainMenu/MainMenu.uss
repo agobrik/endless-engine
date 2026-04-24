@@ -1,0 +1,139 @@
+/* MainMenu Stylesheet — Endless Engine
+   Colors: BONE #E8E6D9, EMBER #FF6B35, ASH #1C1C26, VOID #0D0D14 */
+
+.menu-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(13, 13, 20, 0.92);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+/* ── Title ───────────────────────────────────────────── */
+
+.title-block {
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.title-main {
+    color: rgb(232, 230, 217);
+    font-size: 64px;
+    -unity-font-style: bold;
+    letter-spacing: 8px;
+    -unity-text-outline-width: 2px;
+    -unity-text-outline-color: rgb(255, 107, 53);
+}
+
+.title-sub {
+    color: rgb(255, 107, 53);
+    font-size: 28px;
+    -unity-font-style: bold;
+    letter-spacing: 12px;
+    margin-top: -8px;
+}
+
+/* ── Income block ────────────────────────────────────── */
+
+.income-block {
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 48px;
+    padding: 16px 40px;
+    background-color: rgba(255, 107, 53, 0.08);
+    border-width: 1px;
+    border-color: rgba(255, 107, 53, 0.3);
+    border-radius: 8px;
+}
+
+.menu-gold-label {
+    color: rgb(232, 230, 217);
+    font-size: 36px;
+    -unity-font-style: bold;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgb(13, 13, 20);
+}
+
+.menu-income-rate {
+    color: rgba(255, 107, 53, 0.8);
+    font-size: 16px;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
+
+.button-block {
+    flex-direction: column;
+    align-items: center;
+    width: 320px;
+}
+
+.btn-primary {
+    width: 100%;
+    background-color: rgb(255, 107, 53);
+    border-color: rgb(255, 107, 53);
+    border-width: 0;
+    border-radius: 6px;
+    color: rgb(13, 13, 20);
+    font-size: 20px;
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    padding: 18px 0;
+    margin-bottom: 12px;
+    transition-duration: 0.12s;
+    transition-property: background-color, scale;
+}
+
+.btn-primary:hover {
+    background-color: rgb(255, 130, 70);
+    scale: 1.02 1.02;
+}
+
+.btn-secondary {
+    width: 100%;
+    background-color: rgba(255, 107, 53, 0.1);
+    border-color: rgba(255, 107, 53, 0.5);
+    border-width: 1px;
+    border-radius: 6px;
+    color: rgb(232, 230, 217);
+    font-size: 16px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    padding: 14px 0;
+    margin-bottom: 10px;
+    transition-duration: 0.12s;
+    transition-property: background-color;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(255, 107, 53, 0.2);
+}
+
+.btn-prestige {
+    width: 100%;
+    background-color: transparent;
+    border-color: rgba(232, 230, 217, 0.2);
+    border-width: 1px;
+    border-radius: 6px;
+    color: rgba(232, 230, 217, 0.4);
+    font-size: 13px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    padding: 10px 0;
+    margin-top: 4px;
+}
+
+.btn-prestige:enabled {
+    color: rgb(232, 230, 217);
+    border-color: rgba(232, 230, 217, 0.5);
+}
+
+.btn-prestige:enabled:hover {
+    background-color: rgba(232, 230, 217, 0.08);
+}

@@ -1,0 +1,67 @@
+/* ── EventBannerOverlay.uss ── */
+
+.event-banner-root {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    align-items: center;
+}
+
+.event-banner {
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 14px;
+    background-color: rgba(10, 6, 2, 0.88);
+    border-color: rgba(255, 160, 30, 0.55);
+    border-width: 1px;
+    border-radius: 4px;
+    max-width: 480px;
+}
+
+.event-icon {
+    font-size: 16px;
+    color: rgba(255, 160, 30, 0.9);
+    margin-right: 10px;
+    -unity-text-align: upper-center;
+}
+
+.event-info {
+    flex-direction: column;
+    flex-grow: 1;
+    margin-right: 12px;
+}
+
+.event-name-label {
+    font-size: 12px;
+    color: rgba(255, 200, 100, 0.95);
+    -unity-font-style: bold;
+}
+
+.event-timer-label {
+    font-size: 10px;
+    color: rgba(160, 140, 100, 0.75);
+    margin-top: 1px;
+}
+
+.event-bonuses {
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.bonus-label {
+    font-size: 10px;
+    padding: 1px 6px;
+    border-radius: 2px;
+    margin-bottom: 2px;
+}
+
+.income-bonus {
+    color: rgba(100, 220, 100, 0.9);
+    background-color: rgba(100, 220, 100, 0.1);
+}
+
+.research-bonus {
+    color: rgba(100, 160, 255, 0.9);
+    background-color: rgba(100, 160, 255, 0.1);
+}

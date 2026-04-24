@@ -1,0 +1,92 @@
+/* Upgrade Card Overlay Stylesheet — Endless Engine
+   Art Bible Section 7 (UI/HUD), Section 3 (Color Palette)
+   Layer 8: above HUD (0) and Pause (5), below nothing */
+
+.overlay-root {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: rgba(0, 0, 0, 0.65);
+    justify-content: center;
+    align-items: center;
+    display: none; /* hidden by default — shown by UpgradeCardUI.cs */
+}
+
+.overlay-root.visible {
+    display: flex;
+}
+
+.overlay-panel {
+    background-color: rgba(28, 28, 38, 0.96);
+    border-radius: 10px;
+    border-width: 1px;
+    border-color: rgba(232, 230, 217, 0.2);
+    padding: 32px;
+    align-items: center;
+    min-width: 720px;
+}
+
+.overlay-title {
+    color: rgb(232, 230, 217);
+    font-size: 22px;
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    margin-bottom: 24px;
+}
+
+.card-container {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: center;
+}
+
+/* ── Card ──────────────────────────────────────────── */
+
+.upgrade-card {
+    background-color: rgba(13, 13, 20, 0.9);
+    border-radius: 8px;
+    border-width: 1px;
+    border-color: rgba(232, 230, 217, 0.25);
+    padding: 20px;
+    margin: 0 10px;
+    width: 200px;
+    min-height: 240px;
+    justify-content: space-between;
+    align-items: center;
+
+    transition-duration: 0.15s;
+    transition-property: border-color, background-color;
+}
+
+.upgrade-card:hover {
+    border-color: rgb(255, 107, 53);
+    background-color: rgba(255, 107, 53, 0.08);
+}
+
+.upgrade-card:disabled {
+    opacity: 0.4;
+
+}
+
+.card-name {
+    color: rgb(232, 230, 217);
+    font-size: 14px;
+    -unity-font-style: bold;
+    -unity-text-align: upper-center;
+    white-space: normal;
+    margin-bottom: 8px;
+}
+
+.card-description {
+    color: rgba(232, 230, 217, 0.75);
+    font-size: 11px;
+    -unity-text-align: upper-center;
+    white-space: normal;
+    flex-grow: 1;
+}
+
+.card-cost {
+    color: rgb(255, 107, 53);
+    font-size: 13px;
+    -unity-font-style: bold;
+    margin-top: 12px;
+}

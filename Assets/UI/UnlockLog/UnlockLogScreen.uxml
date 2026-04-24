@@ -1,0 +1,32 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="UnlockLogScreen.uss" />
+
+    <ui:VisualElement name="unlock-root" class="unlock-root" style="display: none;">
+
+        <ui:VisualElement name="unlock-panel" class="unlock-panel">
+
+            <ui:VisualElement name="unlock-header" class="unlock-header">
+                <ui:Label name="unlock-title" text="DISCOVERIES" class="unlock-title" />
+                <ui:Label name="unlock-count-label" text="0 discovered" class="unlock-count-label" />
+                <ui:Button name="close-button" text="✕" class="unlock-close-btn" />
+            </ui:VisualElement>
+
+            <!-- Category filter -->
+            <ui:VisualElement name="category-bar" class="category-bar">
+                <ui:Button name="filter-all"         text="All"       class="cat-btn active" />
+                <ui:Button name="filter-item"        text="Items"     class="cat-btn" />
+                <ui:Button name="filter-building"    text="Buildings" class="cat-btn" />
+                <ui:Button name="filter-pet"         text="Pets"      class="cat-btn" />
+                <ui:Button name="filter-milestone"   text="Milestones" class="cat-btn" />
+                <ui:Button name="filter-achievement" text="Achievements" class="cat-btn" />
+            </ui:VisualElement>
+
+            <!-- Entry list -->
+            <ui:ScrollView name="unlock-scroll" class="unlock-scroll">
+                <ui:VisualElement name="unlock-list" class="unlock-list" />
+            </ui:ScrollView>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,115 @@
+/* PostRun Stylesheet — Endless Engine */
+
+.postrun-root {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(13, 13, 20, 0.88);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.postrun-panel {
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(28, 28, 38, 0.95);
+    border-width: 1px;
+    border-color: rgba(255, 107, 53, 0.4);
+    border-radius: 12px;
+    padding: 48px 64px;
+    min-width: 420px;
+}
+
+.postrun-title {
+    color: rgb(255, 107, 53);
+    font-size: 36px;
+    -unity-font-style: bold;
+    letter-spacing: 5px;
+    margin-bottom: 40px;
+    -unity-text-outline-width: 1px;
+    -unity-text-outline-color: rgb(13, 13, 20);
+}
+
+/* ── Stats ───────────────────────────────────────────── */
+
+.stats-block {
+    flex-direction: column;
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.stat-row {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom-width: 1px;
+    border-color: rgba(232, 230, 217, 0.1);
+}
+
+.stat-label {
+    color: rgba(232, 230, 217, 0.6);
+    font-size: 13px;
+    letter-spacing: 2px;
+}
+
+.stat-value {
+    color: rgb(232, 230, 217);
+    font-size: 22px;
+    -unity-font-style: bold;
+    -unity-text-align: middle-right;
+}
+
+.stat-value-total {
+    color: rgb(255, 107, 53);
+    font-size: 28px;
+}
+
+/* ── Buttons ─────────────────────────────────────────── */
+
+.postrun-buttons {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.btn-primary {
+    width: 100%;
+    background-color: rgb(255, 107, 53);
+    border-width: 0;
+    border-radius: 6px;
+    color: rgb(13, 13, 20);
+    font-size: 18px;
+    -unity-font-style: bold;
+    letter-spacing: 3px;
+    padding: 16px 0;
+    margin-bottom: 10px;
+    transition-duration: 0.12s;
+    transition-property: background-color;
+}
+
+.btn-primary:hover {
+    background-color: rgb(255, 130, 70);
+}
+
+.btn-secondary {
+    width: 100%;
+    background-color: transparent;
+    border-color: rgba(232, 230, 217, 0.3);
+    border-width: 1px;
+    border-radius: 6px;
+    color: rgba(232, 230, 217, 0.7);
+    font-size: 14px;
+    -unity-font-style: bold;
+    letter-spacing: 2px;
+    padding: 12px 0;
+    transition-duration: 0.12s;
+    transition-property: background-color;
+}
+
+.btn-secondary:hover {
+    background-color: rgba(232, 230, 217, 0.08);
+}

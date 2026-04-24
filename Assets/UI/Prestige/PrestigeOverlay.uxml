@@ -1,0 +1,23 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="PrestigeOverlay.uss" />
+    <ui:VisualElement name="prestige-overlay-root" class="prestige-overlay-root">
+
+        <ui:VisualElement name="prestige-panel" class="prestige-panel">
+
+            <ui:Label name="prestige-title" text="PRESTIGE" class="prestige-title" />
+
+            <ui:VisualElement name="preview-section" class="preview-section">
+                <ui:Label name="current-mult-label" text="Current Multiplier: 1.0×" class="preview-label" />
+                <ui:Label name="new-mult-label"     text="New Multiplier: 1.5×"     class="preview-label-highlight" />
+                <ui:Label name="offline-label"      text="Projected offline (6h): +0" class="preview-label" />
+            </ui:VisualElement>
+
+            <ui:VisualElement name="button-row" class="button-row">
+                <ui:Button name="cancel-button"  text="CANCEL"  class="prestige-btn-cancel" />
+                <ui:Button name="confirm-button" text="CONFIRM" class="prestige-btn-confirm" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

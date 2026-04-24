@@ -1,0 +1,62 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <Style src="StatisticsScreen.uss" />
+    <ui:VisualElement name="stats-root" class="stats-root">
+
+        <ui:VisualElement name="stats-panel" class="stats-panel">
+
+            <!-- Header -->
+            <ui:VisualElement name="stats-header" class="stats-header">
+                <ui:Label name="title-label" text="STATISTICS" class="stats-title" />
+                <ui:Button name="close-button" text="✕" class="btn-close" />
+            </ui:VisualElement>
+
+            <!-- Filter tabs -->
+            <ui:VisualElement name="filter-bar" class="filter-bar">
+                <ui:Button name="tab-all"     text="ALL TIME"   class="filter-tab filter-tab-active" />
+                <ui:Button name="tab-lastrun" text="LAST RUN"   class="filter-tab" />
+            </ui:VisualElement>
+
+            <!-- All-time stats list -->
+            <ui:ScrollView name="all-time-scroll" class="stats-scroll" vertical-scroller-visibility="AlwaysVisible">
+                <ui:VisualElement name="all-time-list" class="stats-list" />
+            </ui:ScrollView>
+
+            <!-- Last run summary (hidden by default) -->
+            <ui:VisualElement name="last-run-panel" class="last-run-panel" style="display: none;">
+                <ui:VisualElement name="run-stat-row-duration"  class="run-stat-row">
+                    <ui:Label text="DURATION"       class="run-stat-label" />
+                    <ui:Label name="run-duration"   text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="run-stat-row-gold"      class="run-stat-row">
+                    <ui:Label text="GOLD EARNED"    class="run-stat-label" />
+                    <ui:Label name="run-gold"       text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="run-stat-row-kills"     class="run-stat-row">
+                    <ui:Label text="KILLS"          class="run-stat-label" />
+                    <ui:Label name="run-kills"      text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="run-stat-row-wave"      class="run-stat-row">
+                    <ui:Label text="MAX WAVE"       class="run-stat-label" />
+                    <ui:Label name="run-max-wave"   text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="run-stat-row-prestige"  class="run-stat-row">
+                    <ui:Label text="PRESTIGE"       class="run-stat-label" />
+                    <ui:Label name="run-prestige"   text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="run-stat-row-upgrades"  class="run-stat-row">
+                    <ui:Label text="UPGRADES"       class="run-stat-label" />
+                    <ui:Label name="run-upgrades"   text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="run-stat-row-cascade"   class="run-stat-row">
+                    <ui:Label text="CASCADE MULT"   class="run-stat-label" />
+                    <ui:Label name="run-cascade"    text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+                <ui:VisualElement name="run-stat-row-income"    class="run-stat-row">
+                    <ui:Label text="FINAL INCOME"   class="run-stat-label" />
+                    <ui:Label name="run-income"     text="—"  class="run-stat-value" />
+                </ui:VisualElement>
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
