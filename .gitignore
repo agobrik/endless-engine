@@ -34,3 +34,13 @@ desktop.ini
 *.bak
 *.orig
 *~
+
+# Claude Code
+.claude/
+
+# Archives
+*.rar
+*.zip
+
+# Personal notes
+opusdegerlendirme.txt
