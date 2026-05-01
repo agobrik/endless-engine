@@ -7,8 +7,16 @@
       "dependencies": {
         "com.unity.inputsystem": "1.14.2",
         "com.unity.addressables": "2.7.6",
+        "com.unity.ugui": "2.0.0",
         "com.unity.nuget.newtonsoft-json": "3.2.2"
       }
+    },
+    "com.rlabrecque.steamworks.net": {
+      "version": "https://github.com/rlabrecque/Steamworks.NET.git?path=/com.rlabrecque.steamworks.net#20.2.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "a3fe8091f7237eef3f38becc3faa29b2dc6f9ce9"
     },
     "com.unity.2d.animation": {
       "version": "10.2.1",
@@ -351,6 +359,13 @@
         "com.unity.modules.jsonserialize": "1.0.0"
       },
       "url": "https://packages.unity.com"
+    },
+    "jp.hadashikick.vcontainer": {
+      "version": "https://github.com/hadashiA/VContainer.git?path=/VContainer/Assets/VContainer#1.16.6",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "7d839caeb73b6b97d996688333e26ed534f55aad"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

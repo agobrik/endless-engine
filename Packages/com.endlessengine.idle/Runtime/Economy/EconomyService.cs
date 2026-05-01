@@ -1,15 +1,21 @@
 using System;
 using UnityEngine;
 using EndlessEngine.Config;
+using EndlessEngine.Economy.Math;
 using EndlessEngine.SaveAndLoad;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Economy
 {
     /// <summary>
-    /// Sole authority on the player's Gold balance (CurrentResources).
+    /// Sole authority on the player's Gold balance.
     /// Receives gains from OnEnemyKilled and OnOfflineGainCalculated.
     /// Validates and executes upgrade purchases via TryPurchase.
     /// Resets to StartingGold on OnPrestigeStarted.
+    ///
+    /// Internal balance is stored as IBigNumber (backend selected by BigNumberFactory at bootstrap).
+    /// Public API exposes both double and long accessors for backwards compatibility.
+    /// long accessors clamp at long.MaxValue — use double accessors for display/comparison.
     ///
     /// Hot path: AddResources is zero-allocation — no LINQ, no delegate captures per call.
     ///
@@ -25,42 +31,53 @@ namespace EndlessEngine.Economy
 
         // ── Events ────────────────────────────────────────────────────────────────
 
-        /// <summary>Fires after every mutation (gain, deduction, cap truncation, prestige reset).
-        /// Delta is signed: positive for gains, negative for deductions and resets.</summary>
-        public static event Action<long, long> OnResourcesChanged;
+        /// <summary>
+        /// Fires after every mutation (gain, deduction, cap truncation, prestige reset).
+        /// current = new balance as double. delta signed: positive gain, negative deduction.
+        /// </summary>
+        public static event Action<double, double> OnResourcesChanged;
 
         /// <summary>Fires after a successful upgrade purchase.</summary>
-        public static event Action<string, long> OnUpgradePurchased;
+        public static event Action<string, double> OnUpgradePurchased;
 
         /// <summary>Fires when a purchase attempt fails due to insufficient balance.</summary>
-        public static event Action<string, long, long> OnPurchaseFailed;
+        public static event Action<string, double, double> OnPurchaseFailed;
 
-        // ── Dependencies (injected via Initialize or set in tests) ─────────────────
+        // ── Dependencies ──────────────────────────────────────────────────────────
 
         private IUpgradeTreeQuery _upgradeTreeQuery;
         private ISaveNotifier     _saveNotifier;
 
-        // ── Config cache (populated on OnAfterLoad) ────────────────────────────────
+        // ── Config cache ──────────────────────────────────────────────────────────
 
-        private long _resourceHardCap;
-        private long _startingGold;
+        private IBigNumber _resourceHardCap;
+        private IBigNumber _startingGold;
 
-        // ── Runtime state ──────────────────────────────────────────────────────────
+        // ── Runtime state ─────────────────────────────────────────────────────────
 
-        private long _currentResources;
-        private int  _lastPurchaseFrame = int.MinValue;
-        private string _lastPurchaseNodeId;
-        private bool _initialized;
+        private IBigNumber _currentResources;
+        private int          _lastPurchaseFrame = int.MinValue;
+        private string       _lastPurchaseNodeId;
+        private bool         _initialized;
 
-        // ── Public accessors ───────────────────────────────────────────────────────
+        // ── Public accessors ──────────────────────────────────────────────────────
 
-        /// <summary>Current Gold balance. Read-only external access.</summary>
-        public long CurrentResources => _currentResources;
+        /// <summary>Current Gold balance as double. Use for display and comparison.</summary>
+        public double CurrentResources => _currentResources.ToDouble();
 
-        /// <summary>Static accessor for current Gold balance. Used by RunSessionManager to snapshot gold at run boundaries.</summary>
-        public static long CurrentResourcesStatic { get; private set; }
+        /// <summary>
+        /// Current Gold balance as long (clamped at long.MaxValue).
+        /// Kept for backwards compatibility with systems that haven't migrated yet.
+        /// </summary>
+        public long CurrentResourcesLong => _currentResources.ToLong();
 
-        // ── Initialization ─────────────────────────────────────────────────────────
+        /// <summary>Static double accessor. Used by RunSessionManager and legacy callers.</summary>
+        public static double CurrentResourcesStatic { get; private set; }
+
+        /// <summary>Static long accessor for legacy callers. Clamped at long.MaxValue.</summary>
+        public static long CurrentResourcesStaticLong => (long)System.Math.Min(CurrentResourcesStatic, (double)long.MaxValue);
+
+        // ── Initialization ────────────────────────────────────────────────────────
 
         /// <summary>
         /// Inject dependencies. Call before SaveService fires OnSaveLoaded.
@@ -85,98 +102,124 @@ namespace EndlessEngine.Economy
             OnResourcesChanged -= SyncStaticAccessor;
         }
 
-        private static void SyncStaticAccessor(long current, long delta) => CurrentResourcesStatic = current;
+        private static void SyncStaticAccessor(double current, double delta)
+            => CurrentResourcesStatic = current;
 
         // ── ISaveStateProvider ────────────────────────────────────────────────────
 
         /// <inheritdoc />
         public void OnBeforeSave(SaveData saveData)
         {
-            saveData.CurrentResources = _currentResources;
+            saveData.NumberBackendName = BigNumberFactory.Backend.ToString();
+
+            if (_currentResources is BigDouble bd)
+            {
+                // Store full mantissa+exponent for lossless BigDouble persistence
+                saveData.CurrentResourcesMantissa  = bd.Mantissa;
+                saveData.CurrentResourcesExponent  = bd.Exponent;
+                // Also write double for backwards compat (within range) or as Infinity marker
+                saveData.CurrentResources = bd.ToDouble();
+            }
+            else
+            {
+                saveData.CurrentResources          = _currentResources.ToDouble();
+                saveData.CurrentResourcesMantissa  = 0.0;
+                saveData.CurrentResourcesExponent  = 0;
+            }
         }
 
         /// <inheritdoc />
         public void OnAfterLoad(SaveData saveData)
         {
-            // Cache config values once — not re-read per event (per GDD Rule 5, Config section)
             var economyConfig = ConfigRegistry.Economy;
-            _resourceHardCap  = economyConfig.ResourceHardCap;
-            _startingGold     = economyConfig.StartingGold;
+            _resourceHardCap  = BigNumberFactory.Create((double)economyConfig.ResourceHardCap);
+            _startingGold     = BigNumberFactory.Create((double)economyConfig.StartingGold);
 
-            bool isNewGame = saveData.CurrentResources == 0 && saveData.SchemaVersion == 0;
+            bool isNewGame = saveData.CurrentResources == 0
+                          && saveData.CurrentResourcesExponent == 0
+                          && saveData.SchemaVersion == 0;
             if (isNewGame)
             {
                 _currentResources = _startingGold;
             }
             else
             {
-                // Clamp to current cap in case config was patched since last save (EC-ECO-08)
-                _currentResources = Math.Min(saveData.CurrentResources, _resourceHardCap);
-                // Clamp to zero — defensive against corrupted saves
-                if (_currentResources < 0) _currentResources = 0;
+                IBigNumber loaded;
+                // Prefer mantissa+exponent pair (v4 BigDouble saves); fall back to double
+                bool hasBigDoubleFields = saveData.CurrentResourcesExponent != 0
+                                       || saveData.CurrentResourcesMantissa != 0.0;
+                if (hasBigDoubleFields && BigNumberFactory.Backend == NumberBackend.BigDouble)
+                    loaded = new BigDouble(saveData.CurrentResourcesMantissa, saveData.CurrentResourcesExponent);
+                else
+                    loaded = BigNumberFactory.Create(saveData.CurrentResources);
+
+                // Clamp to current cap in case config was patched since last save
+                _currentResources = loaded.IsGreaterThan(_resourceHardCap) ? _resourceHardCap : loaded;
+                if (_currentResources.IsNegative) _currentResources = BigNumberFactory.Zero;
             }
 
             _initialized = true;
-            CurrentResourcesStatic = _currentResources;
-            OnResourcesChanged?.Invoke(_currentResources, 0L);
+            CurrentResourcesStatic = _currentResources.ToDouble();
+            OnResourcesChanged?.Invoke(_currentResources.ToDouble(), 0.0);
         }
 
         // ── Public API ────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// Add Gold to the balance. Applies F2 hard-cap formula.
+        /// Add Gold to the balance. Applies hard-cap.
         /// Zero-allocation hot path — safe to call from OnEnemyKilled handler.
         /// </summary>
-        public void AddResources(long amount)
+        public void AddResources(double amount)
         {
             if (!_initialized) return;
             if (amount < 0)
             {
-                Debug.LogError($"[EconomyService] AddResources called with negative amount: {amount}. Clamping to 0.");
+                Debug.LogWarning($"[EconomyService] AddResources called with negative amount: {amount}. Clamping to 0.");
                 amount = 0;
             }
 
-            // Overflow-safe cap check (EC-ECO-07)
-            long headroom = _resourceHardCap - _currentResources;
-            long actualAdded = amount <= headroom ? amount : headroom;
+            double headroom    = _resourceHardCap.ToDouble() - _currentResources.ToDouble();
+            double actualAdded = amount <= headroom ? amount : headroom;
 
             if (actualAdded == 0 && amount > 0)
-            {
-                // Silently truncated — at cap (GDD Rule 3)
                 Debug.Log($"[EconomyService] ResourceHardCap reached. Gain of {amount} truncated to 0.");
-            }
 
-            _currentResources += actualAdded;
-            OnResourcesChanged?.Invoke(_currentResources, actualAdded);
+            _currentResources      = _currentResources.Add(BigNumberFactory.Create(actualAdded));
+            CurrentResourcesStatic = _currentResources.ToDouble();
+            OnResourcesChanged?.Invoke(_currentResources.ToDouble(), actualAdded);
         }
+
+        /// <summary>Legacy long overload — converts to double internally.</summary>
+        public void AddResources(long amount) => AddResources((double)amount);
 
         /// <summary>
         /// Deduct Gold from the balance. Precondition: CurrentResources >= amount.
-        /// Raises OnResourcesChanged with negative delta.
         /// </summary>
-        public void DeductResources(long amount)
+        public void DeductResources(double amount)
         {
             if (!_initialized) return;
-            if (amount < 0 || _currentResources < amount)
+            if (amount < 0 || _currentResources.ToDouble() < amount)
             {
-                Debug.LogError($"[EconomyService] DeductResources precondition failed: balance={_currentResources}, amount={amount}");
+                Debug.LogWarning($"[EconomyService] DeductResources precondition failed: balance={_currentResources.ToDouble()}, amount={amount}");
                 return;
             }
 
-            _currentResources -= amount;
-            OnResourcesChanged?.Invoke(_currentResources, -amount);
+            _currentResources      = _currentResources.Subtract(BigNumberFactory.Create(amount));
+            CurrentResourcesStatic = _currentResources.ToDouble();
+            OnResourcesChanged?.Invoke(_currentResources.ToDouble(), -amount);
         }
+
+        /// <summary>Legacy long overload.</summary>
+        public void DeductResources(long amount) => DeductResources((double)amount);
 
         /// <summary>
         /// Validate and execute an upgrade purchase.
-        /// Raises OnUpgradePurchased on success, OnPurchaseFailed on insufficient balance.
         /// Double-purchase guard: same nodeId twice in the same frame is ignored.
         /// </summary>
         public void TryPurchase(string nodeId)
         {
             if (!_initialized) return;
 
-            // Double-purchase guard (GDD Rule 13)
             int currentFrame = Time.frameCount;
             if (_lastPurchaseFrame == currentFrame && _lastPurchaseNodeId == nodeId)
             {
@@ -184,9 +227,9 @@ namespace EndlessEngine.Economy
                 return;
             }
 
-            long cost = _upgradeTreeQuery.GetNodeCost(nodeId);
+            double cost = _upgradeTreeQuery.GetNodeCostDouble(nodeId);
 
-            if (_currentResources >= cost)
+            if (_currentResources.ToDouble() >= cost)
             {
                 _lastPurchaseFrame  = currentFrame;
                 _lastPurchaseNodeId = nodeId;
@@ -197,73 +240,69 @@ namespace EndlessEngine.Economy
             }
             else
             {
-                OnPurchaseFailed?.Invoke(nodeId, cost, _currentResources);
+                OnPurchaseFailed?.Invoke(nodeId, cost, _currentResources.ToDouble());
             }
         }
 
         // ── Event Handlers ────────────────────────────────────────────────────────
 
-        /// <summary>
-        /// Re-reads economy config after a realm swap.
-        /// Clamps current balance to the new hard cap if it has decreased.
-        /// ADR-0003 — Config Registry: downstream services must listen to OnRealmSwapped.
-        /// </summary>
         private void RefreshConfigCache()
         {
             var economyConfig = Config.ConfigRegistry.Economy;
-            _resourceHardCap  = economyConfig.ResourceHardCap;
-            _startingGold     = economyConfig.StartingGold;
+            _resourceHardCap  = BigNumberFactory.Create((double)economyConfig.ResourceHardCap);
+            _startingGold     = BigNumberFactory.Create((double)economyConfig.StartingGold);
 
-            // Clamp balance to new cap if the new realm has a lower cap
-            if (_currentResources > _resourceHardCap)
+            if (_currentResources.IsGreaterThan(_resourceHardCap))
             {
-                long delta = _resourceHardCap - _currentResources;
+                double delta      = _resourceHardCap.ToDouble() - _currentResources.ToDouble();
                 _currentResources = _resourceHardCap;
-                OnResourcesChanged?.Invoke(_currentResources, delta);
+                OnResourcesChanged?.Invoke(_currentResources.ToDouble(), delta);
             }
 
-            Debug.Log($"[EconomyService] Config refreshed after realm swap. HardCap={_resourceHardCap}, StartingGold={_startingGold}");
+            Debug.Log($"[EconomyService] Config refreshed. HardCap={_resourceHardCap.ToDouble()}, StartingGold={_startingGold.ToDouble()}");
         }
 
         private void HandlePrestigeStarted()
         {
-            long delta = _startingGold - _currentResources; // negative delta (reset)
+            double delta      = _startingGold.ToDouble() - _currentResources.ToDouble();
             _currentResources = _startingGold;
-            OnResourcesChanged?.Invoke(_currentResources, delta);
+            OnResourcesChanged?.Invoke(_currentResources.ToDouble(), delta);
         }
 
         // ── Test injection ────────────────────────────────────────────────────────
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        /// <summary>Direct state injection for tests. Do not use in production code.</summary>
-        public void InjectStateForTesting(long currentResources, long hardCap, long startingGold)
+        public void InjectStateForTesting(double currentResources, double hardCap, double startingGold)
         {
-            _currentResources = currentResources;
-            _resourceHardCap  = hardCap;
-            _startingGold     = startingGold;
+            _currentResources = BigNumberFactory.Create(currentResources);
+            _resourceHardCap  = BigNumberFactory.Create(hardCap);
+            _startingGold     = BigNumberFactory.Create(startingGold);
             _initialized      = true;
         }
 
-        /// <summary>
-        /// Subscribes to ConfigRegistry events for testing.
-        /// Call after Initialize() in EditMode tests where OnEnable does not fire.
-        /// </summary>
+        /// <summary>Legacy long overload for existing tests.</summary>
+        public void InjectStateForTesting(long currentResources, long hardCap, long startingGold)
+            => InjectStateForTesting((double)currentResources, (double)hardCap, (double)startingGold);
+
         public void SubscribeForTesting()
         {
             Config.ConfigRegistry.OnRealmSwapped += RefreshConfigCache;
         }
 
-        /// <summary>Unsubscribes from ConfigRegistry events. Call in test TearDown.</summary>
         public void UnsubscribeForTesting()
         {
             Config.ConfigRegistry.OnRealmSwapped -= RefreshConfigCache;
         }
 
-        /// <summary>
-        /// Directly invokes the prestige reset handler for unit tests.
-        /// Simulates OnPrestigeStarted firing without requiring PrestigeStateManager.
-        /// </summary>
         public void InjectPrestigeResetForTesting() => HandlePrestigeStarted();
+
+        public static void ClearSubscribersForTesting()
+        {
+            OnResourcesChanged    = null;
+            OnUpgradePurchased    = null;
+            OnPurchaseFailed      = null;
+            CurrentResourcesStatic = 0;
+        }
 #endif
     }
 }

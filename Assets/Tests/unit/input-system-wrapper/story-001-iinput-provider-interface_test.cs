@@ -171,9 +171,11 @@ namespace EndlessEngine.Tests.Unit.InputSystemWrapper
 
             foreach (var file in csFiles)
             {
-                // InputProviderUnity is the sole allowed importer
+                // InputProviderUnity is the sole allowed importer; CheatConsole uses legacy Input directly
                 if (file.EndsWith("InputProviderUnity.cs",
-                    System.StringComparison.OrdinalIgnoreCase))
+                        System.StringComparison.OrdinalIgnoreCase) ||
+                    file.EndsWith("CheatConsole.cs",
+                        System.StringComparison.OrdinalIgnoreCase))
                     continue;
 
                 string content = System.IO.File.ReadAllText(file);

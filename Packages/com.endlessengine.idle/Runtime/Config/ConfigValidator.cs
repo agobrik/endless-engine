@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Config
 {
@@ -72,7 +74,7 @@ namespace EndlessEngine.Config
                 if (!idSet.Add(node.NodeId) && dupSeen.Add(node.NodeId))
                 {
                     LogIssue($"[Realm: {slug}] Duplicate UpgradeNodeConfigSO.NodeId '{node.NodeId}'.", mode);
-                    ok = mode == ValidationMode.Warning;
+                    ok = false;
                 }
             }
 
@@ -86,7 +88,7 @@ namespace EndlessEngine.Config
                     {
                         LogIssue($"[Realm: {slug}] UpgradeNode '{node.NodeId}' has prerequisite '{prereq}' " +
                                  "which does not match any NodeId in the set.", mode);
-                        ok = mode == ValidationMode.Warning;
+                        ok = false;
                     }
                 }
             }
@@ -112,7 +114,7 @@ namespace EndlessEngine.Config
                     {
                         string cycle = string.Join(" → ", cyclePath);
                         LogIssue($"[Realm: {slug}] Cycle detected in upgrade prerequisite graph: {cycle}.", mode);
-                        ok = mode == ValidationMode.Warning;
+                        ok = false;
                         // Continue scanning for additional cycles
                     }
                 }

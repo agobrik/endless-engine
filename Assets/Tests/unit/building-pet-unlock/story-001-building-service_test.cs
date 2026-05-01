@@ -190,7 +190,7 @@ namespace EndlessEngine.Tests.Unit.BuildingPetUnlock
         {
             _service.TryPlace("gold_mine", 0, 0); // 10 gold/tick
             _service.TryPlace("gold_mine", 1, 0); // 10 gold/tick
-            long before = _economy.CurrentResources; // 200 - 100 = 100
+            double before = _economy.CurrentResources; // 200 - 100 = 100
 
             _service.OnTick(1f);
 

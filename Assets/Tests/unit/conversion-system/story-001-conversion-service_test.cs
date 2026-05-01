@@ -147,7 +147,7 @@ namespace EndlessEngine.Tests.Unit.ConversionSystem
         public void TryConvert_GoldToGems_ConsumesGoldProducesGems()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long goldBefore = _economy.CurrentResources;
+            double goldBefore = _economy.CurrentResources;
             double gemsBefore = _currencyService.GetBalance("gems");
 
             bool result = _service.TryConvert("gold_to_gems");
@@ -163,7 +163,7 @@ namespace EndlessEngine.Tests.Unit.ConversionSystem
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             double gemsBefore = _currencyService.GetBalance("gems");
-            long goldBefore   = _economy.CurrentResources;
+            double goldBefore   = _economy.CurrentResources;
 
             bool result = _service.TryConvert("gems_to_gold");
 
@@ -245,7 +245,7 @@ namespace EndlessEngine.Tests.Unit.ConversionSystem
         public void TryConvert_Bulk_ExecutesMultipleTimes()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long goldBefore  = _economy.CurrentResources; // 10_000
+            double goldBefore  = _economy.CurrentResources; // 10_000
             double gemsBefore = _currencyService.GetBalance("gems");
 
             bool result = _service.TryConvert("bulk_gold_to_gems", count: 5);

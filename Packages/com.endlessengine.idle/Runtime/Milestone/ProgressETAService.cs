@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 using EndlessEngine.Economy;
 using EndlessEngine.Generator;
@@ -87,17 +87,17 @@ namespace EndlessEngine.Milestone
         /// Calculate ETA in seconds for an arbitrary gold target.
         /// Returns -1 if the target is already met or income rate is zero/negative.
         /// </summary>
-        public float CalculateETA(long targetGold)
+        public float CalculateETA(double targetGold)
         {
             if (_economyService == null) return -1f;
 
-            long current = _economyService.CurrentResources;
+            double current = _economyService.CurrentResources;
             if (current >= targetGold) return 0f;
 
             float ratePerSecond = GetCurrentIncomeRate();
             if (ratePerSecond <= 0f) return -1f;
 
-            return (targetGold - current) / ratePerSecond;
+            return (float)((targetGold - current) / ratePerSecond);
         }
 
         /// <summary>
@@ -143,7 +143,7 @@ namespace EndlessEngine.Milestone
         public float GetCurrentIncomeRate()
         {
             if (_generatorSystem != null)
-                return _generatorSystem.CalculateTotalYield();
+                return (float)_generatorSystem.CalculateTotalYield();
             return 0f;
         }
 

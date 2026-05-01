@@ -7,6 +7,8 @@ using EndlessEngine.Damage;
 using EndlessEngine.Enemy;
 using EndlessEngine.Health;
 using EndlessEngine.SaveAndLoad;
+using EndlessEngine.Telemetry;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Wave
 {
@@ -147,6 +149,8 @@ namespace EndlessEngine.Wave
 
                 // Wave clear processing
                 _state = WaveState.WaveComplete;
+                TelemetryService.Track(TelemetryEvents.WaveCompleted,
+                    new System.Collections.Generic.Dictionary<string, object> { { "wave", _currentWaveNumber } });
                 OnWaveComplete?.Invoke(_currentWaveNumber);
 
                 // Upgrade selection milestone
@@ -459,9 +463,4 @@ namespace EndlessEngine.Wave
         Boss,
     }
 
-    /// <summary>Narrow interface for wave milestone save triggers.</summary>
-    public interface IWaveSaveNotifier
-    {
-        void NotifyWaveMilestone(int waveNumber);
-    }
 }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using EndlessEngine.Config;
 using EndlessEngine.Economy;
+using EndlessEngine.Economy.Math;
 using EndlessEngine.Flow;
 
 namespace EndlessEngine.Generator
@@ -24,8 +25,8 @@ namespace EndlessEngine.Generator
 
         // ── State ─────────────────────────────────────────────────────────────────
 
-        /// <summary>Total gold earned from passive income since last reset.</summary>
-        public long TotalPassiveEarned { get; private set; }
+        /// <summary>Total gold earned from passive income since last reset (IBigNumber).</summary>
+        public IBigNumber TotalPassiveEarned { get; private set; } = BigNumberFactory.Zero;
 
         // ── Initialization ────────────────────────────────────────────────────────
 
@@ -58,19 +59,19 @@ namespace EndlessEngine.Generator
         {
             if (_generators == null || _economy == null) return;
 
-            float baseYield = _generators.CalculateTotalYield(); // gold/sec
-            if (baseYield <= 0f) return;
+            IBigNumber baseYield = _generators.CalculateTotalYieldBig();
+            if (baseYield.IsZero) return;
 
-            float modifier = GetRunModifier();
-            long  income   = (long)(baseYield * modifier * effectiveDt);
+            double modifier = GetRunModifier();
+            IBigNumber income = baseYield.Multiply(modifier * effectiveDt);
 
-            if (income <= 0) return;
+            if (income.IsZero || income.IsNegative) return;
 
-            _economy.AddResources(income);
-            TotalPassiveEarned += income;
+            _economy.AddResources(income.ToDouble());
+            TotalPassiveEarned = TotalPassiveEarned.Add(income);
         }
 
-        private float GetRunModifier()
+        private double GetRunModifier()
         {
             if (_gameFlow == null || !_gameFlow.IsInRun) return 1f;
 
@@ -82,7 +83,7 @@ namespace EndlessEngine.Generator
         // ── Test Support ──────────────────────────────────────────────────────────
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-        public void ResetTotalsForTesting() => TotalPassiveEarned = 0L;
+        public void ResetTotalsForTesting() => TotalPassiveEarned = BigNumberFactory.Zero;
 
         /// <summary>
         /// Manually subscribes to TickEngine.OnTick.

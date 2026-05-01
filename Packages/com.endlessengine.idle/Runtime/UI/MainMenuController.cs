@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UIElements;
 using EndlessEngine.Economy;
 using EndlessEngine.Flow;
@@ -111,7 +111,7 @@ namespace EndlessEngine.UI
 
         // ── Event Handlers ────────────────────────────────────────────────────────
 
-        private void OnResourcesChanged(long newBalance, long delta)
+        private void OnResourcesChanged(double newBalance, double delta)
         {
             if (_goldLabel != null)
                 _goldLabel.text = "◆ " + GoldFormatter.Format(newBalance);
@@ -120,9 +120,9 @@ namespace EndlessEngine.UI
         private void UpdateIncomeRate()
         {
             if (_incomeRateLabel == null) return;
-            float rate = _generatorSystem != null ? _generatorSystem.CalculateTotalYield() : 0f;
-            _incomeRateLabel.text = rate > 0f
-                ? $"+{GoldFormatter.Format((long)rate)}/sec"
+            double rate = _generatorSystem != null ? _generatorSystem.CalculateTotalYield() : 0.0;
+            _incomeRateLabel.text = rate > 0.0
+                ? $"+{GoldFormatter.Format(rate)}/sec"
                 : "+0/sec";
         }
 

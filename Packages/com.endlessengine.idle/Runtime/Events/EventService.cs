@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using EndlessEngine.Config;
+using EndlessEngine.Stats;
 
 namespace EndlessEngine.Events
 {
@@ -18,7 +19,7 @@ namespace EndlessEngine.Events
     ///
     /// Time source is overrideable for testing via InjectDateTimeForTesting.
     /// </summary>
-    public class EventService : MonoBehaviour
+    public class EventService : MonoBehaviour, IModifierSource
     {
         // ── Static events ─────────────────────────────────────────────────────────
 
@@ -91,6 +92,17 @@ namespace EndlessEngine.Events
                 if (_configs.TryGetValue(eventId, out var cfg))
                     mult *= cfg.IncomeMultiplier;
             return mult;
+        }
+
+        // ── IModifierSource ───────────────────────────────────────────────────────
+
+        public string SourceId => "event";
+
+        public Modifier GetModifier(StatType stat)
+        {
+            if (stat == StatType.IdleYieldRate)
+                return Modifier.FromMultiplier(GetCombinedIncomeMultiplier());
+            return Modifier.None;
         }
 
         /// <summary>

@@ -1,6 +1,6 @@
 # Session State — Endless Engine
 
-*Last updated: 2026-04-24 — Sprint 26 TAMAMLANDI — v1.0.4*
+*Last updated: 2026-04-25 — Sprint 26 TAMAMLANDI — v1.0.4 + Türkçe Kılavuz*
 
 ## Current Stage
 
@@ -17,47 +17,39 @@
 - ✅ Sprint 25: IdRegistryWindow, ConfigValidator graph-level, NewGameWizard GameType presets, SchemaBumpUtility, v1.0.3
 - ✅ Sprint 26: ContentPackWizard (9 SO + RealmPack + Registry auto-register), cookbook Section 31 update, v1.0.4
 
-## Sprint 23 Sonuçları
+## Bu Oturumda Yapılanlar
 
 | Görev | Durum | Dosya |
 |-------|-------|-------|
-| S23-01: MinimalIdle scene + config assets | ✅ | Samples~/MinimalIdle/ |
-| S23-02: MinimalIdleBootstrap + MinimalIdleUI scripts | ✅ | Samples~/MinimalIdle/Scripts/ |
-| S23-03: Editor tools → Package/Editor/ | ✅ | Packages/.../Editor/ (8 files) |
-| S23-04: CI .github/workflows/tests.yml fix | ✅ | .github/workflows/tests.yml |
-| S23-05: migration-guide.md rewrite | ✅ | Documentation~/migration-guide.md |
-| S23-06: Performance tests (perf-001, 002, 003) | ✅ | Assets/Tests/performance/ |
-| S23-07: integration-007 SkillTree→UpgradeSystem | ✅ | Assets/Tests/integration/full-system/ |
-| S23-08: integration-008 Ascension cascade chain | ✅ | Assets/Tests/integration/full-system/ |
-| S23-09: NotificationService → Runtime/Notification/ | ✅ | Packages/.../Runtime/Notification/ |
+| cookbook.md CI/CD Setup bölümü eklendi | ✅ | Documentation~/cookbook.md |
+| cookbook.md OpenUPM Publishing bölümü eklendi | ✅ | Documentation~/cookbook.md |
+| cookbook.md versiyon footer güncellendi (v1.0.1 → v1.0.4) | ✅ | Documentation~/cookbook.md |
+| GitHub repo kurulumu (private, Seçenek A) tartışıldı | ✅ | — |
+| Dağıtım yöntemi: ZIP (Seçenek B) kararlaştırıldı | ✅ | — |
+| Türkçe kullanım kılavuzu oluşturuldu (31 bölüm) | ✅ | Documentation~/kullanim-kilavuzu-tr.md |
 
-## Sprint 24 Sonuçları
+## Dağıtım Kararları
 
-| Görev | Durum | Dosya |
-|-------|-------|-------|
-| S24-01: package.json URLs + v1.0.2 bump | ✅ | Packages/.../package.json |
-| S24-02: CHANGELOG [1.0.2] entry | ✅ | Packages/.../CHANGELOG.md |
-| S24-03: getting-started.md git URL fix | ✅ | Documentation~/getting-started.md |
-| S24-04: SchemaVersion + RealmIdentityConfig assets | ✅ | Assets/Configs/ |
-| S24-05: VerticalSlice.unity scene wiring (6 UI screens + 5 services) | ✅ | Assets/Scenes/VerticalSlice.unity |
-| S24-06: MinimalIdle.unity config wiring | ✅ | Samples~/MinimalIdle/Scenes/ |
-| S24-07: MinimalIdle sample config .meta files (4 files) | ✅ | Samples~/MinimalIdle/Configs/ |
-| S24-08: Disabled test cleanup (CS0101 duplicates deleted) | ✅ | Assets/Tests/unit/ |
-| S24-09: api-reference.md Section 10 — Content & Social (7 modules) | ✅ | Documentation~/api-reference.md |
+- **GitHub:** Private repo açılmadı (karar: ZIP ile dağıtım)
+- **Dağıtım yöntemi:** `Packages/com.endlessengine.idle/` klasörünü ZIP → ekibe gönder
+- **Ekip kurulumu:** ZIP'i kendi projesinin `Packages/` klasörüne koyar
+- **OpenUPM:** Şimdilik yok (public repo gerektiriyor)
 
-## Test Coverage Özeti
+## Mevcut Dosya Durumu
 
-- Unit tests: 68 dosya (25 sistem)
-- Integration tests: 8 dosya (full-system)
-- Performance tests: 3 dosya
+- `Packages/com.endlessengine.idle/` — v1.0.4, tam paket
+- `Documentation~/api-reference.md` — 10 bölüm (Section 10: Content & Social dahil)
+- `Documentation~/cookbook.md` — 31 bölüm + CI/CD + OpenUPM + footer v1.0.4
+- `Documentation~/kullanim-kilavuzu-tr.md` — YENİ: Türkçe tam kullanım kılavuzu
+- `Editor/` — 10 araç (ContentPackWizard, IdRegistryWindow, SchemaBumpUtility dahil)
 
 ## Sonraki Adımlar
 
-- GitHub Actions: UNITY_LICENSE, UNITY_EMAIL, UNITY_PASSWORD secrets → CI green (manuel)
-- OpenUPM: package.json URLs agobrik'e güncellendi, kayıt yapılabilir (manuel)
+- Yeni geliştirme sprintleri (özellik eklemek istenirse)
+- GitHub repo açmak istenirse: yeni bir oturumda private repo + ZIP workflow
 
 <!-- STATUS -->
 Epic: Idle Toolkit
-Feature: Sprint 26
+Feature: Dokümantasyon
 Task: TAMAMLANDI
 <!-- /STATUS -->

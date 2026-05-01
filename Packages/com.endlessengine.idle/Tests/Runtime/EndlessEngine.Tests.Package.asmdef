@@ -4,7 +4,8 @@
     "references": [
         "EndlessEngine.Runtime",
         "Unity.InputSystem",
-        "Unity.InputSystem.TestFramework"
+        "Unity.InputSystem.TestFramework",
+        "Unity.PerformanceTesting"
     ],
     "includePlatforms": [
         "Editor"

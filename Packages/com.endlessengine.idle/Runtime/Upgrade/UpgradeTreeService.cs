@@ -4,6 +4,7 @@ using UnityEngine;
 using EndlessEngine.Config;
 using EndlessEngine.Economy;
 using EndlessEngine.SaveAndLoad;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Upgrade
 {

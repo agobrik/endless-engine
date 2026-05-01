@@ -134,8 +134,8 @@ namespace EndlessEngine.Tests.Unit.HybridResourceEconomy
             _economy.InjectStateForTesting(currentResources: 900_000L, hardCap: 1_000_000L, startingGold: 10L);
 
             bool eventFired = false;
-            long reportedCurrent = 0;
-            System.Action<long, long> handler = (current, delta) =>
+            double reportedCurrent = 0;
+            System.Action<double, double> handler = (current, delta) =>
             {
                 eventFired      = true;
                 reportedCurrent = current;

@@ -136,6 +136,39 @@ namespace EndlessEngine.Audio
             PlayerPrefs.SetFloat("music_volume", linear);
         }
 
+        // ── Ducking ───────────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Transitions the AudioMixer to the ducked snapshot (music lowered).
+        /// Call before a UI dialog, prestige cinematic, etc.
+        /// Returns immediately if no snapshot is configured.
+        /// </summary>
+        public void Duck()
+        {
+            if (_config?.SnapshotDucked != null)
+                _config.SnapshotDucked.TransitionTo(_config.SnapshotTransitionTime);
+        }
+
+        /// <summary>
+        /// Transitions back to the normal gameplay snapshot.
+        /// </summary>
+        public void Unduck()
+        {
+            if (_config?.SnapshotNormal != null)
+                _config.SnapshotNormal.TransitionTo(_config.SnapshotTransitionTime);
+        }
+
+        /// <summary>
+        /// Transitions the AudioMixer to an arbitrary snapshot.
+        /// <paramref name="transitionTime"/> overrides config default when > 0.
+        /// </summary>
+        public void TransitionToSnapshot(AudioMixerSnapshot snapshot, float transitionTime = -1f)
+        {
+            if (snapshot == null) return;
+            float t = transitionTime > 0f ? transitionTime : (_config != null ? _config.SnapshotTransitionTime : 0.2f);
+            snapshot.TransitionTo(t);
+        }
+
         // ── Event Handlers ────────────────────────────────────────────────────────
 
         private void HandleDamageResolved(DamageHit hit)
@@ -163,7 +196,7 @@ namespace EndlessEngine.Audio
             PlaySFX(_config.WaveCompleteClip, _config.WaveCompleteVolume);
         }
 
-        private void HandleUpgradePurchased(string nodeId, long cost)
+        private void HandleUpgradePurchased(string nodeId, double cost)
         {
             if (_config == null) return;
             PlaySFX(_config.UpgradePurchasedClip, _config.UpgradePurchasedVolume);

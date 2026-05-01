@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using EndlessEngine.Config;
+using EndlessEngine.Core;
 using EndlessEngine.Economy;
+using EndlessEngine.Stats;
 using EndlessEngine.SaveAndLoad;
+using EndlessEngine.Telemetry;
 
 namespace EndlessEngine.Prestige
 {
@@ -24,7 +27,7 @@ namespace EndlessEngine.Prestige
     ///
     /// ADR: ADR-0010 — Prestige Crash Safety
     /// </summary>
-    public class PrestigeStateManager : MonoBehaviour, ISaveStateProvider, IPrestigeQuery
+    public class PrestigeStateManager : MonoBehaviour, ISaveStateProvider, IPrestigeQuery, IModifierSource
     {
         // ── ISaveStateProvider ────────────────────────────────────────────────────
 
@@ -50,6 +53,14 @@ namespace EndlessEngine.Prestige
         [SerializeField]
         private SaveService _saveService;
 
+        // ── Unity lifecycle ───────────────────────────────────────────────────────
+
+        private void OnEnable()  => OnPrestigeComplete += HandlePrestigeComplete;
+        private void OnDisable() => OnPrestigeComplete -= HandlePrestigeComplete;
+
+        private static void HandlePrestigeComplete(int _, float multiplier)
+            => UpgradeApplicationSystem.SetPermanentMultiplier(multiplier);
+
         // ── CanPrestige ───────────────────────────────────────────────────────────
 
         private int _currentWaveNumber;
@@ -61,7 +72,13 @@ namespace EndlessEngine.Prestige
             {
                 if (_prestigeInProgress) return false;
 
-                var cfg = ConfigRegistry.Prestige;
+                PrestigeConfigSO cfg;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                cfg = _injectedConfig;
+                if (cfg == null) { try { cfg = ConfigRegistry.Prestige; } catch { return false; } }
+#else
+                cfg = ConfigRegistry.Prestige;
+#endif
 
                 if (_currentWaveNumber < cfg.MinWaveForPrestige) return false;
 
@@ -80,9 +97,25 @@ namespace EndlessEngine.Prestige
         /// </summary>
         public float GetPermanentMultiplier()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            var cfg = _injectedConfig;
+            if (cfg == null) { try { cfg = ConfigRegistry.Prestige; } catch { return 1f; } }
+#else
             var cfg = ConfigRegistry.Prestige;
+#endif
             return Mathf.Min(cfg.MaxPermanentMultiplier,
                              Mathf.Pow(cfg.BaseMultiplierPerPrestige, PrestigeCount));
+        }
+
+        // ── IModifierSource ───────────────────────────────────────────────────────
+
+        public string SourceId => "prestige";
+
+        public Modifier GetModifier(StatType stat)
+        {
+            if (stat == StatType.IdleYieldRate || stat == StatType.PrestigeMultiplier)
+                return Modifier.FromMultiplier(GetPermanentMultiplier());
+            return Modifier.None;
         }
 
         /// <summary>
@@ -126,6 +159,13 @@ namespace EndlessEngine.Prestige
 
             // ── NOTIFY COMPLETE ───────────────────────────────────────────────────
             float mult = GetPermanentMultiplier();
+            TelemetryService.Track(TelemetryEvents.PrestigeTriggered,
+                new System.Collections.Generic.Dictionary<string, object>
+                {
+                    { "prestige_count", PrestigeCount },
+                    { "permanent_multiplier", mult }
+                });
+            TelemetryService.SetPlayerProperty("prestige_count", PrestigeCount);
             OnPrestigeComplete?.Invoke(PrestigeCount, mult);
 
             // ── REALM UNLOCK CHECK ────────────────────────────────────────────────
@@ -165,7 +205,8 @@ namespace EndlessEngine.Prestige
         public void OnAfterLoad(SaveData saveData)
         {
             PrestigeCount = saveData.PrestigeCount;
-            // PermanentMultiplier is computed on demand from ConfigRegistry + PrestigeCount
+            if (PrestigeCount > 0)
+                UpgradeApplicationSystem.SetPermanentMultiplier(GetPermanentMultiplier());
         }
 
         // ── Test injection ────────────────────────────────────────────────────────
@@ -236,6 +277,13 @@ namespace EndlessEngine.Prestige
         /// a full prestige lifecycle.
         /// </summary>
         public static void FirePrestigeStartedForTesting() => OnPrestigeStarted?.Invoke();
+
+        /// <summary>
+        /// Directly fires OnPrestigeComplete for unit testing subscribers
+        /// without requiring a full prestige lifecycle.
+        /// </summary>
+        public static void FirePrestigeCompleteForTesting(int count, float multiplier)
+            => OnPrestigeComplete?.Invoke(count, multiplier);
 #endif
     }
 }

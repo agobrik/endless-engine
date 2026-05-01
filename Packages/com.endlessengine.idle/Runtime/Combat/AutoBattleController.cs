@@ -364,6 +364,20 @@ namespace EndlessEngine.Combat
                 FireAutoAttack();
         }
 
+        /// <summary>
+        /// Immediately completes the wave transition for <paramref name="completedWave"/> without
+        /// waiting for WaveTransitionDelaySeconds. Bypasses the coroutine — safe in EditMode.
+        /// </summary>
+        public void SimulateWaveTransitionCompleteForTesting(int completedWave)
+        {
+            int nextWave = completedWave + 1;
+            _state = CombatState.Active;
+            CacheStats();
+            _attackTimer = _effectiveAttackInterval;
+            OnWaveTransitionComplete?.Invoke(nextWave);
+            _waveTransitionCoroutine = null;
+        }
+
         /// <summary>Clears all static event subscribers. Call in test TearDown.</summary>
         public static void ClearStaticSubscribersForTesting()
         {

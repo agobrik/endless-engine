@@ -129,7 +129,7 @@ namespace EndlessEngine.Tests.Unit.ChallengeResearch
         [Test]
         public void TryEnqueue_DeductsGold()
         {
-            long goldBefore = _economy.CurrentResources;
+            double goldBefore = _economy.CurrentResources;
             _service.TryEnqueue(TreeId, "node_a");
             Assert.AreEqual(goldBefore - _nodeA.GoldCost, _economy.CurrentResources);
         }
@@ -202,7 +202,7 @@ namespace EndlessEngine.Tests.Unit.ChallengeResearch
             _service.TryEnqueue(TreeId, "node_a"); // head
             _service.TryEnqueue(TreeId, "node_c"); // index 1
 
-            long goldBefore = _economy.CurrentResources;
+            double goldBefore = _economy.CurrentResources;
             bool result = _service.TryDequeue(TreeId, "node_c");
 
             Assert.IsTrue(result);

@@ -56,16 +56,16 @@ namespace EndlessEngine.Tests.Unit.HybridResourceEconomy
         private FakeSaveNotifier _saveNotifier;
 
         // Captured event data
-        private long _lastNewBalance;
-        private long _lastDelta;
-        private int  _resourcesChangedCount;
+        private double _lastNewBalance;
+        private double _lastDelta;
+        private int    _resourcesChangedCount;
 
         private string _lastPurchasedNodeId;
-        private long   _lastPurchasedCost;
+        private double _lastPurchasedCost;
 
         private string _lastFailedNodeId;
-        private long   _lastFailedCost;
-        private long   _lastFailedBalance;
+        private double _lastFailedCost;
+        private double _lastFailedBalance;
 
         // ── SetUp / TearDown ──────────────────────────────────────────────────────
 
@@ -97,14 +97,14 @@ namespace EndlessEngine.Tests.Unit.HybridResourceEconomy
 
         private void ResetEventCaptures()
         {
-            _lastNewBalance = -1L;
-            _lastDelta = 0L;
+            _lastNewBalance = -1.0;
+            _lastDelta = 0.0;
             _resourcesChangedCount = 0;
             _lastPurchasedNodeId = null;
-            _lastPurchasedCost = 0L;
+            _lastPurchasedCost = 0.0;
             _lastFailedNodeId = null;
-            _lastFailedCost = 0L;
-            _lastFailedBalance = 0L;
+            _lastFailedCost = 0.0;
+            _lastFailedBalance = 0.0;
         }
 
         private void SubscribeToEvents()
@@ -121,20 +121,20 @@ namespace EndlessEngine.Tests.Unit.HybridResourceEconomy
             EconomyService.OnPurchaseFailed     -= CapturePurchaseFailed;
         }
 
-        private void CaptureResourcesChanged(long newBalance, long delta)
+        private void CaptureResourcesChanged(double newBalance, double delta)
         {
             _lastNewBalance = newBalance;
             _lastDelta      = delta;
             _resourcesChangedCount++;
         }
 
-        private void CaptureUpgradePurchased(string nodeId, long cost)
+        private void CaptureUpgradePurchased(string nodeId, double cost)
         {
             _lastPurchasedNodeId = nodeId;
             _lastPurchasedCost   = cost;
         }
 
-        private void CapturePurchaseFailed(string nodeId, long cost, long balance)
+        private void CapturePurchaseFailed(string nodeId, double cost, double balance)
         {
             _lastFailedNodeId    = nodeId;
             _lastFailedCost      = cost;
@@ -150,7 +150,7 @@ namespace EndlessEngine.Tests.Unit.HybridResourceEconomy
             // Arrange — already set up with InjectStateForTesting(currentResources=0, hardCap, startingGold=0)
 
             // Act — verify current state
-            long balance = _economy.CurrentResources;
+            double balance = _economy.CurrentResources;
 
             // Assert
             Assert.AreEqual(0L, balance, "New game should initialize to StartingGold=0.");
@@ -165,7 +165,7 @@ namespace EndlessEngine.Tests.Unit.HybridResourceEconomy
             _economy.InjectStateForTesting(12_345L, 1_000_000_000L, 0L);
 #endif
             // Act
-            long balance = _economy.CurrentResources;
+            double balance = _economy.CurrentResources;
 
             // Assert
             Assert.AreEqual(12_345L, balance, "Balance should be restored from save data.");

@@ -225,7 +225,7 @@ namespace EndlessEngine.Tests.Integration.VerticalSlice
                 State          = EnemyState.Dead,
             };
 
-            long resourcesBefore = _economyService.CurrentResources;
+            double resourcesBefore = _economyService.CurrentResources;
 
             // Act: fire OnEnemyKilled directly (simulates enemy HP reaching 0)
             EnemyManager.FireEnemyKilledForTesting(agent);

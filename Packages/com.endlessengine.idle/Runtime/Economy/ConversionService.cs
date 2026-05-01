@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EndlessEngine.Config;
@@ -96,7 +96,7 @@ namespace EndlessEngine.Economy
                 ? recipe.MaxExecutions(inputBalance, outputCap, outputBalance)
                 : 1;
 
-            int runs = Math.Min(count, maxRuns);
+            int runs = System.Math.Min(count, maxRuns);
             if (runs <= 0) return Fail(recipeId, ConversionFailReason.InsufficientBalance);
 
             double totalInput  = recipe.InputAmount  * runs;

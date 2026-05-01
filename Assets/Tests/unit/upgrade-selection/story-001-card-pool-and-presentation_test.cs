@@ -306,7 +306,7 @@ namespace EndlessEngine.Tests.Unit.UpgradeSelection
             string selectedNodeId = null;
             UpgradeSelectionService.OnUpgradeSelected += id => selectedNodeId = id;
 
-            long resourcesBefore = economy.CurrentResources;
+            double resourcesBefore = economy.CurrentResources;
 
             // Act
             svc.NotifyCardChosen(0); // consolation card is always index 0
@@ -352,7 +352,7 @@ namespace EndlessEngine.Tests.Unit.UpgradeSelection
             string selectedId = null;
             UpgradeSelectionService.OnUpgradeSelected += id => selectedId = id;
 
-            long resourcesBefore = economy.CurrentResources;
+            double resourcesBefore = economy.CurrentResources;
 
             // Act
             svc.NotifyCardChosen(0);

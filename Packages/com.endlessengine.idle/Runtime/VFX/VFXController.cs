@@ -119,6 +119,21 @@ namespace EndlessEngine.VFX
             slot.Spawn(damage, isCrit, worldPos, _floatDuration);
         }
 
+        /// <summary>
+        /// Spawns a floating yield number at a harvest node's world position.
+        /// Called by HarvestLoopService on each tick that awards yield.
+        /// </summary>
+        public void SpawnHarvestNumber(long amount, Vector2 worldPos)
+            => SpawnFloatingNumber(amount, isCrit: false, worldPos);
+
+        /// <summary>
+        /// Spawns a floating yield number at a click target's world position.
+        /// Critical clicks use the crit style (gold, larger).
+        /// Called by ClickLoopService on each click that awards yield.
+        /// </summary>
+        public void SpawnClickNumber(long amount, bool isCrit, Vector2 worldPos)
+            => SpawnFloatingNumber(amount, isCrit, worldPos);
+
         private void SpawnDeathParticle(Vector2 worldPos)
         {
             if (_particlePool.Count == 0) return;

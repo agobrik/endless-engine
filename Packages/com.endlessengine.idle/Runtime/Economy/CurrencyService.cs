@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EndlessEngine.Config;
@@ -100,8 +100,8 @@ namespace EndlessEngine.Economy
                 {
                     if (!_configs.ContainsKey(kv.Key)) continue; // unknown currency — skip
                     var cfg = _configs[kv.Key];
-                    double clamped = cfg.HardCap > 0 ? Math.Min(kv.Value, cfg.HardCap) : kv.Value;
-                    _balances[kv.Key] = Math.Max(0, clamped);
+                    double clamped = cfg.HardCap > 0 ? System.Math.Min(kv.Value, cfg.HardCap) : kv.Value;
+                    _balances[kv.Key] = System.Math.Max(0, clamped);
                 }
             }
 
@@ -135,7 +135,7 @@ namespace EndlessEngine.Economy
 
             double current   = _balances.TryGetValue(currencyId, out double b) ? b : 0;
             double newBalance = cfg.HardCap > 0
-                ? Math.Min(current + amount, cfg.HardCap)
+                ? System.Math.Min(current + amount, cfg.HardCap)
                 : current + amount;
 
             double actualDelta = newBalance - current;

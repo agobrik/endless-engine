@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using UnityEngine;
 using EndlessEngine.Config;
+using EndlessEngine.SaveAndLoad.Migrations;
 using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.SaveAndLoad
@@ -153,6 +154,26 @@ namespace EndlessEngine.SaveAndLoad
                         WriteDiagnosticsLog("Both primary and backup saves failed — starting new game. Save data lost.");
                         Debug.LogError("[SaveService] Both primary and backup saves failed — starting new game.");
                     }
+                }
+            }
+
+            // Run migration pipeline before load guards
+            int targetVersion = 0;
+            try { targetVersion = ConfigRegistry.Schema.CurrentSchemaVersion; } catch { }
+
+            if (saveData.SchemaVersion < targetVersion)
+            {
+                var pipeline = BuildMigrationPipeline();
+                try
+                {
+                    pipeline.Apply(saveData, targetVersion);
+                }
+                catch (MissingMigrationException ex)
+                {
+                    Debug.LogError($"[SaveService] Migration failed: {ex.Message} — starting new game.");
+                    WriteDiagnosticsLog($"Migration error: {ex.Message}");
+                    saveData  = SaveDataFactory.CreateNewGame();
+                    isNewGame = true;
                 }
             }
 
@@ -423,6 +444,26 @@ namespace EndlessEngine.SaveAndLoad
             try
             {
                 string json = await Task.Run(() => File.ReadAllText(path));
+
+                // Signature verification — treat tampered files as corrupted.
+                string sigPath = path + ".sig";
+                if (File.Exists(sigPath))
+                {
+                    string sig = await Task.Run(() => File.ReadAllText(sigPath).Trim());
+                    if (!SaveSigner.Verify(json, sig))
+                    {
+                        Debug.LogError($"[SaveService] Signature mismatch for '{path}' — save may be tampered. Treating as corrupted.");
+                        WriteDiagnosticsLog($"Signature mismatch on '{System.IO.Path.GetFileName(path)}' — treating as corrupted.");
+                        return null;
+                    }
+                }
+                else
+                {
+                    // No signature file — legacy save from before signing was added.
+                    // Accept it this session; it will be re-signed on the next SaveAsync().
+                    Debug.LogWarning($"[SaveService] No signature file found for '{path}' — legacy save accepted, will be signed on next write.");
+                }
+
                 return JsonConvert.DeserializeObject<SaveData>(json);
             }
             catch (Exception ex)
@@ -431,6 +472,13 @@ namespace EndlessEngine.SaveAndLoad
                 return null;
             }
         }
+
+        private static MigrationPipeline BuildMigrationPipeline() => new MigrationPipeline(new IMigration[]
+        {
+            new SaveMigration_V1_V2(),
+            new SaveMigration_V2_V3(),
+            new SaveMigration_V3_V4(),
+        });
 
         private static void WriteDiagnosticsLog(string message)
         {
@@ -447,34 +495,50 @@ namespace EndlessEngine.SaveAndLoad
         }
 
         /// <summary>
-        /// Atomic write: write → .tmp, copy → .bak, rename .tmp → .json, delete .bak.
+        /// Atomic write: write → .tmp (+.sig.tmp), copy → .bak (+.bak.sig), rename → .json (+.sig).
         /// Runs on background thread. Returns true on success.
+        /// Signature sidecar is written atomically alongside the JSON.
         /// </summary>
         private static bool AtomicWrite(string json, string tmpPath, string bakPath, string jsonPath)
         {
+            string sigTmpPath = tmpPath  + ".sig";
+            string sigBakPath = bakPath  + ".sig";
+            string sigPath    = jsonPath + ".sig";
+
             try
             {
-                // Step 1: write to .tmp
-                File.WriteAllText(tmpPath, json);
+                string signature = SaveSigner.Sign(json);
 
-                // Step 2: copy current .json → .bak (if .json exists)
+                // Step 1: write JSON and signature to .tmp files
+                File.WriteAllText(tmpPath,    json);
+                File.WriteAllText(sigTmpPath, signature);
+
+                // Step 2: copy current .json + .sig → .bak + .bak.sig (if .json exists)
                 if (File.Exists(jsonPath))
+                {
                     File.Copy(jsonPath, bakPath, overwrite: true);
+                    if (File.Exists(sigPath))
+                        File.Copy(sigPath, sigBakPath, overwrite: true);
+                }
 
-                // Step 3: rename .tmp → .json (atomic on NTFS same volume)
+                // Step 3: rename .tmp → .json and .sig.tmp → .sig (atomic on NTFS same volume)
                 if (File.Exists(jsonPath)) File.Delete(jsonPath);
                 File.Move(tmpPath, jsonPath);
 
-                // Step 4: delete .bak
-                if (File.Exists(bakPath))
-                    File.Delete(bakPath);
+                if (File.Exists(sigPath)) File.Delete(sigPath);
+                File.Move(sigTmpPath, sigPath);
+
+                // Step 4: delete .bak files
+                if (File.Exists(bakPath))    File.Delete(bakPath);
+                if (File.Exists(sigBakPath)) File.Delete(sigBakPath);
 
                 return true;
             }
             catch (Exception ex)
             {
                 Debug.LogError($"[SaveService] Atomic write exception: {ex.Message}");
-                try { if (File.Exists(tmpPath)) File.Delete(tmpPath); } catch { /* ignore cleanup failure */ }
+                try { if (File.Exists(tmpPath))    File.Delete(tmpPath);    } catch { /* ignore */ }
+                try { if (File.Exists(sigTmpPath)) File.Delete(sigTmpPath); } catch { /* ignore */ }
                 return false;
             }
         }

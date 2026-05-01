@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using EndlessEngine.Config;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Damage
 {

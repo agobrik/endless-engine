@@ -99,7 +99,7 @@ namespace EndlessEngine.Tests.Integration.FullSystem
         {
             _economy.AddResources(500);
             _buildingService.TryPlace("test_farm", 0, 0);
-            long goldAfterPlace = _economy.CurrentResources; // 400
+            double goldAfterPlace = _economy.CurrentResources; // 400
 
             _buildingService.OnTick(1f); // 1 second tick
 

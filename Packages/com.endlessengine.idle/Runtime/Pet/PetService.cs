@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EndlessEngine.Config;
 using EndlessEngine.Economy;
+using EndlessEngine.Stats;
 using EndlessEngine.SaveAndLoad;
 
 namespace EndlessEngine.Pet
@@ -17,7 +18,7 @@ namespace EndlessEngine.Pet
     /// Only one pet can be equipped at a time. Passive effects are read via
     /// GetActiveEffects() — callers apply them to stats (same pattern as SkillTreeService).
     /// </summary>
-    public class PetService : MonoBehaviour, ISaveStateProvider
+    public class PetService : MonoBehaviour, ISaveStateProvider, IModifierSource
     {
         public int ProviderOrder => SaveConstants.SaveProviderOrder.Pet;
 
@@ -202,6 +203,30 @@ namespace EndlessEngine.Pet
             }
 
             return results;
+        }
+
+        // ── IModifierSource ───────────────────────────────────────────────────────
+
+        public string SourceId => "pet";
+
+        public Modifier GetModifier(StatType stat)
+        {
+            var effects = GetActiveEffects();
+            double additive       = 0.0;
+            double multiplicative = 1.0;
+
+            foreach (var effect in effects)
+            {
+                if (effect.Type == SkillEffectType.IncomeBonus && stat == StatType.IdleYieldRate)
+                    additive += effect.Value;
+                else if (effect.Type == SkillEffectType.StatMultiplier && effect.TargetId == stat.ToString())
+                    multiplicative *= effect.Value;
+                else if (effect.Type == SkillEffectType.StatAdditive && effect.TargetId == stat.ToString())
+                    additive += effect.Value;
+            }
+
+            if (additive == 0.0 && multiplicative == 1.0) return Modifier.None;
+            return new Modifier(additive, multiplicative);
         }
 
         // ── ISaveStateProvider ────────────────────────────────────────────────────

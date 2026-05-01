@@ -119,11 +119,11 @@ namespace EndlessEngine.Prestige
 
             if (_database == null) return total;
 
-            for (int i = 1; i < _database.LayerCount; i++)
+            for (int i = 0; i < _database.LayerCount; i++)
             {
                 var cfg = _database.GetLayer(i);
-                if (cfg == null) continue;
-                total *= cfg.GetPermanentMultiplier(GetCount(i));
+                if (cfg == null || cfg.LayerIndex == 0) continue; // LayerIndex 0 = standard prestige, handled by _prestigeManager
+                total *= cfg.GetPermanentMultiplier(GetCount(cfg.LayerIndex));
             }
 
             return total;

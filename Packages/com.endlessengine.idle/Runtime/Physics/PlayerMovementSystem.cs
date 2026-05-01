@@ -2,6 +2,7 @@ using UnityEngine;
 using EndlessEngine.Config;
 using EndlessEngine.Core;
 using EndlessEngine.Input;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Physics
 {

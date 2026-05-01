@@ -29,6 +29,11 @@ using EndlessEngine.UnlockLog;
 using EndlessEngine.Events;
 using EndlessEngine.Leaderboard;
 using EndlessEngine.Export;
+using EndlessEngine.Economy.Math;
+using EndlessEngine.Harvest;
+using EndlessEngine.ClickLoop;
+using EndlessEngine.VFX;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Bootstrap
 {
@@ -109,6 +114,23 @@ namespace EndlessEngine.Bootstrap
         [SerializeField] private LeaderboardConfigSO[]   _leaderboardConfigs;
         [SerializeField] private ExportService           _exportService;
 
+        [Header("Optional — Click Active Loop")]
+        [SerializeField] private ClickLoopService           _clickLoopService;
+        [SerializeField] private ClickLoopOfflineCalculator _clickLoopOfflineCalc;
+        [SerializeField] private ClickLoopConfigSO          _clickLoopConfig;
+        [SerializeField] private ClickTargetConfigSO[]      _clickTargetConfigs;
+        [SerializeField] private LayerMask                  _clickTargetLayer;
+        [SerializeField] private ClickLoopHUDController     _clickLoopHUD;
+
+        [Header("Optional — Harvest Active Loop")]
+        [SerializeField] private HarvestCursor            _harvestCursor;
+        [SerializeField] private HarvestLoopService       _harvestLoopService;
+        [SerializeField] private HarvestOfflineCalculator _harvestOfflineCalculator;
+        [SerializeField] private HarvestAreaConfigSO      _harvestAreaConfig;
+        [SerializeField] private HarvestNodeConfigSO[]    _harvestNodeConfigs;
+        [SerializeField] private VFXController            _vfxController;
+        [SerializeField] private HarvestHUDController     _harvestHUD;
+
         [Header("UI")]
         [SerializeField] private UpgradeScreenController   _upgradeScreen;
         [SerializeField] private BuildingScreenController  _buildingScreen;
@@ -130,6 +152,10 @@ namespace EndlessEngine.Bootstrap
         private IEnumerator Start()
         {
             Debug.Log("[VS Bootstrap] Wiring systems...");
+
+            // 0a. Configure numeric backend BEFORE any service initialises
+            if (_economyConfig != null)
+                BigNumberFactory.Configure(_economyConfig.NumberBackend);
 
             // 0. Populate ConfigRegistry (VS uses InjectForTesting — no Addressables)
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -261,6 +287,50 @@ namespace EndlessEngine.Bootstrap
             if (_exportService != null)
                 _exportService.Initialize(_saveService);
 
+            // 5ab015. Click active loop (optional)
+            if (_clickLoopService != null && _clickLoopConfig != null)
+            {
+                _clickLoopService.Initialize(
+                    config:      _clickLoopConfig,
+                    economy:     _economyService,
+                    input:       _inputProvider,
+                    targetLayer: _clickTargetLayer,
+                    statistics:  _statisticsService,
+                    vfx:         _vfxController);
+
+                if (_clickLoopHUD != null)
+                    _clickLoopHUD.Initialize(_clickLoopService, _clickLoopConfig);
+
+                if (_clickLoopOfflineCalc != null && _saveService != null)
+                {
+                    _clickLoopOfflineCalc.Initialize(
+                        _clickLoopConfig, _economyService, _clickTargetConfigs);
+                    _saveService.OnSaveLoaded += _clickLoopOfflineCalc.HandleSaveLoaded;
+                }
+            }
+
+            // 5ab014. Harvest active loop (optional)
+            if (_harvestCursor != null && _harvestLoopService != null && _harvestAreaConfig != null)
+            {
+                _harvestCursor.Inject(_inputProvider);
+                _harvestLoopService.Initialize(
+                    cursor:     _harvestCursor,
+                    config:     _harvestAreaConfig,
+                    economy:    _economyService,
+                    statistics: _statisticsService,
+                    vfx:        _vfxController);
+
+                if (_harvestHUD != null)
+                    _harvestHUD.Initialize(_harvestLoopService, _harvestCursor, _harvestAreaConfig);
+
+                if (_harvestOfflineCalculator != null && _saveService != null)
+                {
+                    _harvestOfflineCalculator.Initialize(
+                        _harvestAreaConfig, _economyService, _harvestNodeConfigs);
+                    _saveService.OnSaveLoaded += _harvestOfflineCalculator.HandleSaveLoaded;
+                }
+            }
+
             // 5ab013. Leaderboard screen — wire CurrentScore from StatisticsService
             if (_leaderboardScreen != null && _statisticsService != null)
                 _leaderboardScreen.CurrentScore = (long)_statisticsService.Get("total_gold_earned");
@@ -305,16 +375,27 @@ namespace EndlessEngine.Bootstrap
                 );
             }
 
-            // 5c. Click yield module (optional)
+            // 5c. Click yield module (optional — mutually exclusive with ClickLoopService)
+            // Do NOT assign both _clickYieldService and _clickLoopService in the same scene;
+            // both consume GetPointerClickedThisFrame() and will double-count gold.
             if (_clickYieldService != null && _economyService != null)
             {
-                _clickYieldService.Initialize(
-                    config:              null,  // assign ClickSourceConfigSO in Inspector
-                    economy:             _economyService,
-                    passiveYieldGetter:  null   // wire to a yield/s getter if YieldRateClickFraction > 0
-                );
-                if (_inputProvider != null)
-                    _clickYieldService.SetInputProvider(_inputProvider);
+                if (_clickLoopService != null)
+                {
+                    Debug.LogWarning("[Bootstrap] ClickYieldService and ClickLoopService are both assigned. " +
+                        "ClickYieldService will NOT be initialized to prevent double gold. " +
+                        "Remove one from the Inspector.", this);
+                }
+                else
+                {
+                    _clickYieldService.Initialize(
+                        config:              null,  // assign ClickSourceConfigSO in Inspector
+                        economy:             _economyService,
+                        passiveYieldGetter:  null   // wire to a yield/s getter if YieldRateClickFraction > 0
+                    );
+                    if (_inputProvider != null)
+                        _clickYieldService.SetInputProvider(_inputProvider);
+                }
             }
 
             // 6. Run session manager
@@ -351,7 +432,7 @@ namespace EndlessEngine.Bootstrap
                     _saveService.RegisterStateProvider(_generatorSystem);
                 if (_upgradeScreen != null)
                     _saveService.RegisterStateProvider(_upgradeScreen);
-                if (_clickYieldService != null)
+                if (_clickYieldService != null && _clickLoopService == null)
                     _saveService.RegisterStateProvider(_clickYieldService);
                 if (_currencyService != null)
                     _saveService.RegisterStateProvider(_currencyService);
@@ -373,6 +454,10 @@ namespace EndlessEngine.Bootstrap
                     _saveService.RegisterStateProvider(_petService);
                 if (_unlockLogService != null)
                     _saveService.RegisterStateProvider(_unlockLogService);
+                if (_harvestLoopService != null && _harvestAreaConfig != null)
+                    _saveService.RegisterStateProvider(_harvestLoopService);
+                if (_clickLoopService != null && _clickLoopConfig != null)
+                    _saveService.RegisterStateProvider(_clickLoopService);
             }
 
             // 9. Wave spawning dependencies
@@ -445,6 +530,10 @@ namespace EndlessEngine.Bootstrap
                 TickEngine.OnTick -= _researchService.OnTick;
             if (_buildingService != null)
                 TickEngine.OnTick -= _buildingService.OnTick;
+            if (_harvestOfflineCalculator != null && _saveService != null)
+                _saveService.OnSaveLoaded -= _harvestOfflineCalculator.HandleSaveLoaded;
+            if (_clickLoopOfflineCalc != null && _saveService != null)
+                _saveService.OnSaveLoaded -= _clickLoopOfflineCalc.HandleSaveLoaded;
 
             if (_autoBattle != null)
             {

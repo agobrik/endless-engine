@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using EndlessEngine.Config;
 
 namespace EndlessEngine.Economy
@@ -41,7 +41,7 @@ namespace EndlessEngine.Economy
             };
 
             if (config.AbsoluteCeiling > 0)
-                result = Math.Min(result, config.AbsoluteCeiling);
+                result = System.Math.Min(result, config.AbsoluteCeiling);
 
             return result;
         }
@@ -54,7 +54,7 @@ namespace EndlessEngine.Economy
         {
             if (raw <= threshold) return raw;
             double excess = raw - threshold;
-            return threshold + k * Math.Log(1.0 + excess);
+            return threshold + k * System.Math.Log(1.0 + excess);
         }
 
         /// <summary>
@@ -65,7 +65,7 @@ namespace EndlessEngine.Economy
         {
             if (raw <= threshold) return raw;
             double excess = raw - threshold;
-            return threshold + k * Math.Sqrt(excess);
+            return threshold + k * System.Math.Sqrt(excess);
         }
 
         /// <summary>
@@ -81,7 +81,7 @@ namespace EndlessEngine.Economy
 
             double range  = ceiling - threshold;
             double excess = raw - threshold;
-            double result = ceiling - range * Math.Exp(-k * excess / range);
+            double result = ceiling - range * System.Math.Exp(-k * excess / range);
             // Guard against floating-point underflow causing result == ceiling.
             // double.Epsilon is too small relative to large ceiling values (10000.0 - double.Epsilon == 10000.0).
             // Subtract one ULP by nudging with a relative epsilon instead.
@@ -100,7 +100,7 @@ namespace EndlessEngine.Economy
         {
             if (config == null || sampleCount <= 0) return Array.Empty<(double, double)>();
             var result = new (double, double)[sampleCount];
-            double step = maxRaw / Math.Max(1, sampleCount - 1);
+            double step = maxRaw / System.Math.Max(1, sampleCount - 1);
             for (int i = 0; i < sampleCount; i++)
             {
                 double raw = step * i;

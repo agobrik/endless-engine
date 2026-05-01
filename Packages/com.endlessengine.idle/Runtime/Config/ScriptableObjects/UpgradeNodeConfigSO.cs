@@ -75,6 +75,27 @@ namespace EndlessEngine.Config
         StartingGoldBonus,
         RunDurationBonus,
         DoubleGeneratorChance,
+
+        // Harvest (Active Loop)
+        HarvestRadius,
+        HarvestTickRate,
+        HarvestYieldMultiplier,
+        HarvestNodeMaxHP,
+        HarvestNodeRespawnRate,
+        HarvestComboMultiplier,
+        HarvestComboDecayRate,
+        HarvestMultiNodeBonus,
+
+        // Click Loop (Active — tap/click a target object)
+        ClickDamage,
+        ClickTargetMaxHP,
+        ClickTargetRespawnRate,
+        ClickYieldMultiplier,
+        ClickComboMultiplier,
+        ClickComboDecayRate,
+        ClickCritChance,
+        ClickCritMultiplier,
+        ClickAutoRate,
     }
 
     public enum UpgradeEffectType

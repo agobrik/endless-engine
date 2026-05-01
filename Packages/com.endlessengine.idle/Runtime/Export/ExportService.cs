@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using UnityEngine;
 using EndlessEngine.SaveAndLoad;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Export
 {
@@ -46,7 +47,8 @@ namespace EndlessEngine.Export
         }
 
         /// <summary>
-        /// Serialize current SaveData to a build code string.
+        /// Serialize current SaveData to a signed build code string.
+        /// Format: {base64_json}.{hmac_hex}
         /// Copies to system clipboard automatically.
         /// </summary>
         public string ExportToCode(SaveData saveData)
@@ -58,7 +60,9 @@ namespace EndlessEngine.Export
             }
 
             string json      = Newtonsoft.Json.JsonConvert.SerializeObject(saveData);
-            string buildCode = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+            string b64       = Convert.ToBase64String(Encoding.UTF8.GetBytes(json));
+            string sig       = SaveAndLoad.SaveSigner.Sign(json);
+            string buildCode = $"{b64}.{sig}";
 
             GUIUtility.systemCopyBuffer = buildCode;
             OnExportComplete?.Invoke(buildCode);
@@ -70,7 +74,8 @@ namespace EndlessEngine.Export
 
         /// <summary>
         /// Deserialize a build code to SaveData and validate its structure.
-        /// Does NOT auto-apply — returns the decoded SaveData for caller to decide.
+        /// Expects signed format "{base64}.{hmac_hex}"; unsigned (legacy) codes are accepted
+        /// with a warning. Does NOT auto-apply — returns the decoded SaveData for caller to decide.
         /// </summary>
         public bool TryImportFromCode(string buildCode, out SaveData saveData)
         {
@@ -83,7 +88,39 @@ namespace EndlessEngine.Export
 
             try
             {
-                string json = Encoding.UTF8.GetString(Convert.FromBase64String(buildCode));
+                // Split signed build code: "{base64}.{sig}"
+                // The last '.' segment is treated as the HMAC; everything before it is the b64 payload.
+                // Legacy unsigned codes contain no '.' (base64 never uses '.'), so fall through cleanly.
+                string b64Part  = buildCode;
+                string sigPart  = null;
+                int    dotIndex = buildCode.LastIndexOf('.');
+                if (dotIndex > 0 && dotIndex < buildCode.Length - 1)
+                {
+                    string candidateSig = buildCode.Substring(dotIndex + 1);
+                    // A valid HMAC-SHA256 hex is exactly 64 lowercase hex chars.
+                    if (candidateSig.Length == 64)
+                    {
+                        b64Part = buildCode.Substring(0, dotIndex);
+                        sigPart = candidateSig;
+                    }
+                }
+
+                string json = Encoding.UTF8.GetString(Convert.FromBase64String(b64Part));
+
+                if (sigPart != null)
+                {
+                    if (!SaveAndLoad.SaveSigner.Verify(json, sigPart))
+                    {
+                        OnImportFailed?.Invoke("SignatureMismatch");
+                        Debug.LogWarning("[ExportService] Build code signature mismatch — import rejected.");
+                        return false;
+                    }
+                }
+                else
+                {
+                    Debug.LogWarning("[ExportService] Unsigned build code — accepted as legacy. Will be signed on next export.");
+                }
+
                 saveData = Newtonsoft.Json.JsonConvert.DeserializeObject<SaveData>(json);
                 if (saveData == null)
                 {

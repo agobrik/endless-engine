@@ -4,6 +4,7 @@ using UnityEngine;
 using EndlessEngine.Config;
 using EndlessEngine.Economy;
 using EndlessEngine.Flow;
+using EndlessEngine.Stats;
 using EndlessEngine.SaveAndLoad;
 
 namespace EndlessEngine.Research
@@ -24,7 +25,7 @@ namespace EndlessEngine.Research
     ///   TickEngine.OnTick += researchService.OnTick;   (done in bootstrap)
     ///   saveService.RegisterStateProvider(researchService);
     /// </summary>
-    public class ResearchService : MonoBehaviour, ISaveStateProvider
+    public class ResearchService : MonoBehaviour, ISaveStateProvider, IModifierSource
     {
         // ── ISaveStateProvider ────────────────────────────────────────────────────
 
@@ -232,6 +233,32 @@ namespace EndlessEngine.Research
             _activeTicks = 0;
             _completed.Add(key);
             OnNodeCompleted?.Invoke(treeId, nodeId);
+        }
+
+        // ── IModifierSource ───────────────────────────────────────────────────────
+
+        public string SourceId => "research";
+
+        public Modifier GetModifier(StatType stat)
+        {
+            double additive = 0.0;
+            double mult     = 1.0;
+            foreach (var key in _completed)
+            {
+                if (!TryParseKey(key, out var treeId, out var nodeId)) continue;
+                if (!_trees.TryGetValue(treeId, out var tree)) continue;
+                var node = tree.GetNode(nodeId);
+                if (node?.Effects == null) continue;
+                foreach (var effect in node.Effects)
+                {
+                    if (!System.Enum.TryParse<StatType>(effect.TargetId, ignoreCase: true, out var targetStat)) continue;
+                    if (targetStat != stat) continue;
+                    if (effect.Type == SkillEffectType.StatMultiplier) mult     *= effect.Value;
+                    else if (effect.Type == SkillEffectType.StatAdditive
+                          || effect.Type == SkillEffectType.IncomeBonus) additive += effect.Value;
+                }
+            }
+            return (additive == 0.0 && mult == 1.0) ? Modifier.None : new Modifier(additive, mult);
         }
 
         // ── Test helpers ──────────────────────────────────────────────────────────

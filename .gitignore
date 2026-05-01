@@ -1,0 +1,36 @@
+# Unity generated
+/Library/
+/Logs/
+/obj/
+/Temp/
+/UserSettings/
+
+# Build output
+/Build/
+/Builds/
+*.apk
+*.aab
+*.unitypackage
+
+# IDE
+.vscode/
+.idea/
+*.csproj
+*.sln
+*.suo
+*.user
+*.userprefs
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Unity crash reports
+/sysinfo.txt
+/crash.dmp
+
+# Backup files
+*.bak
+*.orig
+*~

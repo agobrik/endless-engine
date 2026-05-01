@@ -1,5 +1,5 @@
 {
-    "name": "EndlessEngine.Tests",
+    "name": "EndlessEngine.Tests.EditMode",
     "rootNamespace": "EndlessEngine.Tests",
     "references": [
         "EndlessEngine.Runtime",

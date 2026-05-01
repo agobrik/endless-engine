@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using EndlessEngine.Config;
 using EndlessEngine.Economy;
+using EndlessEngine.Stats;
 using EndlessEngine.Upgrade;
 
 namespace EndlessEngine.Challenge
@@ -21,7 +22,7 @@ namespace EndlessEngine.Challenge
     /// ChallengeService does NOT persist between sessions — challenges are
     /// per-run modifiers and do not need save/load.
     /// </summary>
-    public class ChallengeService : MonoBehaviour
+    public class ChallengeService : MonoBehaviour, IModifierSource
     {
         // ── Events ────────────────────────────────────────────────────────────────
 
@@ -143,9 +144,9 @@ namespace EndlessEngine.Challenge
         /// Applies RewardMultiplier to the provided base gold amount.
         /// Returns baseGold unchanged if no challenge is active.
         /// </summary>
-        public long CalculateReward(long baseGold)
+        public long CalculateReward(double baseGold)
         {
-            if (_active == null) return baseGold;
+            if (_active == null) return (long)baseGold;
             return (long)(baseGold * _active.RewardMultiplier);
         }
 
@@ -153,7 +154,7 @@ namespace EndlessEngine.Challenge
 
         private void CompleteChallenge()
         {
-            long baseGold  = _economyService?.CurrentResources ?? 0;
+            double baseGold = _economyService?.CurrentResources ?? 0.0;
             long reward    = CalculateReward(baseGold);
 
             // Award bonus points
@@ -182,6 +183,23 @@ namespace EndlessEngine.Challenge
         private void RemoveModifiers(ChallengeConfigSO config)
         {
             _disabledSystems.Clear();
+        }
+
+        // ── IModifierSource ───────────────────────────────────────────────────────
+
+        public string SourceId => "challenge";
+
+        public Modifier GetModifier(StatType stat)
+        {
+            if (_active?.Modifiers == null || !_runActive) return Modifier.None;
+            double mult = 1.0;
+            foreach (var m in _active.Modifiers)
+            {
+                if (m.Type != ChallengeModifierType.StatMultiplier) continue;
+                if (!System.Enum.TryParse<StatType>(m.TargetId, ignoreCase: true, out var targetStat)) continue;
+                if (targetStat == stat) mult *= m.Value;
+            }
+            return mult == 1.0 ? Modifier.None : Modifier.FromMultiplier(mult);
         }
 
         // ── Test helpers ──────────────────────────────────────────────────────────

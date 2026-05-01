@@ -1,4 +1,5 @@
 using UnityEngine;
+using EndlessEngine.Economy.Math;
 
 namespace EndlessEngine.Config
 {
@@ -46,11 +47,23 @@ namespace EndlessEngine.Config
         [Tooltip("The generator that must reach UnlockRequirement count before this unlocks. Null = no prerequisite.")]
         public GeneratorConfigSO UnlockPrerequisite;
 
-        /// <summary>Cost to buy the Nth copy (0-indexed: 0 = first copy).</summary>
+        /// <summary>Cost to buy the Nth copy (0-indexed: 0 = first copy). Long for legacy callers.</summary>
         public long CostForCopy(int copyIndex)
         {
             if (copyIndex < 0) return BaseCost;
             return (long)(BaseCost * System.Math.Pow(CostScalingFactor, copyIndex));
+        }
+
+        /// <summary>
+        /// Cost to buy the Nth copy as IBigNumber (backend-aware).
+        /// Use this on the hot path when BigDouble backend may be active.
+        /// </summary>
+        public IBigNumber CostForCopyBig(int copyIndex)
+        {
+            double raw = copyIndex < 0
+                ? BaseCost
+                : BaseCost * System.Math.Pow(CostScalingFactor, copyIndex);
+            return BigNumberFactory.Create(raw);
         }
     }
 }

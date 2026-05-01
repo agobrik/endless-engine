@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using EndlessEngine.Config;
@@ -398,7 +398,7 @@ namespace EndlessEngine.UI
             int  rank    = _ranks.TryGetValue(node.NodeId, out int r) ? r : 0;
             bool locked  = IsLocked(node);
             bool maxed   = rank >= node.MaxRank;
-            long bal     = EconomyService.CurrentResourcesStatic;
+            double bal = EconomyService.CurrentResourcesStatic;
 
             _ttName.text  = node.DisplayName;
             _ttEffect.style.color = CatColorActive(node.Category);
@@ -476,7 +476,7 @@ namespace EndlessEngine.UI
         private void RefreshAll()
         {
             if (_upgradeTree == null) return;
-            long bal = EconomyService.CurrentResourcesStatic;
+            double bal = EconomyService.CurrentResourcesStatic;
             foreach (var kv in _cards)
             {
                 if (!_upgradeTree.TryGetNode(kv.Key, out var n)) continue;
@@ -488,7 +488,7 @@ namespace EndlessEngine.UI
         }
 
         private void RefreshCard(VisualElement card, UpgradeNodeDefinition node,
-                                  int rank, long bal, bool locked)
+                                  int rank, double bal, bool locked)
         {
             bool maxed = rank >= node.MaxRank;
             float op = (locked && rank == 0) ? 0.25f : 1f;
@@ -634,7 +634,7 @@ namespace EndlessEngine.UI
                 _goldLabel.text = GoldFormatter.Format(EconomyService.CurrentResourcesStatic);
         }
 
-        private void OnGoldChanged(long bal, long delta) { UpdateGold(); RefreshAll(); }
+        private void OnGoldChanged(double bal, double delta) { UpdateGold(); RefreshAll(); }
 
         private static Color CatColor(UpgradeCategory c) => c switch
         {

@@ -32,6 +32,10 @@ namespace EndlessEngine.Tests.Integration.FullSystem
         [SetUp]
         public void SetUp()
         {
+            // Player config needed by UpgradeApplicationSystem.GetBaseStat(StatType.Damage)
+            var playerConfig = ScriptableObject.CreateInstance<PlayerBaseStatConfigSO>();
+            ConfigRegistry.InjectForTesting(player: playerConfig);
+
             // Damage bonus skill node: +50% damage (StatMultiplier)
             _damageNode = ScriptableObject.CreateInstance<SkillNodeConfigSO>();
             _damageNode.NodeId      = "power_boost";
@@ -62,6 +66,7 @@ namespace EndlessEngine.Tests.Integration.FullSystem
 
             var sd = new SaveData();
             sd.EnsureDefaults();
+            sd.SkillPoints = 3; // preserve startingPoints after OnAfterLoad overwrites _skillPoints
             _skillTree.OnAfterLoad(sd);
 
             EndlessEngine.Core.UpgradeApplicationSystem.ResetForTesting();
@@ -70,6 +75,7 @@ namespace EndlessEngine.Tests.Integration.FullSystem
         [TearDown]
         public void TearDown()
         {
+            ConfigRegistry.ClearForTesting();
             if (_skillTree   != null) Object.DestroyImmediate(_skillTree.gameObject);
             if (_saveService != null) Object.DestroyImmediate(_saveService.gameObject);
             if (_treeConfig  != null) Object.DestroyImmediate(_treeConfig);

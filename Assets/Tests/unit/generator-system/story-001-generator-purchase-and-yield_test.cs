@@ -92,7 +92,7 @@ namespace EndlessEngine.Tests.Unit.GeneratorSystem
         [Test]
         public void TryPurchase_Success_DeductsCostFromEconomy()
         {
-            long before = _economy.CurrentResources;
+            double before = _economy.CurrentResources;
             long expectedCost = _cfg.CostForCopy(0);
 
             _system.TryPurchase("test_gen");

@@ -47,6 +47,7 @@ namespace EndlessEngine.Tests.Integration.AutoBattleCombat
 
             // Sensible defaults for fast test execution
             _playerConfig.BaseAttackDamage          = 10f;
+            _playerConfig.BaseMaxHP                 = 100f;
             _playerConfig.BaseAttackInterval        = 1f;
             _playerConfig.BaseCritChance            = 0f;   // no crits by default
             _playerConfig.BaseCritMultiplier        = 2f;
@@ -72,6 +73,9 @@ namespace EndlessEngine.Tests.Integration.AutoBattleCombat
             var wsmGO      = new GameObject("WSM_Test");
             _waveSpawnManager = wsmGO.AddComponent<WaveSpawnManager>();
 
+            // Inject player config so DamageSystem.ResolveDamage can read crit stats
+            ConfigRegistry.InjectForTesting(player: _playerConfig);
+
             _abc.Initialize(
                 _enemyManager,
                 _waveSpawnManager,
@@ -86,6 +90,7 @@ namespace EndlessEngine.Tests.Integration.AutoBattleCombat
         [TearDown]
         public void TearDown()
         {
+            ConfigRegistry.ClearForTesting();
             AutoBattleController.ClearStaticSubscribersForTesting();
             DamageSystem.ClearSubscribersForTesting();
             PlayerHealthComponent.ClearStaticSubscribersForTesting();
@@ -239,8 +244,9 @@ namespace EndlessEngine.Tests.Integration.AutoBattleCombat
 
             _abc.SimulateWaveCompleteForTesting(1);
 
-            // WaveTransitionDelaySeconds = 0.5 in SetUp
-            yield return new WaitForSeconds(0.6f);
+            // EditMode WaitForSeconds does not advance real time; use the coroutine-free helper
+            yield return null;
+            _abc.SimulateWaveTransitionCompleteForTesting(1);
 
             Assert.AreEqual(2, nextWaveReceived,
                 "OnWaveTransitionComplete must fire with nextWaveNumber = completedWave + 1.");

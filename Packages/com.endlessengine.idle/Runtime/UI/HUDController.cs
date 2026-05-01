@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using EndlessEngine.Config;
@@ -69,8 +69,8 @@ namespace EndlessEngine.UI
 
         // ── Gold State ────────────────────────────────────────────────────────────
 
-        private long  _goldDisplayed;     // value currently shown
-        private long  _goldTarget;        // target value
+        private double _goldDisplayed;     // value currently shown
+        private double _goldTarget;        // target value
         private float _goldAnimTimer;     // elapsed animation time
 
         // ── Wave State ────────────────────────────────────────────────────────────
@@ -166,7 +166,7 @@ namespace EndlessEngine.UI
             _hpFillTarget = newFill;
         }
 
-        private void OnResourcesChanged(long newBalance, long delta)
+        private void OnResourcesChanged(double newBalance, double delta)
         {
             _goldTarget = newBalance;
 
@@ -225,7 +225,7 @@ namespace EndlessEngine.UI
             }
         }
 
-        private void OnRunEnded(long goldEarned)
+        private void OnRunEnded(double goldEarned)
         {
             if (_timerLabel != null)
                 _timerLabel.text = "0:00";
@@ -264,7 +264,7 @@ namespace EndlessEngine.UI
                 ? Mathf.Clamp01(_goldAnimTimer / _goldAnimDuration)
                 : 1f;
 
-            _goldDisplayed = (long)Mathf.Lerp(_goldDisplayed, _goldTarget, t);
+            _goldDisplayed = _goldDisplayed + (_goldTarget - _goldDisplayed) * t;
 
             if (t >= 1f)
                 _goldDisplayed = _goldTarget;

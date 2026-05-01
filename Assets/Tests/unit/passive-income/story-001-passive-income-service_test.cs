@@ -132,7 +132,7 @@ namespace EndlessEngine.Tests.Unit.PassiveIncome
             Flow.TickEngine.FireTickForTesting(1f);
             Flow.TickEngine.FireTickForTesting(1f);
             Flow.TickEngine.FireTickForTesting(1f);
-            Assert.AreEqual(3L, _passive.TotalPassiveEarned);
+            Assert.AreEqual(3.0, _passive.TotalPassiveEarned.ToDouble(), 1e-9);
         }
 
         [Test]

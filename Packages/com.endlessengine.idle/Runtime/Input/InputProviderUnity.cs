@@ -38,9 +38,9 @@ namespace EndlessEngine.Input
         private InputAction _cancelAction;
         private InputAction _pauseAction;
 
-        private float   _pauseDebounceTimer;
+        private double  _lastPauseTime = double.MinValue;
         private Vector2 _prevMouseScreenPos;
-        private const float PauseDebounceSeconds = 0.2f;
+        private const double PauseDebounceSeconds = 0.2;
 
         // ── Unity Lifecycle ───────────────────────────────────────────────────────
 
@@ -49,25 +49,68 @@ namespace EndlessEngine.Input
             if (_playerInput == null)
                 _playerInput = GetComponent<PlayerInput>();
 
-            _moveAction    = _playerInput.actions["Move"];
-            _confirmAction = _playerInput.actions["Confirm"];
-            _cancelAction  = _playerInput.actions["Cancel"];
-            _pauseAction   = _playerInput.actions["Pause"];
+            BindFromPlayerInput();
+        }
+
+        private void BindFromPlayerInput()
+        {
+            // PlayerInput.actions is the CLONED asset (Instantiate'd internally).
+            // Read it only after PlayerInput has fully initialized (OnEnable/Start).
+            // In production this is called from Awake which runs after PlayerInput.Awake.
+            if (_playerInput?.actions == null) return;
+            BindActions(_playerInput.actions);
+        }
+
+        private void BindActions(InputActionAsset asset)
+        {
+            // Unbind previous pause handler before rebinding
+            if (_pauseAction != null)
+                _pauseAction.performed -= HandlePausePerformed;
+
+            _moveAction    = asset.FindAction("Move",    throwIfNotFound: false);
+            _confirmAction = asset.FindAction("Confirm", throwIfNotFound: false);
+            _cancelAction  = asset.FindAction("Cancel",  throwIfNotFound: false);
+            _pauseAction   = asset.FindAction("Pause",   throwIfNotFound: false);
+
+            if (_pauseAction != null)
+                _pauseAction.performed += HandlePausePerformed;
+        }
+
+        private void OnDisable()
+        {
+            if (_pauseAction != null)
+                _pauseAction.performed -= HandlePausePerformed;
+        }
+
+        private void OnEnable()
+        {
+            // After a disable/enable cycle, re-subscribe once (guard against double-sub).
+            if (_pauseAction != null)
+            {
+                _pauseAction.performed -= HandlePausePerformed;
+                _pauseAction.performed += HandlePausePerformed;
+            }
+        }
+
+        private void HandlePausePerformed(InputAction.CallbackContext ctx)
+        {
+            if (ctx.time - _lastPauseTime < PauseDebounceSeconds) return;
+            _lastPauseTime = ctx.time;
+            OnPausePressed?.Invoke();
+        }
+
+        /// <summary>
+        /// Binds directly to the provided asset, bypassing PlayerInput's internal clone.
+        /// Call from test setup with the same asset that InputTestFixture drives.
+        /// The asset must already be enabled.
+        /// </summary>
+        public void RebindActionsForTesting(InputActionAsset asset)
+        {
+            BindActions(asset);
         }
 
         private void Update()
         {
-            // Decrement debounce timer
-            _pauseDebounceTimer = Mathf.Max(0f, _pauseDebounceTimer - Time.deltaTime);
-
-            // Fire OnPausePressed only once per debounce window
-            if (_pauseAction.WasPressedThisFrame() && _pauseDebounceTimer <= 0f)
-            {
-                _pauseDebounceTimer = PauseDebounceSeconds;
-                OnPausePressed?.Invoke();
-            }
-
-            // Track previous mouse position for delta calculation
             _prevMouseScreenPos = Mouse.current != null
                 ? Mouse.current.position.ReadValue()
                 : Vector2.zero;
@@ -77,16 +120,16 @@ namespace EndlessEngine.Input
 
         /// <inheritdoc/>
         /// <remarks>Returns the normalized 2D movement vector. Zero when no input.</remarks>
-        public Vector2 GetMoveVector() => _moveAction.ReadValue<Vector2>().normalized;
+        public Vector2 GetMoveVector() => _moveAction != null ? _moveAction.ReadValue<Vector2>().normalized : Vector2.zero;
 
         /// <inheritdoc/>
-        public bool GetConfirmPressed() => _confirmAction.WasPressedThisFrame();
+        public bool GetConfirmPressed() => _confirmAction != null && _confirmAction.WasPressedThisFrame();
 
         /// <inheritdoc/>
-        public bool GetCancelPressed() => _cancelAction.WasPressedThisFrame();
+        public bool GetCancelPressed() => _cancelAction != null && _cancelAction.WasPressedThisFrame();
 
         /// <inheritdoc/>
-        public bool GetPausePressed() => _pauseAction.WasPressedThisFrame();
+        public bool GetPausePressed() => _pauseAction != null && _pauseAction.WasPressedThisFrame();
 
         /// <inheritdoc/>
         public Vector2 GetMouseWorldPosition()

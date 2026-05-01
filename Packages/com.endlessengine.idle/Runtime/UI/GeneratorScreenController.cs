@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
 using EndlessEngine.Config;
@@ -91,7 +91,7 @@ namespace EndlessEngine.UI
 
         private void RefreshAll()
         {
-            long balance = EconomyService.CurrentResourcesStatic;
+            double balance = EconomyService.CurrentResourcesStatic;
             float totalYield = 0f;
 
             foreach (var row in _rows)
@@ -108,7 +108,7 @@ namespace EndlessEngine.UI
 
         // ── Event Handlers ────────────────────────────────────────────────────────
 
-        private void OnResourcesChanged(long balance, long delta) => RefreshAll();
+        private void OnResourcesChanged(double balance, double delta) => RefreshAll();
         private void OnGeneratorPurchased(string id) => RefreshAll();
 
         // ── Visibility ────────────────────────────────────────────────────────────
@@ -182,10 +182,10 @@ namespace EndlessEngine.UI
             Root.Add(_buyBtn);
         }
 
-        public void Refresh(long playerBalance)
+        public void Refresh(double playerBalance)
         {
             int count = _system.GetCount(_cfg.GeneratorId);
-            long cost  = _system.GetNextCost(_cfg.GeneratorId);
+            double cost = _system.GetNextCost(_cfg.GeneratorId);
 
             _countLabel.text = count.ToString();
 

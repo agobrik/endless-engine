@@ -345,7 +345,7 @@ namespace EndlessEngine.Tests.Unit.MilestoneSystem
         public void GoldReward_OnCompletion_AddedToEconomy()
         {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-            long before = _economy.CurrentResources;
+            double before = _economy.CurrentResources;
             _tracker.InjectGoldEarnedForTesting(500);
             _tracker.ForceCheckForTesting();
             Assert.AreEqual(before + 50, _economy.CurrentResources,

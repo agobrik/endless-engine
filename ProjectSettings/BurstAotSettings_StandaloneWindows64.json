@@ -1,0 +1,15 @@
+{
+    "MonoBehaviour": {
+        "m_EnableBurstCompilation": true,
+        "m_EnableOptimisations": true,
+        "m_EnableSafetyChecks": false,
+        "m_EnableDebugInAllBuilds": false,
+        "m_UsePlatformSDKLinker": false,
+        "m_TargetPlatform": 5,
+        "m_CpuMinTargetX32": 0,
+        "m_CpuMinTargetX64": 0,
+        "m_CpuMinTargetArm32": 0,
+        "m_CpuMinTargetArm64": 0,
+        "m_OptimizeFor": 0
+    }
+}

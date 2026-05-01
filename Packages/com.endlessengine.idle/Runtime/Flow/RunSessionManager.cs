@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using EndlessEngine.Config;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Flow
 {
@@ -19,7 +20,7 @@ namespace EndlessEngine.Flow
         public static event Action<float> OnRunTimerUpdated;
 
         /// <summary>Fires when run ends (timer → 0 or forced end). Parameter: gold earned this run.</summary>
-        public static event Action<long> OnRunEnded;
+        public static event Action<double> OnRunEnded;
 
         // ── Dependencies ──────────────────────────────────────────────────────────
 
@@ -27,16 +28,16 @@ namespace EndlessEngine.Flow
 
         // ── Runtime state ─────────────────────────────────────────────────────────
 
-        private bool  _runActive;
-        private float _remainingSeconds;
-        private long  _goldAtRunStart;
-        private long  _goldEarnedThisRun;
+        private bool   _runActive;
+        private float  _remainingSeconds;
+        private double _goldAtRunStart;
+        private double _goldEarnedThisRun;
 
         // ── Public accessors ──────────────────────────────────────────────────────
 
-        public float RemainingSeconds  => _remainingSeconds;
-        public float TotalRunSeconds   { get; private set; }
-        public long  GoldEarnedThisRun => _goldEarnedThisRun;
+        public float  RemainingSeconds  => _remainingSeconds;
+        public float  TotalRunSeconds   { get; private set; }
+        public double GoldEarnedThisRun => _goldEarnedThisRun;
         public bool  IsRunActive       => _runActive;
 
         // ── Initialization ────────────────────────────────────────────────────────
@@ -81,7 +82,7 @@ namespace EndlessEngine.Flow
             TotalRunSeconds   = cfg != null ? cfg.RunDurationSeconds : 120f;
             _remainingSeconds = TotalRunSeconds;
             _goldAtRunStart   = Economy.EconomyService.CurrentResourcesStatic;
-            _goldEarnedThisRun = 0L;
+            _goldEarnedThisRun = 0.0;
             _runActive        = true;
 
             Debug.Log($"[RunSession] Run started. Duration={TotalRunSeconds}s");

@@ -39,5 +39,22 @@ namespace EndlessEngine.Config
         [Header("Mixer")]
         [Tooltip("SFX AudioMixerGroup — all SFX pool sources route here.")]
         public AudioMixerGroup SFXMixerGroup;
+
+        [Header("Ducking Snapshots")]
+        [Tooltip("Normal gameplay AudioMixerSnapshot. Assigned automatically when mixer is set.")]
+        public AudioMixerSnapshot SnapshotNormal;
+
+        [Tooltip("Ducked snapshot: music volume lowered during UI dialogs or prestige cinematic.")]
+        public AudioMixerSnapshot SnapshotDucked;
+
+        [Tooltip("Transition time (seconds) when blending between snapshots.")]
+        [Range(0.05f, 2f)] public float SnapshotTransitionTime = 0.2f;
+
+        [Header("Music")]
+        [Tooltip("Music AudioMixerGroup — MusicController sources route here.")]
+        public AudioMixerGroup MusicMixerGroup;
+
+        [Tooltip("Cross-fade duration when switching music states.")]
+        [Range(0.1f, 5f)] public float MusicCrossFadeDuration = 1.5f;
     }
 }

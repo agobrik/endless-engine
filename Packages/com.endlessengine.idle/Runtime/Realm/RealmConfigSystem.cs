@@ -2,8 +2,10 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using EndlessEngine.Config;
+using EndlessEngine.Flow;
 using EndlessEngine.Prestige;
 using EndlessEngine.SaveAndLoad;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Realm
 {
@@ -32,6 +34,9 @@ namespace EndlessEngine.Realm
 
         [SerializeField]
         private SaveService _saveService;
+
+        [SerializeField]
+        private GameFlowStateMachine _gameFlow;
 
         // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -143,13 +148,7 @@ namespace EndlessEngine.Realm
 
         // ── Helpers ───────────────────────────────────────────────────────────────
 
-        private static bool IsInCombat()
-        {
-            // Placeholder — GameStateManager not yet implemented.
-            // When GameStateManager is available, replace with:
-            //   return GameStateManager.CurrentState == GameState.Combat;
-            return false;
-        }
+        private bool IsInCombat() => _gameFlow != null && _gameFlow.IsInRun;
 
         // ── Test injection ────────────────────────────────────────────────────────
 

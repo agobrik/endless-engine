@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using EndlessEngine.DI;
 
 namespace EndlessEngine.Flow
 {
@@ -14,7 +15,7 @@ namespace EndlessEngine.Flow
     /// Usage: Place on the Bootstrap GameObject. Call Pause()/Resume() from
     /// GameFlowStateMachine state transitions as needed.
     /// </summary>
-    public class TickEngine : MonoBehaviour
+    public class TickEngine : MonoBehaviour, ITickSource
     {
         // ── Events ────────────────────────────────────────────────────────────────
 
@@ -43,6 +44,8 @@ namespace EndlessEngine.Flow
         [Range(0f, 10f)]
         public float TimeScale = 1.0f;
 
+        float ITickSource.TimeScale => TimeScale;
+
         // ── State ─────────────────────────────────────────────────────────────────
 
         private float _accumulator;
@@ -53,6 +56,14 @@ namespace EndlessEngine.Flow
 
         /// <summary>Total effective time elapsed (sum of all tick dt values).</summary>
         public float TotalEffectiveTime { get; private set; }
+
+        /// <summary>
+        /// Maximum ticks fired in a single frame. Prevents burst spikes on heavy frames
+        /// or after long pauses. Excess accumulated time is carried to next frame.
+        /// Default 5 covers up to 5s of frame lag at 1s tick interval.
+        /// </summary>
+        [Tooltip("Max ticks per frame. Prevents burst on heavy frames. Default 5.")]
+        public int MaxTicksPerFrame = 5;
 
         // ── Public API ────────────────────────────────────────────────────────────
 
@@ -86,14 +97,21 @@ namespace EndlessEngine.Flow
 
             _accumulator += Time.deltaTime;
 
-            while (_accumulator >= TickIntervalSeconds)
+            int ticksThisFrame = 0;
+            while (_accumulator >= TickIntervalSeconds && ticksThisFrame < MaxTicksPerFrame)
             {
                 _accumulator -= TickIntervalSeconds;
                 float effectiveDt = TickIntervalSeconds * TimeScale;
                 TotalEffectiveTime += effectiveDt;
                 OnTick?.Invoke(effectiveDt);
+                ticksThisFrame++;
             }
         }
+
+        // ── ITickSource ───────────────────────────────────────────────────────────
+
+        public void Subscribe(Action<float> onTick)   => OnTick += onTick;
+        public void Unsubscribe(Action<float> onTick) => OnTick -= onTick;
 
         // ── Test Support ──────────────────────────────────────────────────────────
 

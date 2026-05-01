@@ -1,0 +1,31 @@
+{
+  "ui.hud.gold_label": "Gold",
+  "ui.hud.wave_label": "Wave",
+  "ui.hud.prestige_label": "Prestige",
+  "ui.hud.offline_gain": "Welcome back! You earned {0} gold while away.",
+
+  "ui.button.prestige": "Prestige",
+  "ui.button.buy": "Buy",
+  "ui.button.buy_10": "Buy ×10",
+  "ui.button.buy_max": "Buy Max",
+  "ui.button.upgrade": "Upgrade",
+
+  "generator.locked": "Locked",
+  "generator.max": "MAX",
+  "generator.cost": "Cost: {0}",
+  "generator.yield": "{0}/sec",
+
+  "prestige.confirm_title": "Prestige?",
+  "prestige.confirm_body": "Reset your run for a permanent ×{0} multiplier.",
+  "prestige.confirm_yes": "Prestige",
+  "prestige.confirm_no": "Cancel",
+  "prestige.multiplier": "×{0} Multiplier",
+
+  "milestone.completed": "Milestone: {0}",
+
+  "save.corrupted_notice": "Save data was restored from backup.",
+  "save.offline_capped": "Offline earnings capped at {0} hours.",
+
+  "streak.day_1": "Welcome back!",
+  "streak.day_n": "Day {0} Streak!"
+}

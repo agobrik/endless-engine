@@ -20,6 +20,12 @@ namespace EndlessEngine.SaveAndLoad
         /// <summary>Diagnostic log for support tickets on corruption.</summary>
         public const string DiagnosticsFile = "diagnostics.log";
 
+        /// <summary>HMAC-SHA256 sidecar signature for the primary save file.</summary>
+        public const string SignatureFile = "save_slot_0.sig";
+
+        /// <summary>HMAC-SHA256 sidecar signature for the backup save file.</summary>
+        public const string BackupSignatureFile = "save_slot_0.bak.sig";
+
         /// <summary>Provider order constants for ISaveStateProvider.ProviderOrder.</summary>
         public static class SaveProviderOrder
         {
@@ -73,6 +79,12 @@ namespace EndlessEngine.SaveAndLoad
 
             /// <summary>Unlock log service writes UnlockLogEntries.</summary>
             public const int UnlockLog = 75;
+
+            /// <summary>Harvest loop service writes HarvestState (node respawn timers + lifetime stats).</summary>
+            public const int Harvest = 88;
+
+            /// <summary>Click loop service writes ClickLoopState (target respawn timers + lifetime stats).</summary>
+            public const int ClickLoop = 89;
         }
     }
 }

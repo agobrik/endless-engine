@@ -164,7 +164,7 @@ namespace EndlessEngine.Tests.Unit.StatisticsSystem
         [Test]
         public void TryActivatePaid_DeductsGold()
         {
-            long goldBefore = _economyService.CurrentResources;
+            double goldBefore = _economyService.CurrentResources;
             _service.TryActivatePaid(_paidConfig);
             Assert.AreEqual(goldBefore - 500, _economyService.CurrentResources);
         }
@@ -190,7 +190,7 @@ namespace EndlessEngine.Tests.Unit.StatisticsSystem
         [Test]
         public void TryActivatePaid_ZeroCost_ActivatesWithoutCharge()
         {
-            long goldBefore = _economyService.CurrentResources;
+            double goldBefore = _economyService.CurrentResources;
             _service.TryActivatePaid(_config2x); // GoldCost = 0
             Assert.AreEqual(goldBefore, _economyService.CurrentResources,
                 "Zero-cost boost must not deduct any gold");

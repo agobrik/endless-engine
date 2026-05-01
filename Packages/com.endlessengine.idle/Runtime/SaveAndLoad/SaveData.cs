@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using EndlessEngine.ClickLoop;
 using EndlessEngine.Generator;
+using EndlessEngine.Harvest;
 using EndlessEngine.Modules;
 using EndlessEngine.Building;
 
@@ -22,6 +24,13 @@ namespace EndlessEngine.SaveAndLoad
         /// <summary>Schema version at time of write. Drives IMigration chain on load.</summary>
         public int SchemaVersion;
 
+        /// <summary>
+        /// Numeric backend used when this save was written ("DoubleNumber" or "BigDouble").
+        /// Informational — does not change how CurrentResources is read.
+        /// Added in schema v3.
+        /// </summary>
+        public string NumberBackendName;
+
         /// <summary>UTC timestamp of last session end. Used for offline time calculation.</summary>
         public DateTime LastSessionTimestamp;
 
@@ -30,8 +39,32 @@ namespace EndlessEngine.SaveAndLoad
 
         // ── Economy ──────────────────────────────────────────────────────────────
 
-        /// <summary>Player's current resource count (Gold/Bits).</summary>
-        public long CurrentResources;
+        /// <summary>
+        /// Player's current resource count (Gold/Bits) as double.
+        /// Supports values beyond long.MaxValue for deep-prestige games.
+        /// Added in schema v2. When BigDouble backend is active and Exponent > 308,
+        /// use CurrentResourcesMantissa + CurrentResourcesExponent instead.
+        /// </summary>
+        public double CurrentResources;
+
+        /// <summary>
+        /// Mantissa of the player's current resources when stored as BigDouble (v4+).
+        /// Valid range [1, 10) or 0. Used when CurrentResourcesExponent != 0.
+        /// </summary>
+        public double CurrentResourcesMantissa;
+
+        /// <summary>
+        /// Base-10 exponent of the player's current resources when stored as BigDouble (v4+).
+        /// When non-zero, the true value is CurrentResourcesMantissa × 10^CurrentResourcesExponent.
+        /// </summary>
+        public long CurrentResourcesExponent;
+
+        /// <summary>
+        /// Legacy long field from schema v1. Migrated to CurrentResources by SaveMigration_V1_V2.
+        /// Do not read this field in gameplay code — use CurrentResources.
+        /// </summary>
+        [Obsolete("Migrated to CurrentResources (double) in schema v2. Read by SaveMigration_V1_V2 only.")]
+        public long LegacyCurrentResources;
 
         // ── Upgrade Tree ─────────────────────────────────────────────────────────
 
@@ -189,6 +222,18 @@ namespace EndlessEngine.SaveAndLoad
         /// </summary>
         public ClickModuleSaveState ClickState;
 
+        /// <summary>
+        /// Harvest active-loop state: per-node respawn timers + lifetime stats.
+        /// Null if the game does not use the Harvest module.
+        /// </summary>
+        public HarvestSaveState HarvestState;
+
+        /// <summary>
+        /// Click loop active-loop state: per-target respawn timers + lifetime stats.
+        /// Null if the game does not use the Click Loop module.
+        /// </summary>
+        public ClickLoopSaveState ClickLoopState;
+
         // ── Prestige Crash-Safety Snapshot ───────────────────────────────────────
         // Written in the first prestige save (before reset). Rolled back if second
         // save never completes. ADR-0002 §5 / ADR-0010.
@@ -234,6 +279,8 @@ namespace EndlessEngine.SaveAndLoad
             PetLevels                      ??= new Dictionary<string, int>();
             UnlockLogEntries               ??= new System.Collections.Generic.HashSet<string>();
             EquippedPetId                  ??= string.Empty;
+            HarvestState                   ??= new HarvestSaveState();
+            ClickLoopState                 ??= new ClickLoopSaveState();
 
             if (string.IsNullOrEmpty(CurrentRunState))
                 CurrentRunState = "Active";
@@ -246,6 +293,12 @@ namespace EndlessEngine.SaveAndLoad
 
             if (WaveNumber <= 0)
                 WaveNumber = 1;
+
+            NumberBackendName ??= "DoubleNumber";
+
+            // If v4 BigDouble fields are zero but CurrentResources is set, keep legacy path
+            // (no override needed — EconomyService.OnAfterLoad reads both fields)
+
         }
     }
 }

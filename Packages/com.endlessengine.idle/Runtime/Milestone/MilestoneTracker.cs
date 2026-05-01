@@ -90,7 +90,14 @@ namespace EndlessEngine.Milestone
         public void OnBeforeSave(SaveData saveData)
         {
             saveData.CompletedMilestones ??= new HashSet<string>();
-            saveData.CompletedMilestones.Clear();
+            // Remove stale milestone entries (no prefix) before re-writing,
+            // but leave prefixed entries (quest:, tutorial:, trait:, unlock:) untouched.
+            saveData.CompletedMilestones.RemoveWhere(e =>
+                !e.StartsWith("quest:") &&
+                !e.StartsWith("quest_ts:") &&
+                !e.StartsWith("tutorial:") &&
+                !e.StartsWith("trait:") &&
+                !e.StartsWith("unlock:"));
             foreach (var id in _completed)
                 saveData.CompletedMilestones.Add(id);
         }
@@ -100,18 +107,19 @@ namespace EndlessEngine.Milestone
             _completed.Clear();
             if (saveData.CompletedMilestones != null)
                 foreach (var id in saveData.CompletedMilestones)
-                    _completed.Add(id);
+                    // Only load bare milestone IDs (no colon prefix)
+                    if (!id.Contains(':')) _completed.Add(id);
         }
 
         // ── Event handlers ────────────────────────────────────────────────────────
 
-        private void HandleResourcesChanged(long current, long delta)
+        private void HandleResourcesChanged(double current, double delta)
         {
-            if (delta > 0) _totalGoldEarned += delta;
+            if (delta > 0) _totalGoldEarned += (long)delta;
             CheckAll();
         }
 
-        private void HandleUpgradePurchased(string nodeId, long cost)
+        private void HandleUpgradePurchased(string nodeId, double cost)
         {
             _upgradesPurchased++;
             CheckAll();

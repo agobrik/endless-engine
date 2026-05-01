@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Globalization;
 using System.Text;
 using EndlessEngine.Config;
@@ -50,14 +50,14 @@ namespace EndlessEngine.Economy
             BigNumberNotation notation    = BigNumberNotation.Letter,
             int    decimalPlaces          = 1)
         {
-            decimalPlaces = Math.Max(0, Math.Min(3, decimalPlaces));
+            decimalPlaces = System.Math.Max(0, System.Math.Min(3, decimalPlaces));
 
             if (double.IsNaN(value))      return "NaN";
             if (double.IsPositiveInfinity(value)) return "∞";
             if (double.IsNegativeInfinity(value)) return "-∞";
 
             bool negative = value < 0;
-            double abs    = Math.Abs(value);
+            double abs    = System.Math.Abs(value);
 
             string formatted = notation switch
             {
@@ -94,7 +94,7 @@ namespace EndlessEngine.Economy
             // Fixed: K M B T → tiers 0-3 → exponent 3-12
             // Double-letters: aa→10^15 ... (each tier adds 3 to exponent)
 
-            int tier = (int)Math.Floor(Math.Log10(value) / 3.0) - 1;
+            int tier = (int)System.Math.Floor(System.Math.Log10(value) / 3.0) - 1;
 
             string suffix;
             double divisor;
@@ -102,7 +102,7 @@ namespace EndlessEngine.Economy
             if (tier < FixedSuffixes.Length)
             {
                 suffix  = FixedSuffixes[tier];
-                divisor = Math.Pow(10, (tier + 1) * 3);
+                divisor = System.Math.Pow(10, (tier + 1) * 3);
             }
             else
             {
@@ -111,7 +111,7 @@ namespace EndlessEngine.Economy
                     return FormatScientific(value, decimalPlaces); // beyond zz
 
                 suffix  = DoubleSuffixes[doubleTier];
-                divisor = Math.Pow(10, (tier + 1) * 3);
+                divisor = System.Math.Pow(10, (tier + 1) * 3);
             }
 
             double scaled = value / divisor;
@@ -129,8 +129,8 @@ namespace EndlessEngine.Economy
             if (value < 1_000d)
                 return ((long)value).ToString();
 
-            int exp       = (int)Math.Floor(Math.Log10(value));
-            double mantissa = value / Math.Pow(10, exp);
+            int exp       = (int)System.Math.Floor(System.Math.Log10(value));
+            double mantissa = value / System.Math.Pow(10, exp);
             return FormatFixed(mantissa, decimalPlaces) + "e" + exp;
         }
 
@@ -148,10 +148,10 @@ namespace EndlessEngine.Economy
             if (value < 1_000d)
                 return ((long)value).ToString();
 
-            int tier = (int)Math.Floor(Math.Log10(value) / 3.0);
-            tier = Math.Min(tier, SiPrefixes.Length - 1);
+            int tier = (int)System.Math.Floor(System.Math.Log10(value) / 3.0);
+            tier = System.Math.Min(tier, SiPrefixes.Length - 1);
 
-            double scaled = value / Math.Pow(10, tier * 3);
+            double scaled = value / System.Math.Pow(10, tier * 3);
             return FormatFixed(scaled, decimalPlaces) + SiPrefixes[tier];
         }
 
@@ -164,7 +164,7 @@ namespace EndlessEngine.Economy
         private static string FormatFixed(double value, int places)
         {
             if (places == 0)
-                return ((long)Math.Round(value)).ToString();
+                return ((long)System.Math.Round(value)).ToString();
 
             string fmt = value.ToString("F" + places, CultureInfo.InvariantCulture);
 

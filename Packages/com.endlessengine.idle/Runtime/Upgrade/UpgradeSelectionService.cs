@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using EndlessEngine.Config;
 using EndlessEngine.Economy;
+using Debug = UnityEngine.Debug;
 
 namespace EndlessEngine.Upgrade
 {
@@ -169,7 +170,7 @@ namespace EndlessEngine.Upgrade
             var available = _upgradeTreeService.GetAvailableNodes();
             if (_economyService == null) return available;
 
-            long balance = _economyService.CurrentResources;
+            double balance = _economyService.CurrentResources;
             var eligible = new List<UpgradeNode>(available.Count);
             foreach (var node in available)
             {

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using EndlessEngine.Config;
+using EndlessEngine.Economy.Math;
 
 namespace EndlessEngine.SaveAndLoad
 {
@@ -52,6 +53,8 @@ namespace EndlessEngine.SaveAndLoad
                 PrePrestigeResources              = 0L,
                 PrePrestigeUpgradeNodeStates      = new Dictionary<string, int>(),
                 PrePrestigeWaveNumber             = 0,
+
+                NumberBackendName                 = BigNumberFactory.Backend.ToString(),
             };
         }
     }

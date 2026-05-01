@@ -1,4 +1,5 @@
 using UnityEngine;
+using EndlessEngine.Economy.Math;
 
 namespace EndlessEngine.Config
 {
@@ -26,6 +27,10 @@ namespace EndlessEngine.Config
         [Header("Caps")]
         [Tooltip("Maximum resources the player can hold.")]
         public long ResourceHardCap = 1_000_000_000L;
+
+        [Header("Number Backend")]
+        [Tooltip("Numeric backend for primary currency. DoubleNumber for most games (safe to ~1e15). BigDouble for deep-prestige games (v1.3+).")]
+        public NumberBackend NumberBackend = NumberBackend.DoubleNumber;
 
         [Header("Offline")]
         [Tooltip("Maximum hours of offline yield credited per session.")]

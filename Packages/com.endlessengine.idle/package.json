@@ -1,6 +1,6 @@
 {
   "name": "com.endlessengine.idle",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "displayName": "Endless Engine — Idle Game Toolkit",
   "description": "Modular idle game engine for Unity 6.3 LTS. Core systems: economy, generators, prestige, wave/combat, upgrade/skill/research trees, merge mechanics, minigames, buildings, pets, events, leaderboard, save/load, and a full editor toolset.",
   "unity": "6000.0",
@@ -11,6 +11,7 @@
   "dependencies": {
     "com.unity.inputsystem": "1.14.2",
     "com.unity.addressables": "2.7.6",
+    "com.unity.ugui": "2.0.0",
     "com.unity.nuget.newtonsoft-json": "3.2.2"
   },
   "keywords": [
@@ -43,6 +44,31 @@
       "displayName": "MinimalIdle",
       "description": "Minimal working idle game: 1 generator, 1 upgrade, gold economy, save/load.",
       "path": "Samples~/MinimalIdle"
+    },
+    {
+      "displayName": "ClickerIdle",
+      "description": "Active click loop: tap targets, earn gold, combo, crit, offline.",
+      "path": "Samples~/ClickerIdle"
+    },
+    {
+      "displayName": "HarvestLoop",
+      "description": "Active harvest loop: drag cursor over nodes, earn gold, combo, offline.",
+      "path": "Samples~/HarvestLoop"
+    },
+    {
+      "displayName": "WaveIdle",
+      "description": "Auto-battle + wave system + upgrade cards + prestige.",
+      "path": "Samples~/WaveIdle"
+    },
+    {
+      "displayName": "MergeIdle",
+      "description": "Merge board + economy + upgrade system.",
+      "path": "Samples~/MergeIdle"
+    },
+    {
+      "displayName": "PrestHeavy",
+      "description": "Full prestige + ascension + skill tree + research chain.",
+      "path": "Samples~/PrestHeavy"
     }
   ],
   "type": "tool"

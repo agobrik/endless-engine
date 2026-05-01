@@ -30,16 +30,31 @@ namespace EndlessEngine.Tests.Integration.ConfigLayer
         private static ResolvedConfigs CreateValidResolvedConfigs()
         {
             var enemy    = ScriptableObject.CreateInstance<EnemyStatConfigSO>();
+            // Enemy SO has valid defaults — no overrides needed.
+
             var wave     = ScriptableObject.CreateInstance<WaveConfigSO>();
+            wave.TotalWavesPerRun = 30; // default is -1, which fails ValidateWave (min 1)
+
             var economy  = ScriptableObject.CreateInstance<EconomyConfigSO>();
+            // Economy SO has valid defaults — no overrides needed.
+
             var upgrades = new UpgradeNodeConfigSO[]
             {
                 CreateUpgradeNode("node_damage_01"),
             };
+
             var prestige = ScriptableObject.CreateInstance<PrestigeConfigSO>();
+            // Prestige SO has valid defaults — no overrides needed.
+
             var realm    = ScriptableObject.CreateInstance<RealmIdentityConfigSO>();
+            // Realm SO has valid default ArenaBounds — no overrides needed.
+
             var player   = ScriptableObject.CreateInstance<PlayerBaseStatConfigSO>();
+            // Player SO has valid defaults — no overrides needed.
+
             var schema   = ScriptableObject.CreateInstance<SchemaVersionSO>();
+            schema.CurrentSchemaVersion     = 1;
+            schema.MinimumCompatibleVersion = 1;
 
             return new ResolvedConfigs(enemy, wave, economy, upgrades, prestige, realm, player, schema, "test-realm");
         }
@@ -163,7 +178,7 @@ namespace EndlessEngine.Tests.Integration.ConfigLayer
         // ── AC-CFG-01: ClearForTesting resets state ───────────────────────────────
 
         [Test]
-        [Description("AC-CFG-01: ClearForTesting() sets IsLoaded=false and all accessors return null.")]
+        [Description("AC-CFG-01: ClearForTesting() sets IsLoaded=false and all accessors throw ConfigNotLoadedException.")]
         public void ClearForTesting_ResetsAllState()
         {
             // Arrange
@@ -176,15 +191,17 @@ namespace EndlessEngine.Tests.Integration.ConfigLayer
             ConfigRegistry.ClearForTesting();
 
             // Assert
-            Assert.IsFalse(ConfigRegistry.IsLoaded,      "IsLoaded should be false after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Enemy,           "Enemy should be null after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Wave,            "Wave should be null after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Economy,         "Economy should be null after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Upgrades,        "Upgrades should be null after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Prestige,        "Prestige should be null after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Realm,           "Realm should be null after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Player,          "Player should be null after ClearForTesting");
-            Assert.IsNull(ConfigRegistry.Schema,          "Schema should be null after ClearForTesting");
+            Assert.IsFalse(ConfigRegistry.IsLoaded, "IsLoaded should be false after ClearForTesting");
+
+            // After ClearForTesting, accessing any property throws ConfigNotLoadedException
+            Assert.Throws<ConfigNotLoadedException>(() => { var _ = ConfigRegistry.Enemy; },
+                "Enemy must throw ConfigNotLoadedException after ClearForTesting");
+            Assert.Throws<ConfigNotLoadedException>(() => { var _ = ConfigRegistry.Wave; },
+                "Wave must throw ConfigNotLoadedException after ClearForTesting");
+            Assert.Throws<ConfigNotLoadedException>(() => { var _ = ConfigRegistry.Economy; },
+                "Economy must throw ConfigNotLoadedException after ClearForTesting");
+            Assert.Throws<ConfigNotLoadedException>(() => { var _ = ConfigRegistry.Player; },
+                "Player must throw ConfigNotLoadedException after ClearForTesting");
 #endif
         }
 

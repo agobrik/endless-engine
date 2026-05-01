@@ -10,5 +10,12 @@ namespace EndlessEngine.Economy
     {
         /// <summary>Returns the current Gold cost for the given upgrade node ID.</summary>
         long GetNodeCost(string nodeId);
+
+        /// <summary>
+        /// Returns the current Gold cost as double.
+        /// Default implementation wraps GetNodeCost for backwards compatibility.
+        /// Override in implementations that support large costs beyond long.MaxValue.
+        /// </summary>
+        double GetNodeCostDouble(string nodeId) => (double)GetNodeCost(nodeId);
     }
 }

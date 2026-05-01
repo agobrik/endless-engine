@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UIElements;
 using EndlessEngine.Economy;
 using EndlessEngine.Flow;
@@ -34,7 +34,7 @@ namespace EndlessEngine.UI
         // ── State ─────────────────────────────────────────────────────────────────
 
         private int  _wavesCleared;
-        private long _goldEarned;
+        private double _goldEarned;
 
         // ── Lifecycle ─────────────────────────────────────────────────────────────
 
@@ -96,7 +96,7 @@ namespace EndlessEngine.UI
             _wavesCleared = waveNumber;
         }
 
-        private void OnRunEnded(long goldEarned)
+        private void OnRunEnded(double goldEarned)
         {
             _goldEarned = goldEarned;
             PopulateStats();
@@ -104,7 +104,7 @@ namespace EndlessEngine.UI
 
         private void PopulateStats()
         {
-            long totalGold = EconomyService.CurrentResourcesStatic;
+            double totalGold = EconomyService.CurrentResourcesStatic;
 
             if (_goldEarnedLabel   != null) _goldEarnedLabel.text   = GoldFormatter.Format(_goldEarned);
             if (_wavesClearedLabel != null) _wavesClearedLabel.text = _wavesCleared.ToString();

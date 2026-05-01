@@ -192,6 +192,7 @@ namespace EndlessEngine.Config
             if (realmRegistry != null) _realmRegistry = realmRegistry;
             if (run           != null) _run           = run;
             _isLoaded = true;
+            OnConfigsLoaded?.Invoke();
         }
 
         /// <summary>

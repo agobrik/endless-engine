@@ -78,7 +78,7 @@ namespace EndlessEngine.Editor
 
             GUILayout.FlexibleSpace();
 
-            GUILayout.Label("Search:", EditorStyles.toolbarLabel, GUILayout.Width(50));
+            GUILayout.Label("Search:", EditorStyles.label, GUILayout.Width(50));
             string newSearch = EditorGUILayout.TextField(_searchText, EditorStyles.toolbarSearchField,
                 GUILayout.Width(200));
             if (newSearch != _searchText)
