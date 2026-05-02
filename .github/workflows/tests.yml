@@ -205,7 +205,7 @@ jobs:
           projectPath: .
           unityVersion: 6000.0.47f1
           testMode: PlayMode
-          testFilter: EndlessEngine.Tests.Performance
+          customParameters: -testFilter EndlessEngine.Tests.Performance
           artifactsPath: benchmark-results
           githubToken: ${{ secrets.GITHUB_TOKEN }}
 
