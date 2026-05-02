@@ -3,7 +3,7 @@
 **Paket:** `com.endlessengine.idle` v1.1.0  
 **Motor:** Unity 6.3 LTS  
 **Hedef Kitle:** Unity ile idle / incremental oyun geliştiren C# geliştiricileri  
-**Son Güncelleme:** 2026-04-28
+**Son Güncelleme:** 2026-05-02
 
 Bu kılavuz Endless Engine'i sıfırdan kurarak tam çalışan bir idle oyunu yapmanız için gereken her şeyi kapsar. İlk okumada baştan sona geçin; sonra ihtiyaç duydukça ilgili bölüme dönün.
 
@@ -67,21 +67,29 @@ Bu kılavuz Endless Engine'i sıfırdan kurarak tam çalışan bir idle oyunu ya
 39. [RealmSystem — Realm Değiştirme](#39-realmsystem)
 40. [AudioService — Ses Sistemi](#40-audioservice)
 41. [BigDouble — Büyük Sayı Backend'i](#41-bigdouble)
+42. [TimeBoostService — Zaman Hızlandırma](#42-timeboostservice)
+43. [ZoneSystem — Bölge Sistemi](#43-zonesystem)
+44. [CursorYieldService — Cursor Geliri](#44-cursoryieldservice)
+45. [InventoryService — Envanter](#45-inventoryservice)
+46. [DropResolver — Drop Sistemi](#46-dropresolver)
+47. [PlayerHealthComponent — Oyuncu Sağlığı](#47-playerhealthcomponent)
+48. [GameFlowState ve RunSummaryData](#48-gameflowstate-ve-runsummarydata)
+49. [IIdleModule — Modül Arayüzü](#49-iidlemodule)
 
 **Bölüm I — Araçlar ve Testler**
-42. [Editor Araçları](#42-editor-araçları)
-43. [Test Stratejisi](#43-test-stratejisi)
+50. [Editor Araçları](#50-editor-araçları)
+51. [Test Stratejisi](#51-test-stratejisi)
 
 **Bölüm J — Oyun Yapım Tarifleri**
-44. [Tarif 1: Klasik Idle (Cookie Clicker)](#44-tarif-1-klasik-idle)
-45. [Tarif 2: Aktif Clicker (Tap/Click Hedef)](#45-tarif-2-aktif-clicker)
-46. [Tarif 3: Hasat Loop (Cursor Drag)](#46-tarif-3-hasat-loop)
-47. [Tarif 4: Idle-vs (AutoBattle + Prestige)](#47-tarif-4-idle-vs)
-48. [Tarif 5: Merge Idle](#48-tarif-5-merge-idle)
-49. [Tarif 6: Prestige-Heavy RPG Idle](#49-tarif-6-prestige-heavy-rpg-idle)
+52. [Tarif 1: Klasik Idle (Cookie Clicker)](#52-tarif-1-klasik-idle)
+53. [Tarif 2: Aktif Clicker (Tap/Click Hedef)](#53-tarif-2-aktif-clicker)
+54. [Tarif 3: Hasat Loop (Cursor Drag)](#54-tarif-3-hasat-loop)
+55. [Tarif 4: Idle-vs (AutoBattle + Prestige)](#55-tarif-4-idle-vs)
+56. [Tarif 5: Merge Idle](#56-tarif-5-merge-idle)
+57. [Tarif 6: Prestige-Heavy RPG Idle](#57-tarif-6-prestige-heavy-rpg-idle)
 
 **Bölüm K — Sorun Giderme**
-50. [Sık Karşılaşılan Hatalar ve Çözümleri](#50-sorun-giderme)
+58. [Sık Karşılaşılan Hatalar ve Çözümleri](#58-sorun-giderme)
 
 ---
 
@@ -684,28 +692,58 @@ Her tick: `CalculateTotalYield() × dt` → `EconomyService.AddResources()`.
 
 ## 10. OfflineTimeCalculator
 
-**Ne yapar:** Oyun kapalıyken geçen süreyi hesaplar ve karşılık gelen pasif geliri oyun açılınca ekler. Adı `OfflineTimeCalculator`'dır; `OfflineProgressService` diye bir sınıf yoktur.
+**Ne yapar:** Oyun kapalıyken geçen süreyi hesaplar ve karşılık gelen pasif geliri oyun açılınca `EconomyService`'e ekler. Adı `OfflineTimeCalculator`'dır — eski adı `OfflineProgressService`'ti; o sınıf artık yoktur, kodda veya dokümanda kullanmayın.
 
-> **Dikkat:** Bu sınıfın `Initialize()` metodu yoktur. `SaveService.OnSaveLoaded` event'i tetiklendiğinde otomatik olarak çalışır — yalnızca sahnede bir `OfflineTimeCalculator` component'i olması yeterlidir.
+### Neden Initialize() Yok?
+
+Eski versiyonda (v1.0.x) `Initialize(economy, generators, saveService)` çağrısı gerekiyordu. v1.1.0'da bu bağımlılıklar `SaveService.OnSaveLoaded` event'i üzerinden otomatik çözülür:
+
+1. `OfflineTimeCalculator` `Awake()`'te `SaveService.OnSaveLoaded`'a abone olur.
+2. `SaveService.LoadAsync()` tamamlanınca `OnSaveLoaded(saveData, isNewGame)` tetiklenir.
+3. `OfflineTimeCalculator` bu event'i alır, `saveData.LastSaveTimestamp` ile şimdiki zamanı karşılaştırır.
+4. Geçen süreyi `EconomyConfigSO.OfflineCapHours` ile sınırlar, `OfflineYieldMultiplier` ile çarpar.
+5. Hesaplanan altını `EconomyService.AddResources()` ile ekler ve `OnOfflineGainCalculated`'i ateşler.
+
+**Sonuç:** Bootstrap'te `Initialize()` çağırmak hem gereksizdir hem de derleme hatası verir — metod imzası yoktur.
 
 ### EconomyConfigSO İlgili Alanlar
 
 | Alan | Açıklama | Varsayılan |
 |------|----------|-----------|
 | `OfflineCapHours` | Maksimum offline kazanç süresi | `8` |
-| `OfflineYieldMultiplier` | Offline gelir verimliliği | `0.5` |
+| `OfflineYieldMultiplier` | Offline gelir verimliliği (1.0 = tam, 0.5 = yarı) | `0.5` |
 
-### Kurulum (Bootstrap'te Initialize() çağrısı GEREKMİYOR)
+### Kurulum
 
 ```csharp
-// Bootstrap'te yapmanız gereken TEK şey bu bileşeni sahnede bulundurmak:
-// Hierarchy → Services → OfflineTimeCalculator (component olarak ekleyin)
-// Başka kod gerekmez — SaveService.OnSaveLoaded'a otomatik abone olur.
+// Bootstrap'te yapmanız gereken SADECE budur:
+// Hierarchy → Services → OfflineTimeCalculator (MonoBehaviour olarak ekleyin)
+//
+// YANLIŞ (derleme hatası):
+// _offlineCalc.Initialize(_economyService, _generatorSystem, _saveService); // ← YOK
+//
+// DOĞRU:
+// Hiçbir şey çağırmayın. SaveService.OnSaveLoaded → OfflineTimeCalculator zinciri
+// Awake() içinde otomatik kurulur.
 ```
+
+> **Dikkat:** `OfflineTimeCalculator` sahnede bulunmalı ve `SaveService` ile aynı sahnede olmalıdır. Farklı sahnelerdeyse `Awake()` sırası garanti edilmez; bu durumda `[DefaultExecutionOrder]` kullanın.
+
+### Hesaplama Formülü
+
+```
+offlineSüresi   = min(şimdi − lastSaveTimestamp, OfflineCapHours × 3600)
+offlineKazanç  = GeneratorSystem.CalculateTotalYield()
+                 × offlineSüresi
+                 × OfflineYieldMultiplier
+```
+
+`isNewGame == true` ise hesaplama atlanır — yeni oyunda geçmiş kayıt yoktur.
 
 ### UI'da Gösterme
 
 ```csharp
+// Herhangi bir MonoBehaviour'da abone ol
 OfflineTimeCalculator.OnOfflineGainCalculated += (gold, seconds) =>
 {
     if (gold > 0)
@@ -719,8 +757,12 @@ OfflineTimeCalculator.OnOfflineGainCalculated += (gold, seconds) =>
 ### Testlerde Kullanım
 
 ```csharp
-// Sahte save data ile offline hesabı tetikle
-_offlineCalc.InvokeForTesting(fakeSaveData, isNewGame: false);
+// Sahte SaveData ile hesabı manuel tetikle (EditMode testi)
+var fakeSave = new SaveData();
+fakeSave.LastSaveTimestamp = DateTime.UtcNow.AddHours(-3); // 3 saat önce kaydedilmiş
+_offlineCalc.InvokeForTesting(fakeSave, isNewGame: false);
+
+// Single-fire guard'ı sıfırla (birden fazla test senaryosu için)
 _offlineCalc.ResetForTesting();
 ```
 
@@ -1232,15 +1274,41 @@ Tools → Endless Engine → Upgrade Tree Editor
 
 ## 15. UpgradeApplicationSystem
 
-**Ne yapar:** Tüm stat hesaplarının merkezi. Formüle göre efektif değer döndürür.
+**Ne yapar:** Tüm stat hesaplarının merkezi. Run-scope (geçici) ve kalıcı efektleri katmanlayarak her `StatType` için efektif değer hesaplar ve cache'ler. Herhangi bir sisteme bağımlı olmaksızın static olarak çalışır.
 
-> **Önemli:** Bu bir `static class`'tır — instance oluşturulmaz, `new` veya MonoBehaviour gerekmez. Doğrudan sınıf adıyla erişilir.
+> **Önemli:** Bu bir `static class`'tır — instance oluşturulmaz, `new` veya MonoBehaviour gerekmez, sahnede GameObject gerekmez. Sadece namespace'i ekleyin ve doğrudan sınıf adıyla kullanın.
 
 ### Stat Formülü
 
 ```
-efektif = (base + ΣFlat) × (1 + ΣPercent) × prestige_mult × ascension_cascade
+efektif = (base + Σ AdditiveFlat efektler)
+          × (1 + Σ AdditivePercent efektler)
+          × prestige_permanent_multiplier
+          × ascension_cascade_multiplier
 ```
+
+**Örnek:** `Damage` stat'ı, base=10, 2 tane %20 PercentBonus upgrade, prestige 1.5×:
+```
+efektif = 10 × (1 + 0.20 + 0.20) × 1.5 = 10 × 1.40 × 1.5 = 21.0
+```
+
+### Cache ve Dirty Flag Sistemi
+
+`GetEffectiveStat()` her çağrıda yeniden hesaplamaz — cache kullanır:
+- `ApplyUpgradeEffect()` çağrıldığında ilgili stat "dirty" işaretlenir.
+- Bir sonraki `GetEffectiveStat()` çağrısında dirty stat yeniden hesaplanır ve cache güncellenir.
+- Tekrar çağrıda (cache-hit) sıfır allocation, sıfır hesaplama yükü.
+
+Bu yüzden `Update()` içinde her frame `GetEffectiveStat()` çağrısı güvenlidir.
+
+### Run-Scope vs Kalıcı Efektler
+
+| Tür | Ne Zaman Silinir | Nasıl Eklenir |
+|-----|-----------------|---------------|
+| Run-scope | `ClearRunEffects()` ile (prestige/run sonu) | `ApplyUpgradeEffect(..., isPermanent: false)` |
+| Kalıcı | Asla — sadece `SetPermanentMultiplier` günceller | `ApplyUpgradeEffect(..., isPermanent: true)` |
+
+UpgradeTreeService bir node satın alındığında `isPermanent: false` efekt uygular — run bitince `ClearRunEffects()` bunları temizler. Prestige kalıcı çarpanı `SetPermanentMultiplier` ile ayrıca set edilir.
 
 ### API
 
@@ -1248,51 +1316,110 @@ efektif = (base + ΣFlat) × (1 + ΣPercent) × prestige_mult × ascension_casca
 // Namespace: EndlessEngine.Core
 using EndlessEngine.Core;
 
-float damage  = UpgradeApplicationSystem.GetEffectiveStat(StatType.Damage);
-float radius  = UpgradeApplicationSystem.GetEffectiveStat(StatType.HarvestRadius);
-float crit    = UpgradeApplicationSystem.GetEffectiveStat(StatType.ClickCritChance);
+// Efektif değeri oku (cache-hit = sıfır allocation)
+float damage   = UpgradeApplicationSystem.GetEffectiveStat(StatType.Damage);
+float radius   = UpgradeApplicationSystem.GetEffectiveStat(StatType.HarvestRadius);
+float crit     = UpgradeApplicationSystem.GetEffectiveStat(StatType.ClickCritChance);
+float autoRate = UpgradeApplicationSystem.GetEffectiveStat(StatType.ClickAutoRate);
 
-// Stat değişince tetiklenen event
+// Stat değişince tetiklenen event (UI preview için)
 UpgradeApplicationSystem.OnEffectiveStatChanged += (stat, value) =>
-    Debug.Log($"{stat} = {value}");
+{
+    if (stat == StatType.Damage)
+        damagePreviewText.text = $"Hasar: {value:F1}";
+};
 
-// Etkileri elle uygula (çoğunlukla otomatik — doğrudan çağırmak gerekmez)
-UpgradeApplicationSystem.ApplyUpgradeEffect(StatType.Damage, 0.1f, EffectType.PercentBonus);
+// Efekt uygula (genellikle UpgradeTreeService otomatik çağırır — elle çağırmak nadiren gerekir)
+UpgradeApplicationSystem.ApplyUpgradeEffect(
+    stat:       StatType.Damage,
+    magnitude:  0.2f,
+    effectType: EffectType.AdditivePercent,
+    isPermanent: false  // run-scope
+);
 
-// Run sonunda geçici efektleri temizle
+// Run/Prestige sonrası geçici efektleri temizle (kalıcılar korunur)
 UpgradeApplicationSystem.ClearRunEffects();
+// → Prestige akışında OnPrestigeStarted event'ine abone olun:
+PrestigeStateManager.OnPrestigeStarted += () =>
+    UpgradeApplicationSystem.ClearRunEffects();
 
-// Prestige sonrası kalıcı çarpanı güncelle
-UpgradeApplicationSystem.SetPermanentMultiplier(multiplier);
+// Prestige kalıcı çarpanını güncelle (PrestigeStateManager bunu otomatik çağırır)
+UpgradeApplicationSystem.SetPermanentMultiplier(1.5f);
 
-// Satın alınmadan önce etkiyi simüle et (preview UI için)
+// Satın almadan önce etkiyi simüle et (upgrade preview UI için)
+float current   = UpgradeApplicationSystem.GetEffectiveStat(StatType.Damage);
 float simulated = UpgradeApplicationSystem.SimulateEffect("dmg-1", additionalRanks: 1);
+previewText.text = $"{current:F1} → {simulated:F1}";
 ```
 
-Tüm sistemler (HarvestLoopService, ClickLoopService, AutoBattleController vb.) bu API'yi kullanarak güncel stat değerlerini okur — hiçbir sistem stat'ı kendisi hesaplamaz.
+### Hangi Sistemler Bunu Kullanır?
+
+Tüm stat-bağımlı sistemler doğrudan bu API üzerinden değer okur — kendi içlerinde stat hesaplamazlar:
+
+| Sistem | Hangi Stat'ları Okur |
+|--------|---------------------|
+| `AutoBattleController` | Damage, AttackInterval, CritChance, CritMultiplier |
+| `ClickLoopService` | ClickDamage, ClickCritChance, ClickAutoRate, ClickYieldMultiplier |
+| `HarvestLoopService` | HarvestRadius, HarvestTickRate, HarvestYieldMultiplier |
+| `PassiveIncomeService` | GeneratorSpeed, IdleYieldRate |
+| `OfflineTimeCalculator` | OfflineYieldRate |
+| `BaseStatUpgradeProvider` | Damage, AttackInterval, CritChance, CritMultiplier, MoveSpeed |
+
+### Testlerde Sıfırlama
+
+```csharp
+[TearDown]
+public void TearDown()
+{
+    UpgradeApplicationSystem.ResetForTesting(); // efektler, cache, dirty flag, multiplier
+}
+```
 
 ---
 
 ## 16. SkillTreeService
 
-**Ne yapar:** Prestige ile kazanılan beceri puanları karşılığı açılan kalıcı beceri ağacı.
+**Ne yapar:** Prestige ile kazanılan beceri puanları karşılığı açılan kalıcı beceri ağacı. UpgradeTree'nin aksine Skill Tree prestige'den sonra **sıfırlanmaz** — kazanımlar kalıcıdır. Her node belirli bir `StatType`'ı etkiler; `GetAllActiveEffects()` çıktısı `UpgradeApplicationSystem`'a beslenir.
 
-### Config: SkillTreeConfigSO
+### v1.0.x'ten Fark: Başlatma
+
+Eski versiyonda config `ConfigRegistry.SkillTreeConfigs`'ten alınıyordu:
+```csharp
+// ESKİ (v1.0.x):
+_skillTree.Initialize(configs: ConfigRegistry.SkillTreeConfigs, startingPoints: 0);
+```
+
+v1.1.0'da config'ler doğrudan array olarak geçirilir — Registry üzerinden değil. Bu kasıtlı bir değişiklik: skill tree config'leri realm değişikliğinde değişmez, oyuncuya özgü kalır, bu yüzden ConfigRegistry'de tutulmaz.
+
+### Config: SkillTreeConfigSO ve SkillNodeConfigSO
 
 ```
-Create → Endless Engine → Skill Tree Config
+Create → Endless Engine → Skill Tree Config      (ağaç kapsayıcı)
+Create → Endless Engine → Skill Node Config      (her beceri düğümü)
 ```
 
-Her node: `NodeId`, `DisplayName`, `SkillPointCost`, `AffectedStat`, `EffectPerRank`, `PrerequisiteNodeIDs`.
+`SkillTreeConfigSO`, `SkillNodeConfigSO` referanslarını listeler. Her node:
+
+| Alan | Açıklama | Örnek |
+|------|----------|-------|
+| `NodeId` | Benzersiz ID | `"skill-crit-1"` |
+| `DisplayName` | Gösterim adı | `"Kritik Uzmanı I"` |
+| `SkillPointCost` | Açmak için gereken puan | `1` |
+| `AffectedStat` | Etkilenen stat (StatType) | `CritChance` |
+| `EffectPerRank` | Her ranktaki etki | `0.05` |
+| `IsRefundable` | Geri alınabilir mi? | `true` |
+| `PrerequisiteNodeIDs` | Önce açılması gereken node'lar | `["skill-basic"]` |
 
 ### Başlatma
 
 ```csharp
+// Config'ler doğrudan array olarak geçirilir — ConfigRegistry üzerinden değil
 _skillTree.Initialize(
-    trees:          new SkillTreeConfigSO[] { _mySkillTreeConfig },
-    startingPoints: 0
+    trees:          new SkillTreeConfigSO[] { _combatSkillTree, _economySkillTree },
+    startingPoints: 0   // sıfırdan başla; prestige ödülüyle AddPoints() çağrılır
 );
 _saveService.RegisterStateProvider(_skillTree);
+// SaveProviderOrder.SkillTree = 45
 ```
 
 ### API
@@ -1313,7 +1440,7 @@ bool refunded = _skillTree.TryRefund("combat-tree", "skill-crit-1");
 // Açık mı kontrol et
 bool isOpen = _skillTree.IsUnlocked("combat-tree", "skill-crit-1");
 
-// Tüm aktif efektleri al (modifier hesabı için)
+// Tüm aktif efektleri al — UpgradeApplicationSystem'a beslemek için
 IReadOnlyList<SkillEffect> effects = _skillTree.GetAllActiveEffects();
 
 // Olaylar
@@ -1322,6 +1449,52 @@ SkillTreeService.OnNodeRefunded      += (treeId, nodeId) => RefreshSkillUI();
 SkillTreeService.OnSkillPointsChanged += (points)        => UpdatePointsText(points);
 SkillTreeService.OnUnlockFailed      += (treeId, nodeId, reason) =>
     ShowError($"Açılamadı: {reason}");
+// reason: AlreadyUnlocked | InsufficientPoints | PrerequisiteNotMet | NodeNotFound
+```
+
+### GetAllActiveEffects() → UpgradeApplicationSystem Entegrasyonu
+
+Skill tree node'larının efektleri otomatik olarak stat sistemine uygulanmaz — siz uygularsınız. Tipik kalıp: bir node açıldığında veya yükleme sonrasında tüm aktif efektleri sisteme besleyin:
+
+```csharp
+void ApplyAllSkillEffects()
+{
+    // Önce eski skill efektlerini temizle (isPermanent: true olanlar hariç)
+    // Not: ClearRunEffects kalıcı efektleri silmez — sadece run-scope efektleri siler
+    // Skill efektleri kalıcı olduğu için ayrı bir iz tutmanız gerekebilir.
+    // En güvenli yaklaşım: tüm kalıcı efektleri prestige sonrası yeniden uygulamak:
+
+    foreach (var effect in _skillTree.GetAllActiveEffects())
+    {
+        UpgradeApplicationSystem.ApplyUpgradeEffect(
+            stat:        effect.AffectedStat,
+            magnitude:   effect.Magnitude,
+            effectType:  effect.EffectType,
+            isPermanent: true  // skill efektleri prestige'den sonra da kalır
+        );
+    }
+}
+
+// Çağırılacak yerler:
+// 1. Yükleme sonrası: SaveService.OnSaveLoaded += (_, __) => ApplyAllSkillEffects();
+// 2. Node açıldıktan sonra: SkillTreeService.OnNodeUnlocked += (_, __) => ApplyAllSkillEffects();
+// 3. Node iade sonrası: SkillTreeService.OnNodeRefunded += (_, __) => ApplyAllSkillEffects();
+```
+
+### Hata Kodları
+
+```csharp
+// TryUnlock başarısız olursa OnUnlockFailed tetiklenir:
+// SkillUnlockFailReason.AlreadyUnlocked    — zaten açık
+// SkillUnlockFailReason.InsufficientPoints — yeterli puan yok
+// SkillUnlockFailReason.PrerequisiteNotMet — önkoşul node henüz açılmamış
+// SkillUnlockFailReason.NodeNotFound       — treeId/nodeId yanlış
+
+// TryRefund başarısız olursa (event yok, sadece false döner):
+// SkillRefundFailReason.NotUnlocked     — zaten kapalı
+// SkillRefundFailReason.NotRefundable   — IsRefundable = false
+// SkillRefundFailReason.NodeNotFound    — yanlış ID
+// SkillRefundFailReason.HasDependents   — bu node'a bağımlı başka açık node var
 ```
 
 ### Görsel Düzenleme
@@ -1387,9 +1560,28 @@ ResearchService.OnResearchProgress += (treeId, nodeId, done, total) =>
 
 ## 18. PrestigeStateManager
 
-**Ne yapar:** "Yumuşak sıfırlama" sistemi. Altın, dalga ilerlemesi ve yükseltmeleri sıfırlar; karşılığında kalıcı gelir çarpanı kazanılır.
+**Ne yapar:** "Yumuşak sıfırlama" sistemi. Altın, dalga ilerlemesi ve run-scope yükseltme efektlerini sıfırlar; karşılığında kalıcı gelir çarpanı (`UpgradeApplicationSystem.SetPermanentMultiplier`) kazanılır. `IPrestigeQuery` arayüzünü uygular — diğer sistemler prestige sayısını bu arayüzden okur.
 
-> **Önemli:** `PrestigeStateManager.Initialize()` metodu **YOKTUR**. Bu sınıf `ConfigRegistry.Prestige`'i otomatik olarak kendi `OnEnable` içinde okur. Bootstrap'te sadece `RegisterStateProvider` çağırmanız yeterlidir.
+### Neden Initialize() Yok? (v1.0.x'ten Fark)
+
+Eski versiyonda çağrı şuydu:
+```csharp
+// ESKİ (v1.0.x) — ARTIK GEÇERSİZ, derlenmez:
+_prestigeManager.Initialize(
+    economyService: _economyService,
+    waveManager:    _waveManager,
+    upgradeTree:    _upgradeTree,
+    saveService:    _saveService
+);
+```
+
+v1.1.0'da bu bağımlılıkların tamamı kaldırıldı çünkü:
+- `EconomyService` prestige akışında `OnPrestigeStarted` event'ini dinleyerek kendi altınını sıfırlar — doğrudan referans gerekmez.
+- `WaveSpawnManager` prestige sonrası `ResetForNewRun()`'ı aynı event'le çalıştırır.
+- `UpgradeTreeService` prestige event'ine abone olup run-scope efektleri temizler.
+- `PrestigeStateManager` config'i `ConfigRegistry.Prestige`'den `OnEnable()`'da okur; ayrıca enjeksiyona gerek kalmaz.
+
+**Sonuç:** Bootstrap'te tek yapmanız gereken `ConfigRegistry`'ye `PrestigeConfigSO` eklemek ve `RegisterStateProvider` çağırmaktır.
 
 ### Config: PrestigeConfigSO
 
@@ -1397,118 +1589,260 @@ ResearchService.OnResearchProgress += (treeId, nodeId, done, total) =>
 Create → Endless Engine → Prestige Config
 ```
 
-`PrestigeConfigSO`'yu `ConfigRegistry.InjectForTesting(prestige: _config)` ile veya Addressables üzerinden `ConfigRegistry`'ye kaydedin; `PrestigeStateManager` onu oradan otomatik alır.
-
 | Alan | Açıklama | Örnek |
 |------|----------|-------|
-| `MinWaveToPrestige` | Prestige için gereken min dalga | `10` |
-| `BaseMultiplierPerPrestige` | Prestige başına kalıcı çarpan artışı | `0.1` |
-| `MultiplierFormula` | `Linear` / `Exponential` / `Logarithmic` | `Linear` |
-| `MaxPermanentMultiplier` | Maksimum kalıcı çarpan (0 = sınırsız) | `0` |
+| `MinWaveToPrestige` | Prestige için gereken minimum dalga numarası | `10` |
+| `BaseMultiplierPerPrestige` | Her prestige'de kazanılan kalıcı çarpan artışı | `0.1` |
+| `MultiplierFormula` | Artış formülü: `Linear` / `Exponential` / `Logarithmic` | `Linear` |
+| `MaxPermanentMultiplier` | Maksimum kalıcı çarpan üst sınırı (0 = sınırsız) | `0` |
+
+**Formül örnekleri** (`BaseMultiplierPerPrestige = 0.1` ile 5. prestige'de):
+- `Linear`: `1.0 + 5 × 0.1 = 1.5×`
+- `Exponential`: `1.0 × (1 + 0.1)^5 ≈ 1.61×`
+- `Logarithmic`: `1.0 + 0.1 × ln(5+1) ≈ 1.18×`
 
 ### Kurulum (Initialize() ÇAĞRILMAZ)
 
 ```csharp
-// ConfigRegistry'ye prestige config'i ekleyin (diğer config'lerle birlikte):
+// ADIM 1: ConfigRegistry'ye prestige config ekleyin.
+// Addressables akışında bu otomatiktir (ConfigLoadingService yapar).
+// Test veya doğrudan sahne bootstrap'inde:
 ConfigRegistry.InjectForTesting(
     economy:  _economyConfig,
     wave:     _waveConfig,
-    prestige: _prestigeConfig,   // ← PrestigeStateManager bunu otomatik okur
+    prestige: _prestigeConfig,   // ← PrestigeStateManager OnEnable'da bunu okur
     schema:   _schemaVersion
 );
 
-// SaveService'e kaydedin (bu yeterli):
+// ADIM 2: SaveService'e kaydedin.
 _saveService.RegisterStateProvider(_prestigeManager);
 
-// WaveSpawnManager ile iletişim için wave numarasını bildirin:
+// ADIM 3: WaveSpawnManager → PrestigeStateManager köprüsü.
+// PrestigeStateManager CanPrestige kontrolü için mevcut dalga numarasına ihtiyaç duyar.
+// WaveSpawnManager her yeni dalgada OnWaveStarted event'i ateşler;
+// siz bu event'te prestige manager'a dalga numarasını bildirmelisiniz:
 WaveSpawnManager.OnWaveStarted += (wave) => _prestigeManager.SetCurrentWave(wave);
+
+// YANLIŞ (DERLEME HATASI):
+// _prestigeManager.Initialize(...); // ← bu metod yoktur
 ```
 
-### Prestige Akışı
+### Prestige Akışı (Adım Adım)
 
 ```
-TryPrestige() çağrılır
-  → CanPrestige() kontrolü (min dalga, prestige gate)
-  → Save-1 (çift güvenlik için)
-  → OnPrestigeStarted event'i → tüm sistemler sıfırlanır
-  → PrestigeCount artar, kalıcı çarpan hesaplanır
-  → UpgradeApplicationSystem.SetPermanentMultiplier() çağrılır
-  → OnPrestigeComplete(count, multiplier) event'i
-  → Save-2
+1. UI'dan TryPrestige() çağrılır
+2. CanPrestige kontrolü:
+     → SetCurrentWave() ile bildirilen dalga >= MinWaveToPrestige mi?
+     → Devam eden bir prestige animasyonu var mı? (re-entrant guard)
+3. Kontrol geçerse:
+     → SaveService.SaveAsync() — prestige öncesi güvenlik kaydı
+     → OnPrestigeStarted event'i ateşlenir
+          ↳ EconomyService: CurrentResources = StartingGold
+          ↳ WaveSpawnManager: ResetForNewRun()
+          ↳ UpgradeApplicationSystem: ClearRunEffects()
+          ↳ (siz de burada UI animasyonunuzu tetikleyin)
+4. PrestigeCount++
+5. Yeni kalıcı çarpan hesaplanır (MultiplierFormula ile)
+6. UpgradeApplicationSystem.SetPermanentMultiplier(newMult) çağrılır
+7. OnPrestigeComplete(newCount, newMultiplier) event'i ateşlenir
+8. SaveService.SaveAsync() — prestige sonrası kayıt
+```
+
+### IPrestigeQuery Arayüzü
+
+`PrestigeStateManager`, `IPrestigeQuery` arayüzünü uygular. Diğer sistemler doğrudan `PrestigeStateManager`'a bağımlı olmak yerine bu arayüzü kullanır:
+
+```csharp
+// Namespace: EndlessEngine.Prestige
+public interface IPrestigeQuery
+{
+    int   PrestigeCount        { get; }
+    bool  CanPrestige          { get; }
+    float GetPermanentMultiplier();
+}
+
+// Kullanım (bağımlılık enjeksiyonunda):
+IPrestigeQuery query = _prestigeManager; // upcast
+int count = query.PrestigeCount;
 ```
 
 ### API
 
 ```csharp
-bool ok      = _prestigeManager.TryPrestige();
-int  count   = _prestigeManager.PrestigeCount;
-bool canDo   = _prestigeManager.CanPrestige;
-float mult   = _prestigeManager.GetPermanentMultiplier();
+// Prestige tetikle (koşullar sağlanmıyorsa sessizce false döner)
+bool ok = _prestigeManager.TryPrestige();
 
-PrestigeStateManager.OnPrestigeStarted  += () => ShowAnimation();
-PrestigeStateManager.OnPrestigeComplete += (count, mult) => ShowReward(mult);
-PrestigeStateManager.OnRealmUnlocked    += (slug) => UnlockRealmUI(slug);
+// Durum sorguları
+int   count = _prestigeManager.PrestigeCount;
+bool  canDo = _prestigeManager.CanPrestige;   // MinWaveToPrestige sağlandı mı?
+float mult  = _prestigeManager.GetPermanentMultiplier();
+
+// Olaylar
+PrestigeStateManager.OnPrestigeStarted  += () =>
+{
+    ShowPrestigeAnimation();
+    // Burada prestige sırasında sıfırlanmasını istediğiniz özel sistemleri temizleyin
+};
+
+PrestigeStateManager.OnPrestigeComplete += (count, mult) =>
+{
+    ShowRewardScreen(count, mult);
+    _skillTree.AddPoints(1); // her prestige'de 1 skill puanı ver
+};
+
+PrestigeStateManager.OnRealmUnlocked += (slug) =>
+    UnlockRealmUI(slug); // belirli prestige sayısında yeni realm açılır
+```
+
+### Sık Yapılan Hatalar
+
+```csharp
+// HATA 1: SetCurrentWave çağrılmıyor → CanPrestige daima false
+// Çözüm: WaveSpawnManager.OnWaveStarted'a abone olun (kurulum adım 3)
+
+// HATA 2: ClearRunEffects çağrılmıyor → prestige sonrası eski efektler birikir
+// Çözüm: OnPrestigeStarted'da çağırın:
+PrestigeStateManager.OnPrestigeStarted += () =>
+    UpgradeApplicationSystem.ClearRunEffects();
+
+// HATA 3: RegisterStateProvider eksik → PrestigeCount kayıt/yüklemede sıfırlanır
+// Çözüm: _saveService.RegisterStateProvider(_prestigeManager);
 ```
 
 ---
 
 ## 19. AscensionStateManager
 
-**Ne yapar:** "Derin sıfırlama" — prestige'in de sıfırlandığı meta katman. Birden fazla Ascension Layer destekler.
+**Ne yapar:** "Derin sıfırlama" — prestige sayacının da sıfırlandığı meta katman. Birden fazla Ascension Layer destekler. Her layer kendi `RequiredPrestigeCount` koşuluna ve `PermanentMultiplierPerAscension` değerine sahiptir. Tüm katmanların çarpanı `CascadeMultiplier` olarak birleşir ve tüm sistemi etkiler.
 
-### Config: AscensionLayerConfigSO
+### Prestige ile Ascension Farkı
+
+| | Prestige | Ascension |
+|--|----------|-----------|
+| Ne sıfırlar | Altın, dalga, run efektleri | Bunlara ek olarak PrestigeCount |
+| Ne kazandırır | Kalıcı gelir çarpanı | Cascade çarpanı (çok daha büyük) |
+| Koşul | MinWaveToPrestige | RequiredPrestigeCount |
+| Ne zaman | Her run sonunda mümkün | Nadir, milestone olayı |
+
+### Config: AscensionDatabaseSO + AscensionLayerConfigSO
 
 ```
-Create → Endless Engine → Ascension Layer Config
+Create → Endless Engine → Ascension Database      (tek bir veritabanı)
+Create → Endless Engine → Ascension Layer Config   (her katman için)
 ```
 
-| Alan | Açıklama | Örnek |
+`AscensionDatabaseSO`, tüm `AscensionLayerConfigSO` referanslarını tutan kapsayıcıdır. Her layer ayrı bir SO'dur; veritabanına Inspector'dan eklenir.
+
+| Alan (`AscensionLayerConfigSO`) | Açıklama | Örnek |
 |------|----------|-------|
-| `LayerIndex` | Katman numarası (1'den başlar) | `1` |
-| `RequiredPrestigeCount` | Bu katman için gereken prestige sayısı | `10` |
-| `PermanentMultiplierPerAscension` | Her ascension'da kazanılan çarpan | `2.0` |
+| `LayerIndex` | Katman numarası (0'dan başlar) | `0` |
+| `RequiredPrestigeCount` | Bu katmana girebilmek için gereken prestige sayısı | `10` |
+| `PermanentMultiplierPerAscension` | Her ascension'da tüm gelire uygulanan çarpan | `2.0` |
 
 ### Başlatma
 
 ```csharp
+// AscensionStateManager'ın Initialize() metodu VARDIR — tüm bağımlılıkları alır:
 _ascensionManager.Initialize(
-    database:        _ascensionDatabase,       // AscensionDatabaseSO
-    prestigeManager: _prestigeManager,
-    saveService:     _saveService,
-    economyService:  _economyService,
-    generatorSystem: _generatorSystem          // opsiyonel
+    database:        _ascensionDatabase,   // AscensionDatabaseSO — tüm layer config'leri
+    prestigeManager: _prestigeManager,     // IPrestigeQuery — PrestigeCount okumak için
+    saveService:     _saveService,         // ISaveNotifier — ascension sonrası kayıt
+    economyService:  _economyService,      // Altın sıfırlama için
+    generatorSystem: _generatorSystem      // opsiyonel — generator sıfırlama için
 );
 _saveService.RegisterStateProvider(_ascensionManager);
+
+// SaveProviderOrder.Ascension = 25 (Prestige = 30'dan ÖNCE çalışır — doğru sıra)
+```
+
+### Cascade Çarpanı Nasıl Hesaplanır?
+
+Birden fazla layer varsa cascade, her layer'ın kendi çarpanlarının çarpımıdır:
+
+```
+cascade = Π (layer_i.PermanentMultiplierPerAscension ^ count_i)
+
+// Örnek: Layer0'da 2 ascension (2.0×), Layer1'de 1 ascension (3.0×):
+// cascade = 2.0^2 × 3.0^1 = 4.0 × 3.0 = 12.0×
+```
+
+### Ascension Akışı
+
+```
+1. TryTrigger(layerIndex, currentWaveNumber) çağrılır
+2. CanTrigger kontrolü:
+     → PrestigeCount >= layer.RequiredPrestigeCount mi?
+     → Zaten bu layer'da ascension işlemde mi? (re-entrant guard)
+3. Kontrol geçerse:
+     → OnAscensionStarted(layerIndex) event'i
+          ↳ EconomyService: altın sıfırlanır
+          ↳ PrestigeStateManager: PrestigeCount = 0 (sıfırlanır!)
+          ↳ GeneratorSystem: opsiyonel sıfırlama
+     → Layer için ascension sayacı artar
+     → Yeni cascade çarpanı hesaplanır
+     → OnAscensionComplete(layerIndex, count, newCascade) event'i
+     → OnAscensionResetRequested event'i — UI sıfırlama sinyali
+     → SaveService.SaveAsync()
 ```
 
 ### API
 
 ```csharp
-// Belirli layer'da ascend etmeyi dene
-bool ok = _ascensionManager.TryTrigger(layerIndex: 0, currentWaveNumber: 25);
+// Ascend etmeyi dene
+bool ok = _ascensionManager.TryTrigger(layerIndex: 0, currentWaveNumber: _waveManager.CurrentWaveNumber);
 
-// Kaç kez ascend edildi
-int  count   = _ascensionManager.GetLayer0Count();      // layer 0
-int  countN  = _ascensionManager.GetCount(layerIndex: 1);
+// Kaç kez ascend edildi (layer bazlı)
+int countL0 = _ascensionManager.GetLayer0Count();
+int countL1 = _ascensionManager.GetCount(layerIndex: 1);
 
-// Cascade çarpanı (tüm katmanların birleşik bonusu)
+// Tüm katmanların birleşik çarpanı
 float cascade = _ascensionManager.GetCascadeMultiplier();
 
-// Bu layer için koşullar karşılandı mı
-bool canAscend = _ascensionManager.CanTrigger(layerIndex: 0, currentWaveNumber);
+// Koşul sağlanıyor mu?
+bool canAscend = _ascensionManager.CanTrigger(layerIndex: 0, _waveManager.CurrentWaveNumber);
 
 // Olaylar
-AscensionStateManager.OnAscensionStarted  += (layer) => ShowAscensionAnimation(layer);
+AscensionStateManager.OnAscensionStarted  += (layer) =>
+    ShowAscensionAnimation(layer);
+
 AscensionStateManager.OnAscensionComplete += (layer, count, cascade) =>
-    Debug.Log($"Ascension L{layer} #{count} | Cascade: {cascade:F2}×");
-AscensionStateManager.OnAscensionResetRequested += () => ResetRunUI();
+{
+    cascadeText.text = $"Cascade: ×{cascade:F1}";
+    Debug.Log($"Ascension L{layer} #{count} | Yeni Cascade: {cascade:F2}×");
+};
+
+AscensionStateManager.OnAscensionResetRequested += () =>
+{
+    // PrestigeCount sıfırlandı — prestige UI'ını güncelle
+    ResetPrestigeUI();
+    ResetRunUI();
+};
+```
+
+### Sık Yapılan Hatalar
+
+```csharp
+// HATA 1: PrestigeCount >= RequiredPrestigeCount olduğunu sanmak ama
+//         SetCurrentWave çağrılmadığı için Prestige hiç yapılamamış
+// Çözüm: PrestigeStateManager kurulumunda WaveSpawnManager.OnWaveStarted bağlantısını kontrol edin
+
+// HATA 2: OnAscensionResetRequested'e abone olmadan UI'ı güncellemek
+// Prestige sayacı sıfırlandığında UI'ın eski değeri göstermesini önleyin:
+AscensionStateManager.OnAscensionResetRequested += () =>
+    prestigeCountText.text = "0";
 ```
 
 ---
 
 ## 20. WaveSpawnManager
 
-**Ne yapar:** Düşman dalgalarını yönetir. Her dalga düşmanları spawn eder; tamamlandığında sonraki dalgaya geçer.
+**Ne yapar:** Düşman dalgalarını yönetir. Her dalga düşmanları spawn eder; tamamlandığında sonraki dalgaya geçer. Dalga numarasını kayıt sistemine bildirir; belirli aralıklarda upgrade kart ekranını tetikler.
+
+### WaveConfigSO Neden Initialize'a Geçirilmez?
+
+Eski versiyonda (v1.0.x) `Initialize(enemyManager, config: ConfigRegistry.Wave)` çağrısında config doğrudan geçiriliyordu. v1.1.0'da `WaveSpawnManager.Awake()` içinde `ConfigRegistry.Wave`'e doğrudan erişir — `ConfigLoadingService`'in `OnConfigsLoaded` event'i tetiklendikten sonra `Awake()` çalışacağı garanti edilir (`[DefaultExecutionOrder(-1000)]`). Bu yüzden Initialize parametresinden çıkarıldı.
+
+**Önemli:** Bu değişiklik sadece `WaveConfigSO`'yu etkiler. `EnemyManager` ve `SaveNotifier` hâlâ Initialize'a geçirilmelidir — bunlar sahnede birden fazla instance'ı olabilecek MonoBehaviour'lar olduğu için otomatik çözülmez.
 
 ### Config: WaveConfigSO
 
@@ -1518,43 +1852,78 @@ Create → Endless Engine → Wave Config
 
 | Alan | Açıklama | Örnek |
 |------|----------|-------|
-| `TotalWavesPerRun` | Toplam dalga sayısı | `30` |
-| `WaveTransitionDelaySeconds` | Dalgalar arası bekleme | `2.0` |
-| `UpgradeSelectionWaveInterval` | Kaç dalgada bir upgrade kart ekranı | `5` |
-| `EnemiesPerWave` | Dalga başına düşman sayısı (AnimationCurve) | — |
+| `TotalWavesPerRun` | Run başına toplam dalga sayısı | `30` |
+| `WaveTransitionDelaySeconds` | İki dalga arası bekleme süresi | `2.0` |
+| `UpgradeSelectionWaveInterval` | Kaç dalgada bir upgrade kart ekranı çıkar | `5` |
+| `EnemiesPerWave` | Dalga→düşman sayısı eğrisi (AnimationCurve) | — |
+| `EnemyScalingFactor` | Dalga numarasına göre HP/hasar artış çarpanı | `1.12` |
 
 ### Başlatma
 
 ```csharp
-// WaveConfigSO ConfigRegistry.Wave üzerinden otomatik okunur — Initialize'a geçirilmez!
+// WaveConfigSO Initialize'a GEÇİRİLMEZ — Awake()'te ConfigRegistry.Wave'den okunur.
 _waveManager.Initialize(
-    enemyManager:  _enemyManager,
-    saveNotifier:  _saveService,     // IWaveSaveNotifier (SaveService bunu uygular)
-    healthSystem:  _healthSystem     // opsiyonel
+    enemyManager: _enemyManager,              // EnemyManager — spawn ve öldürme döngüsü
+    saveNotifier: _saveService,               // IWaveSaveNotifier — dalga numarası kaydı
+    healthSystem: _healthSystem               // opsiyonel — oyuncu ölümünde wave durdurma
 );
 _saveService.RegisterStateProvider(_waveManager);
+
+// SaveProviderOrder.WaveAndCombat = 40
+```
+
+### Dalga Döngüsü
+
+```
+StartFirstWave() çağrılır
+  → WaveState: Idle → Spawning
+  → OnWaveStarted(waveNumber) ateşlenir
+       ↳ PrestigeStateManager.SetCurrentWave(wave) ← BUNU BAĞLAMAYI UNUTMAYIN
+  → Düşmanlar spawn edilir (EnemiesPerWave animasyon eğrisinden)
+  → Son düşman ölünce WaveState: Spawning → Transitioning
+  → OnWaveComplete(waveNumber) ateşlenir
+  → wave % UpgradeSelectionWaveInterval == 0 ise:
+       ↳ OnUpgradeSelectionTriggered ateşlenir → siz savaşı durdurup kart ekranı gösterirsiniz
+  → WaveTransitionDelaySeconds bekler
+  → Sonraki dalgaya geçer
 ```
 
 ### API
 
 ```csharp
-// İlk dalgayı başlat
+// İlk dalgayı başlat (Bootstrap sonunda veya "Başla" butonunda)
 _waveManager.StartFirstWave();
 
-// Mevcut dalga numarası
+// Mevcut dalga
 int wave = _waveManager.CurrentWaveNumber;
 
-// Dalga durumu
-WaveState state = _waveManager.State; // Idle / Spawning / Transitioning
+// Durum makinesi
+WaveState state = _waveManager.State; // Idle | Spawning | Transitioning
 
-// Run sıfırla (prestige sonrası)
+// Prestige/Ascension sonrası run sıfırlama
 _waveManager.ResetForNewRun();
 
 // Olaylar
-WaveSpawnManager.OnWaveStarted             += (wave) => waveText.text = $"Dalga {wave}";
-WaveSpawnManager.OnWaveComplete            += (wave) => OnWaveCompleted(wave);
-WaveSpawnManager.OnUpgradeSelectionTriggered += ()   => ShowUpgradeCardScreen();
+WaveSpawnManager.OnWaveStarted += (wave) =>
+{
+    waveText.text = $"Dalga {wave}";
+    _prestigeManager.SetCurrentWave(wave); // ← ZORUNLU BAĞLANTI
+};
+
+WaveSpawnManager.OnWaveComplete += (wave) =>
+    Debug.Log($"Dalga {wave} tamamlandı");
+
+WaveSpawnManager.OnUpgradeSelectionTriggered += () =>
+{
+    _abc.StopCombat(); // savaşı durdur
+    ShowUpgradeCardScreen();
+    // Kart seçilince: _abc.StartCombat() veya _abc.NotifyUpgradeSelected()
+};
 ```
+
+### Yaygın Hata: PrestigeStateManager Bağlantısı
+
+`WaveSpawnManager.OnWaveStarted` → `_prestigeManager.SetCurrentWave(wave)` bağlantısı kurulmazsa `PrestigeManager.CanPrestige` her zaman `false` döner. Bu, prestige butonunun hiç aktif olmadığı bir hata olarak görünür ama gerçek neden wave numarasının hiç bildirilmemesidir.
 
 ---
 
@@ -1576,29 +1945,56 @@ Create → Endless Engine → Player Base Stat Config
 | `BaseCritChance` | Kritik şans (0–1) |
 | `BaseCritMultiplier` | Kritik çarpan |
 
-### Başlatma
+### Neden BaseStatUpgradeProvider Gerekiyor?
 
-`AutoBattleController`, `IUpgradeStatProvider` arayüzünü bekler. Bunu sağlamak için `BaseStatUpgradeProvider` sınıfını kullanın:
+Eski versiyonda (v1.0.x) şöyle kullanılıyordu:
+```csharp
+// ESKİ (v1.0.x) — ARTIK GEÇERSİZ:
+_abc.Initialize(..., statProvider: _upgradeApplicationSystem, ...);
+```
+
+`UpgradeApplicationSystem` static bir class olduğu için instance referansı `_upgradeApplicationSystem` diye bir şey olmaz. v1.1.0'da `IUpgradeStatProvider` arayüzü oluşturuldu ve `BaseStatUpgradeProvider` bu arayüzü uygulayan somut sınıf oldu:
 
 ```csharp
-// IUpgradeStatProvider oluştur
-var statProvider = new BaseStatUpgradeProvider(ConfigRegistry.Player);
-// Not: BaseStatUpgradeProvider namespace EndlessEngine.Combat içindedir
+// IUpgradeStatProvider — EndlessEngine.Combat namespace'inde
+public interface IUpgradeStatProvider
+{
+    float GetAttackDamage();
+    float GetAttackInterval();
+    float GetCritChance();
+    float GetCritMultiplier();
+    float GetMoveSpeed();
+}
+```
 
+`BaseStatUpgradeProvider(PlayerBaseStatConfigSO config)` bu metodları `UpgradeApplicationSystem.GetEffectiveStat(StatType.X)` üzerinden hesaplar. Böylece `AutoBattleController` stat sistemine arayüz üzerinden bağımlıdır — static class'a doğrudan değil.
+
+### Başlatma
+
+```csharp
+// ADIM 1: IUpgradeStatProvider oluştur
+// Namespace: EndlessEngine.Combat
+var statProvider = new BaseStatUpgradeProvider(ConfigRegistry.Player);
+// ConfigRegistry.Player = PlayerBaseStatConfigSO (base değerler burada)
+// Actual saldırı hesabı: BaseAttackDamage × UpgradeApplicationSystem.GetEffectiveStat(Damage)
+
+// ADIM 2: Initialize
 _abc.Initialize(
-    enemyManager:   _enemyManager,
+    enemyManager:     _enemyManager,
     waveSpawnManager: _waveSpawnManager,
-    statProvider:   statProvider,
-    playerConfig:   ConfigRegistry.Player,
-    waveConfig:     ConfigRegistry.Wave,
-    playerId:       1
+    statProvider:     statProvider,       // IUpgradeStatProvider (yukarıda oluşturduğumuz)
+    playerConfig:     ConfigRegistry.Player, // PlayerBaseStatConfigSO
+    waveConfig:       ConfigRegistry.Wave,   // ConfigRegistry'den otomatik alınır
+    playerId:         1                      // DamageSystem'da oyuncuyu tanımlar
 );
 
-// Giriş sağlayıcı (oyuncu hasar için, opsiyonel)
-_abc.SetPlayerQuery(_playerQuery);
+// ADIM 3: PlayerHealthComponent bağlantısı (hasar almak için)
+_abc.SetPlayerQuery(_playerHealthComponent); // IPlayerQuery
+// PlayerHealthComponent IPlayerQuery uygular: IsInIdleRecovery, Position
 
-// Savaşı başlat (Initialize'dan SONRA çağrılmalı)
+// ADIM 4: Savaşı başlat — Initialize'dan HEMEN SONRA çağrılmalı
 _abc.StartCombat();
+// StartCombat() çağrılmadan düşmanlar spawn edilse de saldırı gerçekleşmez
 ```
 
 ### API
@@ -2524,7 +2920,596 @@ bd.Format(BigDouble.Notation.Letter, 2) // "1.50aa"
 
 ---
 
-## 42. Editor Araçları
+## 42. TimeBoostService
+
+**Ne yapar:** TickEngine'in `TimeScale`'ini geçici olarak artıran hız boost sistemi. "2× hız" gibi ücretli veya ödüllü hız güçlendirmeleri için kullanılır. Aynı anda yalnızca bir boost aktif olabilir; yeni aktivasyon mevcut boost'u iptal eder.
+
+### Config: TimeBoostConfigSO
+
+```
+Create → Endless Engine → Time Boost Config
+```
+
+| Alan | Açıklama | Örnek |
+|------|----------|-------|
+| `BoostId` | Benzersiz ID | `"boost-2x"` |
+| `DisplayName` | Gösterim adı | `"2× Hız"` |
+| `TimeScaleMultiplier` | Uygulanacak zaman çarpanı | `2.0` |
+| `DurationSeconds` | Boost süresi | `30` |
+| `GoldCost` | Ücretli aktivasyon maliyeti (0 = ücretsiz) | `500` |
+
+### Başlatma
+
+```csharp
+_timeBoostService.Initialize(
+    tickEngine:     _tickEngine,
+    economyService: _economyService  // null olabilir — ücretli boost kullanmıyorsanız
+);
+```
+
+### API
+
+```csharp
+// Ücretsiz aktivasyon (reklam ödülü, quest ödülü vb.)
+_timeBoostService.TryActivate(_boost2xConfig);
+
+// Ücretli aktivasyon (altın düşürür, başarısızsa false döner)
+bool ok = _timeBoostService.TryActivatePaid(_boost2xConfig);
+
+// Mevcut durum
+bool  active    = _timeBoostService.IsActive;
+float remaining = _timeBoostService.RemainingSeconds;
+TimeBoostConfigSO cfg = _timeBoostService.ActiveConfig; // null ise aktif yok
+
+// İptal et
+_timeBoostService.Cancel();
+
+// Olaylar
+TimeBoostService.OnBoostStarted += (config, remaining) =>
+    boostUI.Show($"{config.DisplayName} — {remaining:F0}s");
+
+TimeBoostService.OnBoostTick += (remaining) =>
+    boostTimer.text = $"{remaining:F0}s";
+
+TimeBoostService.OnBoostEnded += () =>
+    boostUI.Hide();
+```
+
+### UI Countdown Örneği
+
+```csharp
+void Start()
+{
+    TimeBoostService.OnBoostStarted += (cfg, rem) =>
+    {
+        boostPanel.SetActive(true);
+        boostLabel.text = cfg.DisplayName;
+    };
+    TimeBoostService.OnBoostTick += (rem) =>
+        boostTimerText.text = $"{Mathf.CeilToInt(rem)}s";
+    TimeBoostService.OnBoostEnded += () =>
+        boostPanel.SetActive(false);
+}
+```
+
+### Dikkat
+
+- Boost sırasında `TickEngine.TimeScale` doğrudan değiştirilir; boost bitince eski değere döner.
+- Birden fazla boost aynı anda **aktif olamaz** — yeni `TryActivate` çağrısı öncekini iptal eder.
+
+---
+
+## 43. ZoneSystem
+
+**Ne yapar:** Dünyada tanımlı bölgeleri (zone) yönetir. Her zone altın üretir; cursor/oyuncu içine girince hover çarpanı devreye girer. Pasif mod veya aktif (cursor-içinde) mod desteği vardır. Prestij geçidi ve yükseltme sistemi içerir.
+
+### Config: ZoneConfigSO
+
+```
+Create → Endless Engine → Zone Config
+```
+
+| Alan | Açıklama | Örnek |
+|------|----------|-------|
+| `ZoneId` | Benzersiz ID | `"forest-zone"` |
+| `DisplayName` | Gösterim adı | `"Orman"` |
+| `BaseYieldPerSecond` | Saniyede temel altın üretimi | `5.0` |
+| `UnlockCost` | Kilidi açma maliyeti | `500` |
+| `UpgradeCostBase` | İlk yükseltme maliyeti | `200` |
+| `UpgradeCostMultiplier` | Yükseltme başına maliyet çarpanı | `1.5` |
+| `HoverMultiplier` | Cursor içindeyken uygulanan gelir çarpanı | `3.0` |
+| `PassiveMode` | `true` = her tick üretir; `false` = sadece cursor içindeyken | `true` |
+| `PrestigeGateRequired` | Erişim için gereken prestige sayısı | `0` |
+
+### Başlatma
+
+```csharp
+_zoneSystem.Initialize(
+    configs:      ConfigRegistry.ZoneConfigs,  // ZoneConfigSO[]
+    economy:      _economyService,
+    gameFlow:     _gameFlowStateMachine,
+    input:        _inputProvider,
+    saveNotifier: _saveService
+);
+
+// Prestige sayısını zone sistemine bildir (kapılı zone'lar için)
+_zoneSystem.SetPrestigeCountGetter(() => _prestigeManager.PrestigeCount);
+
+_saveService.RegisterStateProvider(_zoneSystem);
+```
+
+### API
+
+```csharp
+// Kilidi aç
+bool ok = _zoneSystem.TryUnlock("forest-zone");
+
+// Yükselt
+bool upgraded = _zoneSystem.TryUpgrade("forest-zone");
+
+// Bir sonraki yükseltme maliyeti
+long cost = _zoneSystem.GetUpgradeCost("forest-zone");
+
+// Cursor zone içinde mi? (fizik sorgusu)
+bool inside = _zoneSystem.IsCursorInZone("forest-zone");
+
+// Zone runtime durumunu al
+ZoneRuntimeState state = _zoneSystem.GetState("forest-zone");
+// state.Level, state.IsUnlocked, state.YieldPerSecond
+
+// Tüm config listesi (UI için)
+IReadOnlyList<ZoneConfigSO> configs = _zoneSystem.Configs;
+
+// Toplam zone geliri (ömür boyu)
+long earned = _zoneSystem.TotalZoneEarned;
+
+// Olaylar
+ZoneSystem.OnZoneUnlocked  += (id) => UnlockZoneUI(id);
+ZoneSystem.OnZoneUpgraded  += (id, level) => UpdateZoneLevel(id, level);
+ZoneSystem.OnZoneEntered   += (id) => HighlightZone(id);
+ZoneSystem.OnZoneExited    += (id) => UnhighlightZone(id);
+```
+
+### Mod Farkı: PassiveMode vs Aktif Mod
+
+| Özellik | PassiveMode = true | PassiveMode = false |
+|---------|-------------------|---------------------|
+| Gelir tetikleyici | Her TickEngine tick'i | Cursor zone içindeyken her tick |
+| Hover çarpanı | Her zaman uygulanmaz | Cursor içindeyken uygulanır |
+| Tipik kullanım | Farm, şehir, temel bölgeler | Özel "aktif" bölgeler |
+
+### Kayıt / Yükleme
+
+```csharp
+// Otomatik: RegisterStateProvider ile SaveData.ZoneStates kaydedilir.
+// SaveProviderOrder.Zone = 70
+```
+
+---
+
+## 44. CursorYieldService
+
+**Ne yapar:** Mouse/parmak hareketini altına çevirir. Üç farklı yield modeli sunar: Hız (ne kadar hızlı hareket edersen o kadar kazanırsın), Mesafe (kaç piksel hareket ettin), Hover (belirli bir noktada bekle ve ısın). GeneratorSystem ve ClickYieldService ile birlikte toplam gelirin parçası olabilir.
+
+### Config: CursorActivityConfigSO
+
+```
+Create → Endless Engine → Cursor Activity Config
+```
+
+| Alan | Açıklama | Örnek |
+|------|----------|-------|
+| `YieldModel` | `Speed` / `Distance` / `Hover` | `Speed` |
+| `BaseYieldPerSecond` | Maksimum saniye başına gelir (Speed modunda) | `10.0` |
+| `PixelsPerGold` | Kaç piksel = 1 altın (Distance modunda) | `50` |
+| `HoverWarmupSeconds` | Hareketsiz beklenecek süre (Hover modunda) | `2.0` |
+| `HoverRadius` | Hareketsiz sayılma toleransı (piksel) | `5.0` |
+| `SpeedSmoothTime` | Hız smoothing süresi | `0.3` |
+
+### Başlatma
+
+```csharp
+_cursorYieldService.Initialize(
+    config:   _cursorActivityConfig,
+    economy:  _economyService,
+    gameFlow: _gameFlowStateMachine
+);
+```
+
+### API
+
+```csharp
+// Mevcut gelir hızı (HUD için)
+float yps = _cursorYieldService.CurrentYieldPerSecond;
+
+// Toplam cursor geliri (istatistik için)
+long earned = _cursorYieldService.TotalCursorEarned;
+
+// Totalleri sıfırla (prestige sonrası)
+_cursorYieldService.ResetTotals();
+```
+
+### Model Karşılaştırması
+
+| Model | Ne Ödüllendirir | İdeal Oyun Türü |
+|-------|----------------|-----------------|
+| `Speed` | Hızlı hareket | Aksiyonlu idle, dash reward |
+| `Distance` | Toplam mesafe | Lazy kıyma oyunları |
+| `Hover` | Sabırlı bekleme | Strateji, zen idle |
+
+### HUD Bağlantısı
+
+```csharp
+void Update()
+{
+    cursorYpsText.text = $"{_cursorYieldService.CurrentYieldPerSecond:F1}/s";
+}
+```
+
+---
+
+## 45. InventoryService
+
+**Ne yapar:** Slot tabanlı öğe envanteri. Her öğe türü (`ItemConfigSO`) için stack sayısını tutar; maksimum slot ve maksimum stack boyutu kısıtları uygular. `MergeService` ve `DropResolver` ile entegre çalışır.
+
+### Config: ItemConfigSO
+
+```
+Create → Endless Engine → Item Config
+```
+
+| Alan | Açıklama | Örnek |
+|------|----------|-------|
+| `ItemId` | Benzersiz ID | `"iron-ore"` |
+| `DisplayName` | Gösterim adı | `"Demir Cevheri"` |
+| `MaxStackSize` | Stack başına maksimum adet | `99` |
+| `Rarity` | `Common` / `Rare` / `Epic` / `Legendary` | `Common` |
+| `Icon` | Envanter ikonu | _(Sprite)_ |
+
+### Başlatma
+
+```csharp
+_inventoryService.Initialize(
+    allItems: ConfigRegistry.ItemConfigs,  // ItemConfigSO[]
+    maxSlots: 20                           // 0 = sınırsız
+);
+_saveService.RegisterStateProvider(_inventoryService);
+```
+
+### API
+
+```csharp
+// Ekle (eklenen miktar döner — stack dolduysa daha az olabilir)
+int added = _inventoryService.Add("iron-ore", count: 5);
+
+// Çıkar (başarısız olursa false)
+bool ok = _inventoryService.Remove("iron-ore", count: 2);
+
+// Miktar sorgula
+int count = _inventoryService.GetCount("iron-ore");
+
+// Var mı?
+bool has = _inventoryService.Has("iron-ore", count: 3);
+
+// Slot sayısı
+int slots     = _inventoryService.SlotCount;
+int maxSlots  = _inventoryService.MaxSlots;
+
+// Tüm stackler (UI için)
+IReadOnlyDictionary<string, int> stacks = _inventoryService.Stacks;
+
+// Olaylar
+InventoryService.OnInventoryChanged += (itemId, newCount, delta) =>
+    inventoryUI.UpdateSlot(itemId, newCount);
+
+InventoryService.OnInventoryFull += (itemId, count) =>
+    ShowError($"Envanter dolu! ({count} {itemId} eklenemedi)");
+```
+
+### MergeService ile Entegrasyon
+
+```csharp
+// MergeService Initialize'da InventoryService referansını alır:
+_mergeService.Initialize(
+    configs:   _mergeConfigs,
+    inventory: _inventoryService,
+    economy:   _economyService
+);
+
+// Birleştirme — InventoryService otomatik güncellenir
+MergeResult result = _mergeService.TryMerge(itemConfig);
+```
+
+---
+
+## 46. DropResolver
+
+**Ne yapar:** Ağırlıklı rastgele drop sistemi. Her roll için birden fazla drop üretebilir; entegre pity sayacı belirli sayıda başarısız rollden sonra nadir item garantisi sağlar. Zero-allocation common path.
+
+### Config: DropTableConfigSO
+
+```
+Create → Endless Engine → Drop Table Config
+```
+
+| Alan | Açıklama | Örnek |
+|------|----------|-------|
+| `TableId` | Benzersiz ID | `"enemy-drops"` |
+| `RollsPerUse` | Her kullanımda kaç roll atılır | `1` |
+| `PityThreshold` | Garantiye kadar roll sayısı | `50` |
+| `PityMinRarity` | Garanti edilecek minimum nadirlik | `Rare` |
+| `Entries[]` | Her biri `Item`, `Weight`, `MinCount`, `MaxCount`, `Rarity` | — |
+
+### Kullanım
+
+`DropResolver` bir MonoBehaviour değildir — `new` ile oluşturulur veya Bootstrap'te enjekte edilir.
+
+```csharp
+// Oluştur
+var dropResolver = new DropResolver();
+
+// Roll at
+List<DropResult> drops = dropResolver.Roll(_enemyDropTable);
+
+foreach (var drop in drops)
+{
+    _inventoryService.Add(drop.Item.ItemId, drop.Count);
+
+    if (drop.WasPityGuaranteed)
+        ShowSpecialEffect(drop.Item);
+}
+
+// Pity bilgisi (UI için)
+int pityProgress = dropResolver.GetPityCounter("enemy-drops");
+
+// Sayacı sıfırla (prestige sonrası)
+dropResolver.ResetPityCounter("enemy-drops");
+dropResolver.ResetAllPityCounters();
+```
+
+### DropResult Yapısı
+
+```csharp
+// drop.Item            — ItemConfigSO
+// drop.Count           — düşen adet
+// drop.Rarity          — bu dropin nadirlik seviyesi
+// drop.WasPityGuaranteed — pity garantisiyle mi düştü?
+```
+
+### Düşman Ölümünde Drop Tetikleme
+
+```csharp
+HealthSystem.OnEntityDied += (entityId, vfxTag, pos) =>
+{
+    var drops = _dropResolver.Roll(_enemyDropTable);
+    foreach (var d in drops)
+        _inventoryService.Add(d.Item.ItemId, d.Count);
+};
+```
+
+---
+
+## 47. PlayerHealthComponent
+
+**Ne yapar:** Oyuncu can sistemi. `DamageSystem.OnDamageResolved` eventine abone olarak hasarı filtreler ve oyuncuya uygular. I-frame (hasar dokunulmazlığı) penceresi, ölüm gecikmesi ve `IdleRecovery` durum geçişi yönetir. `IPlayerQuery` arayüzünü uygular; `EnemyManager` ve `AutoBattleController` bunu kullanır.
+
+### Kullanım
+
+`PlayerHealthComponent` bir MonoBehaviour'dur — sahnede Player GameObject'ine eklenir.
+
+```
+Player/
+  ├─ PlayerInput
+  ├─ InputProviderUnity
+  └─ PlayerHealthComponent   ← buraya
+```
+
+### Inspector Alanları
+
+| Alan | Açıklama | Varsayılan |
+|------|----------|-----------|
+| `MaxHP` | Maksimum can | `100` |
+| `IFrameDurationSeconds` | Hasar sonrası dokunulmazlık süresi | `0.5` |
+| `DeathTransitionDelaySeconds` | Ölüm animasyon gecikmesi | `1.0` |
+| `EntityId` | `DamageSystem` için benzersiz ID | Auto (GetInstanceID) |
+
+### API
+
+```csharp
+// Can değerleri (HUD için)
+float current = _playerHealth.CurrentHP;
+float max     = _playerHealth.MaxHP;
+
+// Durum sorguları
+bool invincible      = _playerHealth.IsInvincible;     // i-frame aktif mi?
+bool inIdleRecovery  = _playerHealth.IsInIdleRecovery; // ölüm sonrası kurtarma
+Vector2 position     = _playerHealth.Position;         // dünya pozisyonu
+
+// Olaylar
+PlayerHealthComponent.OnPlayerHPChanged += (current, max) =>
+    hpBar.fillAmount = current / max;
+
+PlayerHealthComponent.OnEntityDied += (id, vfxTag, pos) =>
+    PlayDeathAnimation(pos);
+
+PlayerHealthComponent.OnPlayerEnteredIdleRecovery += () =>
+    ShowRevivePrompt();
+```
+
+### IdleRecovery Nedir?
+
+`IdleRecovery`, oyuncunun HP'si sıfıra düştükten `DeathTransitionDelaySeconds` sonra girdiği özel durumdur. Bu sürede `EnemyManager` tüm düşman davranışını duraklatır (`EnemyState.Idle`). Oyun `OnPlayerEnteredIdleRecovery` event'ini ateşler — bu event'e abone olan sistemler (örn. WaveSpawnManager) gerekli yeniden başlatma işlemlerini yapar.
+
+### DamageDispatchAdapter ile Bağlantı
+
+`AutoBattleController`'ın düşman saldırılarını işlemesi için `DamageDispatchAdapter` MonoBehaviour'una `_playerHealth` referansı atanmalıdır:
+
+```
+DamageDispatchAdapter
+  └─ _playerHealth → [PlayerHealthComponent referansı]
+```
+
+---
+
+## 48. GameFlowState ve RunSummaryData
+
+### GameFlowState
+
+**Ne yapar:** Oyunun üç ana makro durumunu tanımlayan enum. `GameFlowStateMachine` bu geçişleri yönetir; diğer sistemler mevcut durumu sorgular.
+
+```csharp
+// Namespace: EndlessEngine.Flow
+using EndlessEngine.Flow;
+
+GameFlowState state = _gameFlowStateMachine.CurrentState;
+
+switch (state)
+{
+    case GameFlowState.Menu:
+        // Ana menü, jeneratör ekranı, upgrade ekranı
+        // Pasif gelir tick'leri devam eder
+        break;
+
+    case GameFlowState.InRun:
+        // Aktif koşu — arena aktif, koşu sayacı sayıyor
+        // AutoBattleController savaşıyor
+        break;
+
+    case GameFlowState.PostRun:
+        // Koşu bitti — özet ekranı gösteriliyor
+        // Menu'ye dönmeden önce RunSummaryData gösterilir
+        break;
+}
+
+// Durum değişince
+_gameFlowStateMachine.OnStateChanged += (prev, next) =>
+{
+    if (next == GameFlowState.PostRun)
+        ShowRunSummary(_runSessionManager.LastRunSummary);
+};
+```
+
+### RunSummaryData
+
+**Ne yapar:** Tek bir koşunun sonuçlarını tutan değişmez snapshot. `RunSessionManager` koşu bitince oluşturur; `PostRunScreen`'e aktarılır.
+
+```csharp
+// Namespace: EndlessEngine.Statistics
+using EndlessEngine.Statistics;
+
+// RunSummaryData alanları:
+RunSummaryData summary = _runSessionManager.LastRunSummary;
+
+Debug.Log($"Süre:         {summary.DurationSeconds:F0}s");
+Debug.Log($"Altın:        {summary.GoldEarned}");
+Debug.Log($"Öldürme:      {summary.KillCount}");
+Debug.Log($"En Yüksek Dalga: {summary.MaxWave}");
+Debug.Log($"Prestige mi?  {summary.PrestigePerformed}");
+Debug.Log($"Cascade:      {summary.CascadeMultiplier:F2}×");
+Debug.Log($"Son Gelir:    {summary.FinalIncomeRate:F1}/s");
+```
+
+### RunSummaryData Factory
+
+```csharp
+// Kendi koşu özeti oluşturmak için (özel RunSessionManager'lar):
+var summary = RunSummaryData.Create(
+    startTime:            DateTime.UtcNow - TimeSpan.FromSeconds(duration),
+    endTime:              DateTime.UtcNow,
+    goldEarned:           totalGold,
+    killCount:            kills,
+    maxWave:              wave,
+    prestigeCountAtStart: startPrestige,
+    prestigePerformed:    didPrestige,
+    upgradesAccepted:     upgradeCount,
+    cascadeMultiplier:    cascade,
+    finalIncomeRate:      incomeRate
+);
+```
+
+### PostRun UI Entegrasyonu
+
+```csharp
+void ShowRunSummary(RunSummaryData s)
+{
+    durationText.text  = $"{s.DurationSeconds:F0}s";
+    goldText.text      = FormatGold(s.GoldEarned);
+    killText.text      = s.KillCount.ToString();
+    waveText.text      = $"Dalga {s.MaxWave}";
+    cascadeText.text   = $"×{s.CascadeMultiplier:F2}";
+    incomeText.text    = $"{s.FinalIncomeRate:F1}/s";
+
+    if (s.PrestigePerformed)
+        prestigeBadge.SetActive(true);
+}
+```
+
+---
+
+## 49. IIdleModule
+
+**Ne yapar:** Tüm Endless Engine modüllerinin uygulaması gereken yaşam döngüsü arayüzü. `ModuleRegistry` bu arayüzü kullanan modüllerin başlatma sırasını, tick aboneliğini ve kapatma işlemini yönetir.
+
+### Arayüz
+
+```csharp
+// Namespace: EndlessEngine.Modules
+public interface IIdleModule
+{
+    string   ModuleId    { get; }   // "economy", "skill-tree", "research" vb.
+    string[] Dependencies { get; }  // Önce başlatılması gereken modüllerin ID'leri
+    int      InitOrder   { get; }   // Aynı tier içinde sıralama (küçük = önce)
+    bool     ReceivesTick { get; }  // false ise tick çağrılmaz (veri modülleri için)
+
+    IEnumerator Init();             // Coroutine — senkronsa sadece yield return null
+    void        Tick(float dt);     // TickEngine.OnTick bağlantısı
+    void        Shutdown();         // Olay aboneliklerini temizle
+}
+```
+
+### Kendi Modülünüzü Yazma
+
+```csharp
+public class MyProductionModule : MonoBehaviour, IIdleModule
+{
+    public string   ModuleId     => "my-production";
+    public string[] Dependencies => new[] { "economy", "tick-engine" };
+    public int      InitOrder    => 100;
+    public bool     ReceivesTick => true;
+
+    private EconomyService _economy;
+
+    public IEnumerator Init()
+    {
+        _economy = FindObjectOfType<EconomyService>();
+        yield return null; // senkron init — coroutine gerektirmez
+    }
+
+    public void Tick(float dt)
+    {
+        _economy.AddResources(5.0 * dt);
+    }
+
+    public void Shutdown()
+    {
+        // Event aboneliklerini temizle
+    }
+}
+```
+
+### ModuleRegistry'ye Kaydetme
+
+```csharp
+_moduleRegistry.Register(GetComponent<MyProductionModule>());
+// Tüm modüller kaydedildikten sonra:
+yield return StartCoroutine(_moduleRegistry.InitializeAll());
+```
+
+### Dikkat: Döngüsel Bağımlılık
+
+Modül `Dependencies` dizisinde döngüsel bağımlılık belirtilirse `ModuleRegistry` başlatma sırasında exception fırlatır. `Init()` içinde bağımlılıkları elle çözmek yerine her zaman `Dependencies` kullanın.
+
+## 50. Editor Araçları
 
 Tüm araçlar: **Tools → Endless Engine → …**
 
@@ -2556,7 +3541,7 @@ Tüm araçlar: **Tools → Endless Engine → …**
 
 ---
 
-## 43. Test Stratejisi
+## 51. Test Stratejisi
 
 ### Katman 1 — Unit Tests
 
@@ -2648,7 +3633,7 @@ static void SetField(object t, string n, object v)
 
 ---
 
-## 44. Tarif 1: Klasik Idle
+## 52. Tarif 1: Klasik Idle
 
 **Hedef:** Cookie Clicker benzeri — tıkla, jeneratör al, yükseltme yap.
 
@@ -2675,29 +3660,52 @@ Services/
   OfflineTimeCalculator
 ```
 
-### Bootstrap Script'i
+### Bootstrap Script'i (Adım Açıklamalarıyla)
 
 ```csharp
 private async void Awake()
 {
+    // ADIM 1: Config'leri yükle.
+    // Addressables akışında ConfigLoadingService bunu yapar (otomatik).
+    // Test/direkt sahnede InjectForTesting kullanılır.
     ConfigRegistry.InjectForTesting(economy: _economyConfig);
 
+    // ADIM 2: UpgradeTree önce başlatılır çünkü EconomyService ona bağımlıdır.
+    // HandleConfigsLoaded() → ConfigRegistry.Upgrades'i okur ve DAG'ı kurar.
     _upgradeTree.HandleConfigsLoaded();
+
+    // ADIM 3: EconomyService — UpgradeTree'den sonra, diğer her şeyden önce.
+    // Neden? GeneratorSystem ve PassiveIncome, EconomyService.AddResources()'a çağrı yapar.
     _economyService.Initialize(_upgradeTree, _saveService);
+
+    // ADIM 4: GeneratorSystem — EconomyService'e bağımlı.
     _generatorSystem.Initialize(ConfigRegistry.Generators, _economyService, _saveService);
+
+    // ADIM 5: PassiveIncomeService — GeneratorSystem ve EconomyService'e bağımlı.
+    // null = GameFlowStateMachine yok (Pure Idle'da run/menu ayrımı yok)
     _passiveIncome.Initialize(_generatorSystem, _economyService, null);
+
+    // ADIM 6: ClickYieldService — sadece EconomyService'e bağımlı.
     _clickYield.Initialize(
-        config:             _clickSourceConfig,  // ClickSourceConfigSO
+        config:             _clickSourceConfig,
         economy:            _economyService,
-        passiveYieldGetter: null
+        passiveYieldGetter: null  // YieldRateClickFraction kullanmak istiyorsanız doldurun
     );
     _clickYield.SetInputProvider(_inputProvider);
-    // OfflineTimeCalculator için Initialize() ÇAĞRILMAZ — sahnede component olması yeterli
 
-    _saveService.RegisterStateProvider(_economyService);
-    _saveService.RegisterStateProvider(_upgradeTree);
-    _saveService.RegisterStateProvider(_generatorSystem);
+    // ADIM 7: OfflineTimeCalculator için HİÇBİR ŞEY ÇAĞIRILMAZ.
+    // Awake()'te SaveService.OnSaveLoaded'a zaten abone olmuştur.
 
+    // ADIM 8: SaveService'e sağlayıcıları kaydet — LoadAsync()'den ÖNCE olmalı.
+    // Neden önce? LoadAsync → OnSaveLoaded → OnAfterLoad(saveData) sırasıyla çalışır.
+    // Sağlayıcı kayıtlı değilse OnAfterLoad çağrılmaz, kayıt yüklenmez.
+    _saveService.RegisterStateProvider(_economyService);   // Order: 10
+    _saveService.RegisterStateProvider(_upgradeTree);      // Order: 20
+    _saveService.RegisterStateProvider(_generatorSystem);  // Order: 50
+
+    // ADIM 9: Kayıtları yükle — her şey hazır olduktan sonra.
+    // Bu çağrı: disk okuma → SaveData oluştur → her sağlayıcının OnAfterLoad'ı
+    //           → OnSaveLoaded event'i → OfflineTimeCalculator hesabı
     await _saveService.LoadAsync();
 }
 ```
@@ -2705,8 +3713,8 @@ private async void Awake()
 ### Tıklama Butonu
 
 ```csharp
-public void OnClickGold() => _clickYield.SimulateClickForTesting();
-// veya UI butonunun onClick'e bağlı bir yöntem varsa ProcessClick benzeri kullanım
+// UI butonunun OnClick event'ine bağlayın:
+public void OnClickGold() => _clickYield.ProcessClick();
 ```
 
 ### Jeneratör UI
@@ -2736,7 +3744,7 @@ OfflineTimeCalculator.OnOfflineGainCalculated += (gold, secs) =>
 
 ---
 
-## 45. Tarif 2: Aktif Clicker
+## 53. Tarif 2: Aktif Clicker
 
 **Hedef:** Ekrana yerleştirilen hedef nesnelere tıkla, yok et, altın kazan, yeniden doğmasını bekle.
 
@@ -2787,7 +3795,6 @@ Create → Endless Engine → Click Loop → Click Target Config (TargetId="coin
 private async void Awake()
 {
     ConfigRegistry.InjectForTesting(economy: _economyConfig);
-    await _saveService.LoadAsync();
 
     _upgradeTree.HandleConfigsLoaded();
     _economyService.Initialize(_upgradeTree, _saveService);
@@ -2863,7 +3870,7 @@ _clickLoopService.OnCrit += (_) =>
 
 ---
 
-## 46. Tarif 3: Hasat Loop
+## 54. Tarif 3: Hasat Loop
 
 **Hedef:** Mouse'u/parmağı dünya nesneleri üzerinde sürükleyerek hasar ver, altın kazan.
 
@@ -2912,7 +3919,6 @@ Create → Endless Engine → Harvest → Harvest Node Config
 private async void Awake()
 {
     ConfigRegistry.InjectForTesting(economy: _economyConfig);
-    await _saveService.LoadAsync();
 
     _upgradeTree.HandleConfigsLoaded();
     _economyService.Initialize(_upgradeTree, _saveService);
@@ -2972,7 +3978,7 @@ Create → Upgrade Node Config
 
 ---
 
-## 47. Tarif 4: Idle-vs
+## 55. Tarif 4: Idle-vs
 
 **Hedef:** Otomatik savaş + dalga sistemi + upgrade kartı + prestige.
 
@@ -2988,47 +3994,96 @@ Create → Player Config  (BaseAttackDamage=10, BaseMaxHP=100, BaseCritChance=0.
 Create → Prestige Config (MinWaveToPrestige=10, BaseMultiplierPerPrestige=0.1)
 ```
 
-### Ek Sistemler Bootstrap'e Ekle
+### Tam Bootstrap Script'i (Adım Açıklamalarıyla)
 
 ```csharp
-// WaveConfigSO ConfigRegistry.Wave üzerinden otomatik okunur
-_waveManager.Initialize(
-    enemyManager:  _enemyManager,
-    saveNotifier:  _saveService
-);
+private async void Awake()
+{
+    // ADIM 1: Config'leri yükle.
+    // Prodüksiyonda ConfigLoadingService bunu otomatik yapar.
+    // Burada prestige ve wave config'leri de gerekli — PrestigeStateManager ve
+    // WaveSpawnManager bunları ConfigRegistry'den otomatik okur.
+    ConfigRegistry.InjectForTesting(
+        economy:  _economyConfig,
+        wave:     _waveConfig,
+        player:   _playerConfig,
+        prestige: _prestigeConfig,
+        schema:   _schemaVersion
+    );
 
-// BaseStatUpgradeProvider — IUpgradeStatProvider uygulaması
-var statProvider = new BaseStatUpgradeProvider(ConfigRegistry.Player);
+    // ADIM 2: UpgradeTree önce başlatılır — EconomyService'e bağımlı.
+    _upgradeTree.HandleConfigsLoaded();
 
-_abc.Initialize(
-    enemyManager:     _enemyManager,
-    waveSpawnManager: _waveManager,
-    statProvider:     statProvider,
-    playerConfig:     ConfigRegistry.Player,
-    waveConfig:       ConfigRegistry.Wave,
-    playerId:         1
-);
-_abc.StartCombat();  // Initialize'dan hemen sonra
+    // ADIM 3: EconomyService
+    _economyService.Initialize(_upgradeTree, _saveService);
 
-// PrestigeStateManager'ın Initialize() metodu YOKTUR
-// ConfigRegistry.Prestige'i otomatik okur
-// Sadece wave numarasını bildirin ve SaveService'e kaydedin:
-WaveSpawnManager.OnWaveStarted += (wave) => _prestigeManager.SetCurrentWave(wave);
-_saveService.RegisterStateProvider(_prestigeManager);
-_saveService.RegisterStateProvider(_waveManager);
+    // ADIM 4: GeneratorSystem
+    _generatorSystem.Initialize(ConfigRegistry.Generators, _economyService, _saveService);
+
+    // ADIM 5: PassiveIncome
+    _passiveIncome.Initialize(_generatorSystem, _economyService, _gameFlowStateMachine);
+
+    // ADIM 6: WaveSpawnManager
+    // WaveConfigSO Initialize'a GEÇİRİLMEZ — Awake()'de ConfigRegistry.Wave'den okunur.
+    _waveManager.Initialize(
+        enemyManager: _enemyManager,
+        saveNotifier: _saveService,
+        healthSystem: _healthSystem  // opsiyonel — oyuncu ölümünde wave durdurma
+    );
+
+    // ADIM 7: AutoBattleController
+    // IUpgradeStatProvider oluştur — doğrudan UpgradeApplicationSystem static referansı
+    // kullanılamaz; BaseStatUpgradeProvider arayüzü sağlar.
+    var statProvider = new BaseStatUpgradeProvider(ConfigRegistry.Player);
+    _abc.Initialize(
+        enemyManager:     _enemyManager,
+        waveSpawnManager: _waveManager,
+        statProvider:     statProvider,
+        playerConfig:     ConfigRegistry.Player,
+        waveConfig:       ConfigRegistry.Wave,
+        playerId:         _playerHealthComponent.gameObject.GetInstanceID()
+    );
+    _abc.SetPlayerQuery(_playerHealthComponent); // IPlayerQuery — PlayerHealthComponent uygular
+
+    // ADIM 8: PrestigeStateManager KURULUMU
+    // Initialize() YOKTUR — ConfigRegistry.Prestige'i OnEnable'da okur.
+    // Tek yapılacak: WaveSpawnManager köprüsü + SaveService kaydı.
+    WaveSpawnManager.OnWaveStarted += (wave) => _prestigeManager.SetCurrentWave(wave);
+
+    // Prestige akışında run efektlerini temizle:
+    PrestigeStateManager.OnPrestigeStarted += () =>
+        UpgradeApplicationSystem.ClearRunEffects();
+
+    // ADIM 9: SaveService sağlayıcılarını kaydet — LoadAsync'ten ÖNCE
+    _saveService.RegisterStateProvider(_economyService);   // Order: 10
+    _saveService.RegisterStateProvider(_upgradeTree);      // Order: 20
+    _saveService.RegisterStateProvider(_prestigeManager);  // Order: 30
+    _saveService.RegisterStateProvider(_generatorSystem);  // Order: 50
+    _saveService.RegisterStateProvider(_waveManager);      // Order: 40
+
+    // ADIM 10: Kayıtları yükle
+    await _saveService.LoadAsync();
+
+    // ADIM 11: Savaşı başlat — LoadAsync SONRASINDA çağrılmalı.
+    // Neden? Kayıt yüklenince dalga numarası restore edilir;
+    // StartFirstWave() kayıttan gelen numaradan devam eder.
+    _waveManager.StartFirstWave();
+    _abc.StartCombat();
+}
 ```
 
 ### Dalga Sonu Upgrade Ekranı
 
 ```csharp
-WaveSpawnManager.OnWaveCompleted += (wave) =>
+WaveSpawnManager.OnWaveComplete += (wave) =>
 {
     if (wave % ConfigRegistry.Wave.UpgradeSelectionWaveInterval == 0)
     {
         _abc.StopCombat();
-        var nodes = _upgradeTree.GetAvailableNodes();
-        // 3 tanesi rastgele seç:
-        var cards = nodes
+        var availableNodes = _upgradeTree.GetAvailableNodes();
+
+        // 3 kart rastgele seç (SelectionWeight'e göre ağırlıklı tercih tercih edilebilir)
+        var cards = availableNodes
             .OrderBy(_ => UnityEngine.Random.value)
             .Take(3)
             .Select(n => n.Config)
@@ -3038,7 +4093,7 @@ WaveSpawnManager.OnWaveCompleted += (wave) =>
         {
             _economyService.TryPurchase(chosen.NodeId);
             upgradeScreen.Hide();
-            _abc.StartCombat();
+            _abc.NotifyUpgradeSelected(); // savaşı yeniden başlatır
         });
     }
 };
@@ -3049,16 +4104,45 @@ WaveSpawnManager.OnWaveCompleted += (wave) =>
 ```csharp
 void Update()
 {
-    prestigeBtn.interactable  = _prestigeManager.CanPrestige;
-    multiplierText.text        = $"×{_prestigeManager.GetPermanentMultiplier():F2}";
+    // CanPrestige → MinWaveToPrestige koşulu + SetCurrentWave bağlantısı şart
+    prestigeBtn.interactable = _prestigeManager.CanPrestige;
+    multiplierText.text      = $"×{_prestigeManager.GetPermanentMultiplier():F2}";
 }
 
-public void OnPrestigeClick() => _prestigeManager.TryPrestige();
+public void OnPrestigeClick()
+{
+    if (_prestigeManager.TryPrestige())
+    {
+        // OnPrestigeStarted → EconomyService, WaveManager, UpgradeApplicationSystem sıfırlanır
+        // OnPrestigeComplete → yeni çarpan gösterilir
+        // WaveManager.ResetForNewRun() prestige akışı içinde zaten çağrılır
+        _waveManager.StartFirstWave(); // Prestige sonrası yeni run başlat
+        _abc.StartCombat();
+    }
+}
+```
+
+### Tüm Sistem Bağlantısı Özeti
+
+```
+ConfigRegistry ──────────────────────────────────────────┐
+     │ ConfigRegistry.Wave                                │ ConfigRegistry.Prestige
+     ↓                                                    ↓
+WaveSpawnManager ─── OnWaveStarted ──→ PrestigeStateManager.SetCurrentWave()
+     │                                         │
+     │ spawn/kill                               │ OnPrestigeStarted
+     ↓                                          ↓
+EnemyManager ←── AutoBattleController    UpgradeApplicationSystem.ClearRunEffects()
+     │                  │
+     │ OnEntityDied      │ DamageSystem.ResolveDamage()
+     ↓                  ↓
+HealthSystem      PlayerHealthComponent
+                  (IPlayerQuery → IsInIdleRecovery, Position)
 ```
 
 ---
 
-## 48. Tarif 5: Merge Idle
+## 56. Tarif 5: Merge Idle
 
 **Hedef:** Merge board + pasif gelir + ekonomi.
 
@@ -3089,7 +4173,7 @@ MergeService.OnMergeCompleted += (r) =>
 
 ---
 
-## 49. Tarif 6: Prestige-Heavy RPG Idle
+## 57. Tarif 6: Prestige-Heavy RPG Idle
 
 **Hedef:** Derin prestige + ascension katmanları + skill tree + trait sistemi + araştırma.
 
@@ -3162,7 +4246,7 @@ ResearchService.OnNodeCompleted += (tree, node) =>
 
 ---
 
-## 50. Sorun Giderme
+## 58. Sorun Giderme
 
 ### "ConfigNotLoadedException" veya null ref config hatası
 
@@ -3259,4 +4343,4 @@ Tools → Endless Engine → Schema Bump Utility → Bump Version
 
 ---
 
-*Endless Engine v1.1.0 — Kullanım Kılavuzu Sonu*
+*Endless Engine v1.1.0 — Kullanım Kılavuzu Sonu (58 Bölüm)*

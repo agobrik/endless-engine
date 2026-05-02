@@ -6,6 +6,43 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.1.0] - 2026-05-02
+
+### Added
+
+**Active Gameplay Systems**
+- `ClickLoopService` — tap targets with HP, combo multiplier, crit chance, auto-click support, and offline recovery
+- `HarvestLoopService` — cursor-drag harvest nodes with area damage, combo, and offline catch-up
+- `CursorYieldService` — mouse movement → gold via Speed, Distance, or Hover yield models (was stubbed in 1.0.x, now fully documented)
+- `ZoneSystem` — world-space income zones in passive or cursor-active mode (was present in 1.0.x, now fully documented with `SetPrestigeCountGetter` API)
+- `TimeBoostService` — temporary `TickEngine.TimeScale` multiplier with `TryActivate` / `TryActivatePaid` API (was present in 1.0.x, now fully documented)
+
+**Samples**
+- `ClickerIdle` sample — complete scene demonstrating ClickLoopService with tap targets, combo, crit, offline
+- `HarvestLoop` sample — complete scene demonstrating HarvestLoopService with drag-cursor harvest nodes
+- `WaveIdle` sample — AutoBattle + wave system + upgrade cards + prestige
+- `MergeIdle` sample — MergeService + inventory + economy
+- `PrestHeavy` sample — full prestige + ascension + skill tree + research chain
+
+**Editor Tools**
+- `ContentPackWizard` (`Tools → Endless Engine → Content Pack Wizard`) — one-click RealmPack generator
+- `TraitTreeEditorWindow` (`Tools → Endless Engine → Trait Tree Editor`) — trait tree visual editor
+
+**Documentation**
+- `Documentation~/kullanim-kilavuzu-tr.md` — comprehensive 58-section Turkish user guide covering all systems
+- Added §42 TimeBoostService, §43 ZoneSystem, §44 CursorYieldService, §45 InventoryService, §46 DropResolver, §47 PlayerHealthComponent, §48 GameFlowState + RunSummaryData, §49 IIdleModule
+- Restored full API detail for §10 OfflineTimeCalculator, §15 UpgradeApplicationSystem, §16 SkillTreeService, §18 PrestigeStateManager, §19 AscensionStateManager, §20 WaveSpawnManager, §21 AutoBattleController that was reduced in v1.0.x docs
+- Added complete bootstrap recipes for all 6 game types (§52–§57)
+
+### Fixed
+
+- **Documentation bootstrap recipes** — removed duplicate `LoadAsync()` calls in Tarif 2 and Tarif 3 (providers must all be registered before the single `LoadAsync()` call)
+- **`OnWaveCompleted` → `OnWaveComplete`** — corrected event name in WaveIdle bootstrap recipe
+- **`StartCombat()` → `NotifyUpgradeSelected()`** — corrected post-upgrade-selection call in WaveIdle recipe
+- **BigDouble section ordering** — §41 BigDouble is now physically in the correct position in the Turkish guide
+
+---
+
 ## [1.0.4] - 2026-04-24
 
 ### Added

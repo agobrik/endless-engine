@@ -4,8 +4,8 @@
 
 1. Clone the repo
 2. Open the `endless-engine` Unity project in Unity 6.3 LTS
-3. All scripts live under `Assets/Scripts/Runtime/` (authoritative) and are mirrored to `Packages/com.endlessengine.idle/Runtime/` (UPM target)
-4. Tests live under `Assets/Tests/`
+3. All runtime scripts live under `Packages/com.endlessengine.idle/Runtime/`
+4. Tests live under `Packages/com.endlessengine.idle/Tests/`
 
 ## Coding Standards
 
@@ -19,7 +19,7 @@
 
 - Run tests via **Window → General → Test Runner → EditMode**
 - All new systems require at least: success path, failure path, save/load roundtrip
-- Integration tests for cross-system chains go in `Assets/Tests/integration/`
+- Integration tests for cross-system chains go in `Packages/com.endlessengine.idle/Tests/integration/`
 
 ## Pull Request Guidelines
 
@@ -30,10 +30,9 @@
 
 ## Adding a New Module
 
-1. Create the ScriptableObject config in `Assets/Scripts/Runtime/Config/ScriptableObjects/`
-2. Create the service MonoBehaviour in `Assets/Scripts/Runtime/[ModuleName]/`
+1. Create the ScriptableObject config in `Packages/com.endlessengine.idle/Runtime/Config/ScriptableObjects/`
+2. Create the service MonoBehaviour in `Packages/com.endlessengine.idle/Runtime/[ModuleName]/`
 3. Implement `ISaveStateProvider` (add save fields to `SaveData.cs`, add to `EnsureDefaults()`, add order constant to `SaveConstants.SaveProviderOrder`)
-4. Wire to `VerticalSliceBootstrap.cs` as an optional module (null-checked SerializeField)
-5. Write unit tests in `Assets/Tests/unit/[module-name]/`
-6. Mirror files to `Packages/com.endlessengine.idle/Runtime/[ModuleName]/`
-7. Document in `Documentation~/api-reference.md`
+4. Wire to `BootstrapController.cs` as an optional module (null-checked SerializeField)
+5. Write unit tests in `Packages/com.endlessengine.idle/Tests/unit/[module-name]/`
+6. Document in `Documentation~/api-reference.md`

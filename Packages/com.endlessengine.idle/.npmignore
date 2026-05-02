@@ -1,0 +1,11 @@
+# PDF source files — not part of the published package
+Documentation~/Endless_Engine_Turkce_Kullanim_Kilavuzu_v3.pdf
+Documentation~/Endless_Engine_Turkce_Kullanim_Kilavuzu_v4.pdf
+
+# Tests — not needed by package consumers
+Tests/
+Tests.meta
+
+# Dev-only files
+CONTRIBUTING.md
+CONTRIBUTING.md.meta

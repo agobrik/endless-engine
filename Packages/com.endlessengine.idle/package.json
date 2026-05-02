@@ -5,7 +5,7 @@
   "description": "Modular idle game engine for Unity 6.3 LTS. Core systems: economy, generators, prestige, wave/combat, upgrade/skill/research trees, merge mechanics, minigames, buildings, pets, events, leaderboard, save/load, and a full editor toolset.",
   "unity": "6000.0",
   "unityRelease": "0f1",
-  "documentationUrl": "https://github.com/agobrik/endless-engine/blob/main/Packages/com.endlessengine.idle/Documentation~/api-reference.md",
+  "documentationUrl": "https://github.com/agobrik/endless-engine/blob/main/Packages/com.endlessengine.idle/Documentation~/getting-started.md",
   "changelogUrl": "https://github.com/agobrik/endless-engine/blob/main/Packages/com.endlessengine.idle/CHANGELOG.md",
   "licensesUrl": "https://github.com/agobrik/endless-engine/blob/main/Packages/com.endlessengine.idle/LICENSE.md",
   "dependencies": {

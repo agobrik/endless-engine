@@ -33,7 +33,8 @@ desktop.ini
 # Backup files
 *.bak
 *.orig
-*~
+# Temp files ending in ~ but NOT directories (Documentation~ must be tracked)
+[^/]*~
 
 # Claude Code
 .claude/
