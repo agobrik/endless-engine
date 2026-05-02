@@ -1,6 +1,5 @@
 # Endless Engine — Idle Game Toolkit
 
-[![Tests](https://github.com/agobrik/endless-engine/actions/workflows/tests.yml/badge.svg)](https://github.com/agobrik/endless-engine/actions/workflows/tests.yml)
 [![openupm](https://img.shields.io/npm/v/com.endlessengine.idle?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.endlessengine.idle/)
 
 Modular idle game engine for Unity 6.3 LTS. All systems are config-driven, modular,
