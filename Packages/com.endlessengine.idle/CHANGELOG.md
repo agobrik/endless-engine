@@ -6,6 +6,63 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.3.0] - 2026-05-11
+
+### Added
+
+**New Game Wizard — 12 Game Types**
+Complete overhaul: 12 game types (up from 8), each generating a fully-wired, play-ready scene:
+
+| Type | Press Play and see |
+|------|--------------------|
+| Pure Idle | Gold accumulates, buy generators, prestige button |
+| Clicker Idle | Tap orange sphere → gold + generators |
+| Click Loop (new) | 3 HP-targets in triangle formation, click to destroy, combo+crit, respawn |
+| Harvest Idle (new) | 5 green resource nodes, drag cursor to harvest, combo meter |
+| Idle-vs / RPG | Red enemies spawn and move, wave HUD, auto-battle |
+| Tower Defense (new) | Winding tile path, 3 tower slots, enemies walk path |
+| Merge Idle | 3×3 merge board with 2 seed items |
+| Farm Idle (new) | 6 farm plots in 2×3 grid, planted/growing/ready states |
+| Research Idle | Generators + research placeholder |
+| Building Idle | 8 building slot grid with placeholder buildings |
+| Prestige-Heavy | All prestige layers + multi-currency |
+| Custom | All modules off |
+
+**New Runtime Components**
+- `HarvestLoopBootstrap` — wires HarvestCursor + HarvestLoopService after AutoSetupBootstrap.IsReady; auto-creates InputProviderUnity if absent
+- `ClickLoopBootstrap` — wires ClickLoopService + InputProviderUnity; creates ClickLoopConfigSO fallback if absent
+
+**New Config Assets Created by Wizard**
+- `ClickLoopConfig.asset` — pre-tuned combo/crit/auto-click settings
+- `ClickTarget_0/1/2.asset` — 3 target configs with escalating HP and yield
+- `HarvestAreaConfig.asset` — cursor radius, tick interval, combo parameters
+- `HarvestNode.asset` — resource node HP, yield, respawn time
+- `StarterBuilding.asset` — for Building/Farm types
+
+**Scene Visual Improvements (SceneSetupUtility)**
+- Per-type sky color: harvest=dark green, click=dark blue, wave=dark red, tower=military green, farm=field green, merge=purple
+- ClickLoop: 3 colored HP-target circles in triangle + glow rings + HP bars
+- HarvestIdle: 5 tree-shaped nodes (body+crown circles), ground plane, cursor radius indicator
+- TowerDefense: winding tile path, grass background, 3 tower slots with grey turret
+- FarmIdle: sky+ground layers, 6 farm plots with growing/ready crop visuals
+- BuildingIdle: 8 colored building slot grid
+- Enemy HP bars, click target HP bars (world-space SpriteRenderer)
+- All HUD panels: per-type size + position (wave/tower = top-right, others = left strip)
+
+**GeneratedGameHUD Improvements**
+- Subscribes to HarvestLoopService.OnYieldAwarded + OnComboChanged
+- Subscribes to ClickLoopService.OnYieldAwarded + OnComboChanged
+- Shows HarvestLabel, ComboLabel, ClickIncomeLabel, GemLabel
+- PrestigeButton now actually calls PrestigeStateManager.TryPrestige()
+- Save indicator shows "Saved" on generator purchase, "Prestige!" on prestige
+
+**New Game Wizard UI**
+- 12 game types in dropdown with descriptions
+- 12 module toggles (added: Click Loop, Harvest, Research, Building, Merge)
+- File preview lists ClickTarget/HarvestNode configs
+
+---
+
 ## [1.2.1] - 2026-05-10
 
 ### Added

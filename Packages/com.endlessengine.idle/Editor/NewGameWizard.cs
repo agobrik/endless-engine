@@ -9,22 +9,22 @@ namespace EndlessEngine.Editor
     /// <summary>
     /// Tools → Endless Engine → New Game Wizard
     ///
-    /// Step 1 — pick a Game Type (preset modules + economy values pre-filled).
-    /// Step 2 — fine-tune individual module toggles.
-    /// Step 3 — click Generate to produce:
-    ///   - Configs/ folder with selected module ScriptableObject assets (values pre-set)
-    ///   - Scripts/ folder with a generated Bootstrap .cs file
-    ///   - Scenes/ folder placeholder note
+    /// Generates a fully-wired, play-ready Unity scene plus all config assets for any
+    /// idle/incremental game type. Press Generate → open scene → press Play.
     ///
-    /// Game Types and their presets:
-    ///   Pure Idle        — Generator + Prestige, long sessions, slow economy
-    ///   Clicker Idle     — Click + Generator + Prestige, fast early game
-    ///   Idle-vs / RPG    — Generator + Wave/Combat + Prestige + MultiCurrency
-    ///   Merge Idle       — Click, no generators, merge-focused economy
-    ///   Research Idle    — Generator + Prestige + MultiCurrency (research tokens)
-    ///   Building Idle    — Generator + Zone + Prestige
-    ///   Prestige-Heavy   — Generator + Prestige + MultiCurrency (all prestige layers)
-    ///   Custom           — All toggles off by default, user picks manually
+    /// Supported game types:
+    ///   Pure Idle        — Generator + Prestige. Classic idle accumulation.
+    ///   Clicker Idle     — Generator + Tap/Click + Prestige. Active tapping.
+    ///   Click Loop       — Full ClickLoopService: click targets with HP, combo, crit, offline.
+    ///   Harvest Idle     — HarvestLoopService: drag cursor over world nodes, combo, offline.
+    ///   Idle-vs / RPG    — Wave auto-battle + Generator + Prestige + Multi-Currency.
+    ///   Tower Defense    — Wave combat on a path + tower slot placeholders.
+    ///   Merge Idle       — Merge 2×tier-N items → 1×tier-(N+1). No generators.
+    ///   Farm Idle        — Grid building + generators + prestige.
+    ///   Research Idle    — Long research queues gate progression.
+    ///   Building Idle    — Grid city with zone income.
+    ///   Prestige-Heavy   — Full prestige + ascension + multi-currency.
+    ///   Custom           — All toggles off — configure manually.
     /// </summary>
     public class NewGameWizard : EditorWindow
     {
@@ -34,45 +34,52 @@ namespace EndlessEngine.Editor
         {
             PureIdle        = 0,
             ClickerIdle     = 1,
-            IdleVsRPG       = 2,
-            MergeIdle       = 3,
-            ResearchIdle    = 4,
-            BuildingIdle    = 5,
-            PrestigeHeavy   = 6,
-            Custom          = 7,
+            ClickLoop       = 2,
+            HarvestIdle     = 3,
+            IdleVsRPG       = 4,
+            TowerDefense    = 5,
+            MergeIdle       = 6,
+            FarmIdle        = 7,
+            ResearchIdle    = 8,
+            BuildingIdle    = 9,
+            PrestigeHeavy   = 10,
+            Custom          = 11,
         }
 
-        // ── State ──────────────────────────────────────────────────────────────────
+        // ── State ─────────────────────────────────────────────────────────────────
 
-        private string _gameName = "MyIdleGame";
-
-        private GameType _gameType = GameType.PureIdle;
+        private string   _gameName  = "MyIdleGame";
+        private GameType _gameType  = GameType.PureIdle;
 
         private bool _modGenerator     = true;
-        private bool _modCursor        = false;
         private bool _modClick         = false;
+        private bool _modClickLoop     = false;
+        private bool _modHarvest       = false;
+        private bool _modCursor        = false;
         private bool _modZone          = false;
         private bool _modWave          = false;
         private bool _modPrestige      = true;
         private bool _modMultiCurrency = false;
+        private bool _modResearch      = false;
+        private bool _modBuilding      = false;
+        private bool _modMerge         = false;
 
-        // UI refs
-        private TextField  _nameField;
-        private Label      _previewLabel;
-        private Label      _statusLabel;
-        private Label      _presetDescLabel;
+        private TextField _nameField;
+        private Label     _previewLabel;
+        private Label     _statusLabel;
+        private Label     _presetDescLabel;
 
-        // ── Menu ───────────────────────────────────────────────────────────────────
+        // ── Menu ──────────────────────────────────────────────────────────────────
 
         [MenuItem("Tools/Endless Engine/New Game Wizard", priority = 0)]
         public static void Open()
         {
             var win = GetWindow<NewGameWizard>(utility: true, title: "New Game Wizard");
-            win.minSize = new Vector2(540, 600);
-            win.maxSize = new Vector2(720, 760);
+            win.minSize = new Vector2(560, 680);
+            win.maxSize = new Vector2(760, 880);
         }
 
-        // ── GUI ────────────────────────────────────────────────────────────────────
+        // ── GUI ───────────────────────────────────────────────────────────────────
 
         private void CreateGUI()
         {
@@ -82,161 +89,120 @@ namespace EndlessEngine.Editor
             root.style.paddingLeft   = 16;
             root.style.paddingRight  = 16;
 
-            // ── Header ─────────────────────────────────────────────────────────────
+            // Header
             var header = new Label("New Game Wizard");
-            header.style.fontSize   = 18;
+            header.style.fontSize = 18;
             header.style.unityFontStyleAndWeight = FontStyle.Bold;
-            header.style.marginBottom = 4;
+            header.style.marginBottom = 3;
             root.Add(header);
 
-            var sub = new Label("Generates an idle game skeleton with pre-configured modules and economy values.");
+            var sub = new Label("Generates a fully-wired, play-ready scene + all config assets.");
             sub.style.fontSize    = 11;
-            sub.style.color       = new Color(0.6f, 0.6f, 0.6f);
+            sub.style.color       = new Color(0.55f, 0.55f, 0.55f);
             sub.style.whiteSpace  = WhiteSpace.Normal;
-            sub.style.marginBottom = 14;
+            sub.style.marginBottom = 12;
             root.Add(sub);
 
-            // ── Game Name ──────────────────────────────────────────────────────────
-            root.Add(SectionLabel("Project Settings"));
-
-            var nameRow = new VisualElement();
-            nameRow.style.flexDirection = FlexDirection.Row;
-            nameRow.style.alignItems    = Align.Center;
-            nameRow.style.marginBottom  = 8;
-
-            var nameLabel = new Label("Game Name");
-            nameLabel.style.width        = 90;
-            nameLabel.style.fontSize     = 12;
-            nameLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-
+            // Game name
+            root.Add(SectionLabel("Project"));
+            var nameRow = Row();
+            var nl = Bold("Game Name", 90);
             _nameField = new TextField { value = _gameName };
             _nameField.style.flexGrow = 1;
-            _nameField.RegisterValueChangedCallback(evt =>
-            {
-                _gameName = evt.newValue;
-                RefreshPreview();
-            });
-
-            nameRow.Add(nameLabel);
-            nameRow.Add(_nameField);
+            _nameField.RegisterValueChangedCallback(evt => { _gameName = evt.newValue; RefreshPreview(); });
+            nameRow.Add(nl); nameRow.Add(_nameField);
             root.Add(nameRow);
 
-            // ── Game Type ──────────────────────────────────────────────────────────
+            // Game type
             root.Add(SectionLabel("Game Type"));
-
-            var typeRow = new VisualElement();
-            typeRow.style.flexDirection = FlexDirection.Row;
-            typeRow.style.alignItems    = Align.Center;
-            typeRow.style.marginBottom  = 4;
-
-            var typeLabel = new Label("Type");
-            typeLabel.style.width       = 90;
-            typeLabel.style.fontSize    = 12;
-            typeLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-
+            var typeRow = Row();
+            typeRow.style.marginBottom = 3;
+            var tl = Bold("Type", 90);
             var typeNames = new List<string>();
             foreach (GameType t in System.Enum.GetValues(typeof(GameType)))
-                typeNames.Add(GameTypeDisplayName(t));
-
-            var typeDropdown = new DropdownField(typeNames, (int)_gameType);
-            typeDropdown.style.flexGrow = 1;
-            typeDropdown.RegisterValueChangedCallback(evt =>
+                typeNames.Add(DisplayName(t));
+            var typeDD = new DropdownField(typeNames, (int)_gameType);
+            typeDD.style.flexGrow = 1;
+            typeDD.RegisterValueChangedCallback(evt =>
             {
-                int idx = typeNames.IndexOf(evt.newValue);
-                _gameType = (GameType)idx;
+                _gameType = (GameType)typeNames.IndexOf(evt.newValue);
                 ApplyPreset(_gameType);
                 RefreshPreview();
-                RefreshModuleToggles();
-                UpdatePresetDesc();
+                rootVisualElement.Clear();
+                CreateGUI();
             });
-
-            typeRow.Add(typeLabel);
-            typeRow.Add(typeDropdown);
+            typeRow.Add(tl); typeRow.Add(typeDD);
             root.Add(typeRow);
 
-            _presetDescLabel = new Label(GetPresetDescription(_gameType));
+            _presetDescLabel = new Label(Desc(_gameType));
             _presetDescLabel.style.fontSize     = 10;
-            _presetDescLabel.style.color        = new Color(0.65f, 0.85f, 0.65f);
+            _presetDescLabel.style.color        = new Color(0.6f, 0.88f, 0.6f);
             _presetDescLabel.style.whiteSpace   = WhiteSpace.Normal;
             _presetDescLabel.style.marginBottom = 10;
             _presetDescLabel.style.marginLeft   = 92;
             root.Add(_presetDescLabel);
 
-            // ── Module Toggles ─────────────────────────────────────────────────────
-            root.Add(SectionLabel("Modules  (auto-set by type — override if needed)"));
+            // Module toggles
+            root.Add(SectionLabel("Modules  (auto-set — override if needed)"));
+            root.Add(CoreRow());
 
-            root.Add(CoreModuleRow());
-
-            root.Add(ModuleToggleRow(
-                "Generator",
-                "PassiveIncomeService · GeneratorSystem",
-                _modGenerator, v => { _modGenerator = v; RefreshPreview(); }));
-
-            root.Add(ModuleToggleRow(
-                "Cursor",
-                "CursorYieldService  (Speed / Hover / Distance)",
-                _modCursor, v => { _modCursor = v; RefreshPreview(); }));
-
-            root.Add(ModuleToggleRow(
-                "Click",
-                "ClickYieldService  (combo · crit · auto-click)",
-                _modClick, v => { _modClick = v; RefreshPreview(); }));
-
-            root.Add(ModuleToggleRow(
-                "Zone",
-                "ZoneSystem  (world-space income zones)",
-                _modZone, v => { _modZone = v; RefreshPreview(); }));
-
-            root.Add(ModuleToggleRow(
-                "Wave / Combat",
-                "WaveSpawnManager · EnemyManager · HealthSystem",
-                _modWave, v => { _modWave = v; RefreshPreview(); }));
-
-            root.Add(ModuleToggleRow(
-                "Prestige",
-                "PrestigeStateManager  (reset → multiplier)",
-                _modPrestige, v => { _modPrestige = v; RefreshPreview(); }));
-
-            root.Add(ModuleToggleRow(
-                "Multi-Currency",
-                "CurrencyService  (gems · tokens · secondary currencies)",
+            root.Add(ModRow("Generator",     "GeneratorSystem · PassiveIncomeService",
+                _modGenerator,  v => { _modGenerator = v; RefreshPreview(); }));
+            root.Add(ModRow("Click (simple)", "ClickTargetHandler (tap sphere → gold)",
+                _modClick,      v => { _modClick = v; RefreshPreview(); }));
+            root.Add(ModRow("Click Loop",    "ClickLoopService · ClickTarget HP/combo/crit/offline",
+                _modClickLoop,  v => { _modClickLoop = v; RefreshPreview(); }));
+            root.Add(ModRow("Harvest",       "HarvestLoopService · HarvestCursor · combo/offline",
+                _modHarvest,    v => { _modHarvest = v; RefreshPreview(); }));
+            root.Add(ModRow("Cursor",        "CursorYieldService  (Speed / Distance / Hover)",
+                _modCursor,     v => { _modCursor = v; RefreshPreview(); }));
+            root.Add(ModRow("Zone",          "ZoneSystem  (world-space income zones)",
+                _modZone,       v => { _modZone = v; RefreshPreview(); }));
+            root.Add(ModRow("Wave / Combat", "WaveSpawnManager · EnemyManager · AutoBattle",
+                _modWave,       v => { _modWave = v; RefreshPreview(); }));
+            root.Add(ModRow("Prestige",      "PrestigeStateManager  (reset → multiplier)",
+                _modPrestige,   v => { _modPrestige = v; RefreshPreview(); }));
+            root.Add(ModRow("Research",      "ResearchService  (time-gated tech tree)",
+                _modResearch,   v => { _modResearch = v; RefreshPreview(); }));
+            root.Add(ModRow("Building",      "BuildingService  (place/upgrade buildings)",
+                _modBuilding,   v => { _modBuilding = v; RefreshPreview(); }));
+            root.Add(ModRow("Merge",         "MergeService · InventoryService  (2×N → N+1)",
+                _modMerge,      v => { _modMerge = v; RefreshPreview(); }));
+            root.Add(ModRow("Multi-Currency","CurrencyService  (gems · tokens · secondary)",
                 _modMultiCurrency, v => { _modMultiCurrency = v; RefreshPreview(); }));
 
-            // ── Preview ────────────────────────────────────────────────────────────
+            // File preview
             root.Add(SectionLabel("Files to Create"));
-
-            var previewBox = new ScrollView();
-            previewBox.style.height          = 100;
-            previewBox.style.backgroundColor = new Color(0.12f, 0.12f, 0.12f);
-            previewBox.style.borderTopLeftRadius     = 4;
-            previewBox.style.borderTopRightRadius    = 4;
-            previewBox.style.borderBottomLeftRadius  = 4;
-            previewBox.style.borderBottomRightRadius = 4;
-            previewBox.style.paddingTop    = 6;
-            previewBox.style.paddingLeft   = 8;
-            previewBox.style.paddingBottom = 6;
-            previewBox.style.marginBottom  = 12;
-
+            var scroll = new ScrollView();
+            scroll.style.height          = 90;
+            scroll.style.backgroundColor = new Color(0.11f, 0.11f, 0.11f);
+            scroll.style.paddingTop      = 5;
+            scroll.style.paddingLeft     = 8;
+            scroll.style.marginBottom    = 10;
+            scroll.style.borderTopLeftRadius     = 4;
+            scroll.style.borderTopRightRadius    = 4;
+            scroll.style.borderBottomLeftRadius  = 4;
+            scroll.style.borderBottomRightRadius = 4;
             _previewLabel = new Label();
-            _previewLabel.style.fontSize    = 10;
-            _previewLabel.style.color       = new Color(0.75f, 0.85f, 0.75f);
-            _previewLabel.style.whiteSpace  = WhiteSpace.Normal;
-            previewBox.Add(_previewLabel);
-            root.Add(previewBox);
+            _previewLabel.style.fontSize   = 10;
+            _previewLabel.style.color      = new Color(0.7f, 0.85f, 0.7f);
+            _previewLabel.style.whiteSpace = WhiteSpace.Normal;
+            scroll.Add(_previewLabel);
+            root.Add(scroll);
 
-            // ── Status ─────────────────────────────────────────────────────────────
+            // Status
             _statusLabel = new Label();
             _statusLabel.style.fontSize     = 11;
             _statusLabel.style.whiteSpace   = WhiteSpace.Normal;
             _statusLabel.style.marginBottom = 8;
             root.Add(_statusLabel);
 
-            // ── Generate Button ────────────────────────────────────────────────────
-            var btn = new Button(Generate) { text = "Generate Skeleton" };
-            btn.style.height          = 36;
+            // Generate button
+            var btn = new Button(Generate) { text = "  Generate Skeleton  " };
+            btn.style.height          = 38;
             btn.style.fontSize        = 13;
             btn.style.unityFontStyleAndWeight = FontStyle.Bold;
-            btn.style.backgroundColor = new Color(0.15f, 0.42f, 0.15f);
+            btn.style.backgroundColor = new Color(0.13f, 0.40f, 0.13f);
             btn.style.color           = Color.white;
             btn.style.borderTopLeftRadius     = 4;
             btn.style.borderTopRightRadius    = 4;
@@ -248,36 +214,47 @@ namespace EndlessEngine.Editor
             RefreshPreview();
         }
 
-        // ── Game Type Preset Logic ─────────────────────────────────────────────────
+        // ── Display names ─────────────────────────────────────────────────────────
 
-        private static string GameTypeDisplayName(GameType t) => t switch
+        private static string DisplayName(GameType t) => t switch
         {
             GameType.PureIdle      => "Pure Idle",
             GameType.ClickerIdle   => "Clicker Idle",
+            GameType.ClickLoop     => "Click Loop (full)",
+            GameType.HarvestIdle   => "Harvest Idle",
             GameType.IdleVsRPG     => "Idle-vs / RPG",
+            GameType.TowerDefense  => "Tower Defense",
             GameType.MergeIdle     => "Merge Idle",
+            GameType.FarmIdle      => "Farm Idle",
             GameType.ResearchIdle  => "Research Idle",
             GameType.BuildingIdle  => "Building Idle",
             GameType.PrestigeHeavy => "Prestige-Heavy",
             _                      => "Custom",
         };
 
-        private static string GetPresetDescription(GameType t) => t switch
+        private static string Desc(GameType t) => t switch
         {
-            GameType.PureIdle      => "Generator + Prestige. Pure passive income — no combat, no clicking.",
-            GameType.ClickerIdle   => "Click + Generator + Prestige. Fast early game, active tap/click.",
-            GameType.IdleVsRPG     => "Generator + Wave/Combat + Prestige + Multi-Currency. Run-based arena.",
-            GameType.MergeIdle     => "Click only. Income from merging and selling items — no generators.",
-            GameType.ResearchIdle  => "Generator + Prestige + Multi-Currency. Long research queues gate content.",
-            GameType.BuildingIdle  => "Generator + Zone + Prestige. Grid-based building placement income.",
-            GameType.PrestigeHeavy => "Generator + Prestige + Multi-Currency. All three prestige layers active.",
-            _                      => "All modules off by default. Configure manually.",
+            GameType.PureIdle      => "Passive income from generators. Buy upgrades. Prestige for multiplier. The classic idle formula.",
+            GameType.ClickerIdle   => "Tap an orange sphere to earn gold + passive generators. Combo builds with rapid taps.",
+            GameType.ClickLoop     => "Click targets with HP bars — destroy them for gold. Combo × crit × auto-click × offline.",
+            GameType.HarvestIdle   => "Drag cursor over green harvest nodes. Combo builds as you harvest. Nodes respawn.",
+            GameType.IdleVsRPG     => "Auto-battle waves of enemies. Generators fund upgrades between waves. Prestige after runs.",
+            GameType.TowerDefense  => "Enemies walk a path. Tower placeholders earn income. Wave auto-combat built-in.",
+            GameType.MergeIdle     => "Combine 2×tier-N items into 1×tier-(N+1). Sell for gold. No passive income.",
+            GameType.FarmIdle      => "Plant & harvest farm plots (generator analogy). Building placement income.",
+            GameType.ResearchIdle  => "Generators fund research. Unlock upgrades via time-gated tech tree.",
+            GameType.BuildingIdle  => "Place buildings on a grid — each produces income per tick.",
+            GameType.PrestigeHeavy => "All prestige layers (Prestige + Ascension) + multi-currency + generators.",
+            _                      => "All modules off. Configure manually.",
         };
+
+        // ── Presets ───────────────────────────────────────────────────────────────
 
         private void ApplyPreset(GameType t)
         {
-            // Reset all
-            _modGenerator = _modCursor = _modClick = _modZone = _modWave = _modPrestige = _modMultiCurrency = false;
+            _modGenerator = _modClick = _modClickLoop = _modHarvest = _modCursor =
+            _modZone = _modWave = _modPrestige = _modMultiCurrency =
+            _modResearch = _modBuilding = _modMerge = false;
 
             switch (t)
             {
@@ -285,125 +262,123 @@ namespace EndlessEngine.Editor
                     _modGenerator = true;
                     _modPrestige  = true;
                     break;
-
                 case GameType.ClickerIdle:
                     _modClick     = true;
                     _modGenerator = true;
                     _modPrestige  = true;
                     break;
-
+                case GameType.ClickLoop:
+                    _modClickLoop = true;
+                    _modGenerator = true;
+                    _modPrestige  = true;
+                    break;
+                case GameType.HarvestIdle:
+                    _modHarvest   = true;
+                    _modGenerator = true;
+                    _modPrestige  = true;
+                    break;
                 case GameType.IdleVsRPG:
                     _modGenerator     = true;
                     _modWave          = true;
                     _modPrestige      = true;
                     _modMultiCurrency = true;
                     break;
-
-                case GameType.MergeIdle:
-                    _modClick = true;
+                case GameType.TowerDefense:
+                    _modGenerator     = true;
+                    _modWave          = true;
+                    _modPrestige      = true;
                     break;
-
+                case GameType.MergeIdle:
+                    _modMerge = true;
+                    break;
+                case GameType.FarmIdle:
+                    _modGenerator = true;
+                    _modBuilding  = true;
+                    _modPrestige  = true;
+                    break;
                 case GameType.ResearchIdle:
                     _modGenerator     = true;
                     _modPrestige      = true;
+                    _modResearch      = true;
                     _modMultiCurrency = true;
                     break;
-
                 case GameType.BuildingIdle:
                     _modGenerator = true;
                     _modZone      = true;
+                    _modBuilding  = true;
                     _modPrestige  = true;
                     break;
-
                 case GameType.PrestigeHeavy:
                     _modGenerator     = true;
                     _modPrestige      = true;
                     _modMultiCurrency = true;
                     break;
-
                 case GameType.Custom:
                     break;
             }
         }
 
-        private void UpdatePresetDesc()
-        {
-            if (_presetDescLabel != null)
-                _presetDescLabel.text = GetPresetDescription(_gameType);
-        }
+        // ── Economy preset values ─────────────────────────────────────────────────
 
-        /// <summary>
-        /// Rebuilds the module toggle rows to reflect the current _mod* values.
-        /// Because UIElements doesn't directly support mutating toggle values from code
-        /// after creation in this pattern, we trigger a full UI refresh.
-        /// </summary>
-        private void RefreshModuleToggles()
-        {
-            // Simplest approach: rebuild the whole window
-            rootVisualElement.Clear();
-            CreateGUI();
-        }
-
-        // ── Preset Economy Values ──────────────────────────────────────────────────
-
-        /// <summary>
-        /// Applies preset economy field values to a newly-created EconomyConfigSO
-        /// based on the selected game type.
-        /// </summary>
         private void ApplyEconomyPreset(EndlessEngine.Config.EconomyConfigSO so)
         {
             switch (_gameType)
             {
                 case GameType.PureIdle:
-                    so.IdleYieldRateBase         = 0.5f;
-                    so.BaseMultiplierPerPrestige  = 1.5f;
-                    so.ResourceHardCap            = 10_000_000_000L;
-                    so.OfflineCapHours            = 12f;
+                    so.IdleYieldRateBase        = 0.5f;
+                    so.BaseMultiplierPerPrestige = 1.5f;
+                    so.ResourceHardCap          = 10_000_000_000L;
+                    so.OfflineCapHours          = 12f;
                     break;
-
                 case GameType.ClickerIdle:
-                    so.IdleYieldRateBase         = 0.1f;
-                    so.BaseMultiplierPerPrestige  = 1.5f;
-                    so.ResourceHardCap            = 1_000_000_000L;
-                    so.OfflineCapHours            = 8f;
+                case GameType.ClickLoop:
+                    so.IdleYieldRateBase        = 0.1f;
+                    so.BaseMultiplierPerPrestige = 1.5f;
+                    so.ResourceHardCap          = 1_000_000_000L;
+                    so.OfflineCapHours          = 8f;
                     break;
-
+                case GameType.HarvestIdle:
+                    so.IdleYieldRateBase        = 0f;
+                    so.BaseMultiplierPerPrestige = 1.5f;
+                    so.ResourceHardCap          = 1_000_000_000L;
+                    so.OfflineCapHours          = 8f;
+                    break;
                 case GameType.IdleVsRPG:
-                    so.IdleYieldRateBase         = 0.2f;
-                    so.BaseMultiplierPerPrestige  = 2.0f;
-                    so.ResourceHardCap            = 100_000_000_000L;
-                    so.OfflineCapHours            = 8f;
+                case GameType.TowerDefense:
+                    so.IdleYieldRateBase        = 0.2f;
+                    so.BaseMultiplierPerPrestige = 2.0f;
+                    so.ResourceHardCap          = 100_000_000_000L;
+                    so.OfflineCapHours          = 8f;
                     break;
-
                 case GameType.MergeIdle:
-                    so.IdleYieldRateBase         = 0f;
-                    so.BaseMultiplierPerPrestige  = 1.0f;
-                    so.ResourceHardCap            = 1_000_000L;
-                    so.OfflineCapHours            = 0f;
+                    so.IdleYieldRateBase        = 0f;
+                    so.BaseMultiplierPerPrestige = 1.0f;
+                    so.ResourceHardCap          = 1_000_000L;
+                    so.OfflineCapHours          = 0f;
                     break;
-
+                case GameType.FarmIdle:
+                    so.IdleYieldRateBase        = 0.4f;
+                    so.BaseMultiplierPerPrestige = 1.6f;
+                    so.ResourceHardCap          = 10_000_000_000L;
+                    so.OfflineCapHours          = 16f;
+                    break;
                 case GameType.ResearchIdle:
-                    so.IdleYieldRateBase         = 0.3f;
-                    so.BaseMultiplierPerPrestige  = 1.8f;
-                    so.ResourceHardCap            = 1_000_000_000_000L;
-                    so.OfflineCapHours            = 24f;
+                    so.IdleYieldRateBase        = 0.3f;
+                    so.BaseMultiplierPerPrestige = 1.8f;
+                    so.ResourceHardCap          = 1_000_000_000_000L;
+                    so.OfflineCapHours          = 24f;
                     break;
-
                 case GameType.BuildingIdle:
-                    so.IdleYieldRateBase         = 0.4f;
-                    so.BaseMultiplierPerPrestige  = 1.6f;
-                    so.ResourceHardCap            = 10_000_000_000L;
-                    so.OfflineCapHours            = 12f;
+                    so.IdleYieldRateBase        = 0.4f;
+                    so.BaseMultiplierPerPrestige = 1.6f;
+                    so.ResourceHardCap          = 10_000_000_000L;
+                    so.OfflineCapHours          = 12f;
                     break;
-
                 case GameType.PrestigeHeavy:
-                    so.IdleYieldRateBase         = 0.5f;
-                    so.BaseMultiplierPerPrestige  = 3.0f;
-                    so.ResourceHardCap            = 1_000_000_000_000_000L;
-                    so.OfflineCapHours            = 8f;
-                    break;
-
-                default: // Custom — leave defaults
+                    so.IdleYieldRateBase        = 0.5f;
+                    so.BaseMultiplierPerPrestige = 3.0f;
+                    so.ResourceHardCap          = 1_000_000_000_000_000L;
+                    so.OfflineCapHours          = 8f;
                     break;
             }
         }
@@ -412,189 +387,87 @@ namespace EndlessEngine.Editor
         {
             switch (_gameType)
             {
-                case GameType.PureIdle:
-                    so.BaseMultiplierPerPrestige = 1.5f;
-                    so.MaxPermanentMultiplier    = 100f;
-                    break;
-                case GameType.ClickerIdle:
-                    so.BaseMultiplierPerPrestige = 1.5f;
-                    so.MaxPermanentMultiplier    = 50f;
-                    break;
                 case GameType.IdleVsRPG:
+                case GameType.TowerDefense:
                     so.BaseMultiplierPerPrestige = 2.0f;
                     so.MaxPermanentMultiplier    = 1000f;
+                    break;
+                case GameType.PrestigeHeavy:
+                    so.BaseMultiplierPerPrestige = 3.0f;
+                    so.MaxPermanentMultiplier    = 10_000f;
                     break;
                 case GameType.ResearchIdle:
                     so.BaseMultiplierPerPrestige = 1.8f;
                     so.MaxPermanentMultiplier    = 500f;
                     break;
-                case GameType.BuildingIdle:
-                    so.BaseMultiplierPerPrestige = 1.6f;
+                default:
+                    so.BaseMultiplierPerPrestige = 1.5f;
                     so.MaxPermanentMultiplier    = 200f;
-                    break;
-                case GameType.PrestigeHeavy:
-                    so.BaseMultiplierPerPrestige = 3.0f;
-                    so.MaxPermanentMultiplier    = 10_000f;
                     break;
             }
         }
 
         private void ApplyWavePreset(EndlessEngine.Config.WaveConfigSO so)
         {
-            switch (_gameType)
-            {
-                case GameType.IdleVsRPG:
-                    so.TotalWavesPerRun        = 50;
-                    so.BaseEnemyCountPerWave   = 5;
-                    so.EliteWaveInterval       = 10;
-                    break;
-                default:
-                    so.TotalWavesPerRun        = 30;
-                    so.BaseEnemyCountPerWave   = 3;
-                    so.EliteWaveInterval       = 5;
-                    break;
-            }
+            so.TotalWavesPerRun       = _gameType == GameType.IdleVsRPG ? 50 : 30;
+            so.BaseEnemyCountPerWave  = _gameType == GameType.IdleVsRPG ? 5 : 3;
+            so.EliteWaveInterval      = 10;
         }
 
-        // ── UI Helpers ─────────────────────────────────────────────────────────────
+        // ── File list preview ─────────────────────────────────────────────────────
 
-        private static Label SectionLabel(string text)
+        private List<string> BuildFileList()
         {
-            var lbl = new Label(text);
-            lbl.style.fontSize   = 11;
-            lbl.style.color      = new Color(0.55f, 0.75f, 1f);
-            lbl.style.unityFontStyleAndWeight = FontStyle.Bold;
-            lbl.style.marginTop  = 8;
-            lbl.style.marginBottom = 4;
-            lbl.style.unityTextAlign = TextAnchor.UpperLeft;
-            return lbl;
-        }
-
-        private static VisualElement CoreModuleRow()
-        {
-            return MakeRow(
-                isCore:    true,
-                labelText: "Core",
-                tagText:   "TickEngine · EconomyService · SaveService · GameFlow",
-                initial:   true,
-                onChange:  null);
-        }
-
-        private static VisualElement ModuleToggleRow(
-            string label, string tag, bool initial,
-            System.Action<bool> onChange)
-        {
-            return MakeRow(isCore: false, labelText: label, tagText: tag,
-                           initial: initial, onChange: onChange);
-        }
-
-        private static VisualElement MakeRow(
-            bool isCore, string labelText, string tagText,
-            bool initial, System.Action<bool> onChange)
-        {
-            var row = new VisualElement();
-            row.style.flexDirection  = FlexDirection.Row;
-            row.style.alignItems     = Align.Center;
-            row.style.height         = 32;
-            row.style.marginBottom   = 3;
-            row.style.paddingLeft    = 8;
-            row.style.paddingRight   = 8;
-            row.style.backgroundColor = isCore
-                ? new Color(0.18f, 0.22f, 0.18f)
-                : new Color(0.16f, 0.16f, 0.16f);
-            row.style.borderTopLeftRadius     = 4;
-            row.style.borderTopRightRadius    = 4;
-            row.style.borderBottomLeftRadius  = 4;
-            row.style.borderBottomRightRadius = 4;
-
-            var toggle = new Toggle { value = initial };
-            toggle.style.marginRight = 8;
-            if (isCore) toggle.SetEnabled(false);
-            else toggle.RegisterValueChangedCallback(evt => onChange?.Invoke(evt.newValue));
-
-            var nameLabel = new Label(isCore ? "Core  (always included)" : labelText);
-            nameLabel.style.fontSize = 12;
-            nameLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            nameLabel.style.flexGrow = 0;
-            nameLabel.style.flexShrink = 0;
-            nameLabel.style.marginRight = 8;
-
-            var spacer = new VisualElement();
-            spacer.style.flexGrow = 1;
-
-            var tagLabel = new Label(tagText);
-            tagLabel.style.fontSize   = 10;
-            tagLabel.style.color      = new Color(0.55f, 0.55f, 0.55f);
-            tagLabel.style.unityTextAlign = TextAnchor.MiddleRight;
-            tagLabel.style.overflow   = Overflow.Hidden;
-            tagLabel.style.flexShrink = 1;
-            tagLabel.style.maxWidth   = 280;
-
-            row.Add(toggle);
-            row.Add(nameLabel);
-            row.Add(spacer);
-            row.Add(tagLabel);
-            return row;
+            string r = $"Assets/{Sanitize(_gameName)}/";
+            var l = new List<string>();
+            l.Add($"{r}Configs/EconomyConfig.asset  [{DisplayName(_gameType)} preset]");
+            l.Add($"{r}Configs/SchemaVersion.asset");
+            if (_modGenerator)  { l.Add($"{r}Configs/GoldMine.asset");
+                                  l.Add($"{r}Configs/GeneratorDatabase.asset"); }
+            if (_modClickLoop)  l.Add($"{r}Configs/ClickLoopConfig.asset");
+            if (_modClickLoop)  l.Add($"{r}Configs/ClickTarget_0.asset  (×3)");
+            if (_modHarvest)    l.Add($"{r}Configs/HarvestAreaConfig.asset");
+            if (_modHarvest)    l.Add($"{r}Configs/HarvestNode.asset");
+            if (_modCursor)     l.Add($"{r}Configs/CursorActivityConfig.asset");
+            if (_modClick)      l.Add($"{r}Configs/ClickSourceConfig.asset");
+            if (_modZone)       l.Add($"{r}Configs/ZoneDatabase.asset");
+            if (_modWave)       { l.Add($"{r}Configs/WaveConfig.asset");
+                                  l.Add($"{r}Configs/EnemyStatConfig.asset"); }
+            if (_modPrestige)   l.Add($"{r}Configs/PrestigeConfig.asset");
+            if (_modResearch)   l.Add($"{r}Configs/ResearchDatabase.asset");
+            if (_modBuilding)   l.Add($"{r}Configs/StarterBuilding.asset");
+            if (_modMultiCurrency) l.Add($"{r}Configs/CurrencyDatabase.asset");
+            l.Add($"");
+            l.Add($"{r}Scenes/{Sanitize(_gameName)}.unity  ← Open this, then press Play");
+            return l;
         }
 
         private void RefreshPreview()
         {
             if (_previewLabel == null) return;
-            var lines = BuildFileList();
-            _previewLabel.text = string.Join("\n", lines);
+            _previewLabel.text = string.Join("\n", BuildFileList());
         }
 
-        // ── File List ──────────────────────────────────────────────────────────────
-
-        private List<string> BuildFileList()
-        {
-            string root = $"Assets/{SanitizeName(_gameName)}/";
-            var list = new List<string>();
-
-            list.Add($"{root}Configs/EconomyConfig.asset  [{GameTypeDisplayName(_gameType)} preset]");
-            list.Add($"{root}Configs/SchemaVersion.asset");
-            if (_modGenerator)  { list.Add($"{root}Configs/GoldMine.asset"); list.Add($"{root}Configs/GeneratorDatabase.asset"); }
-            if (_modCursor)     list.Add($"{root}Configs/CursorActivityConfig.asset");
-            if (_modClick)      list.Add($"{root}Configs/ClickSourceConfig.asset");
-            if (_modZone)       list.Add($"{root}Configs/ZoneDatabase.asset");
-            if (_modWave)       list.Add($"{root}Configs/WaveConfig.asset");
-            if (_modWave)       list.Add($"{root}Configs/EnemyStatConfig.asset");
-            if (_modWave)       list.Add($"{root}Configs/RunConfig.asset");
-            if (_modPrestige)       list.Add($"{root}Configs/PrestigeConfig.asset");
-            if (_modMultiCurrency)  list.Add($"{root}Configs/CurrencyDatabase.asset");
-
-            list.Add($"{root}Scenes/{SanitizeName(_gameName)}.unity  ← OPEN THIS, then press Play");
-            return list;
-        }
-
-        // ── Generation ─────────────────────────────────────────────────────────────
+        // ── Generation ────────────────────────────────────────────────────────────
 
         private void Generate()
         {
-            string name = SanitizeName(_gameName);
-            if (string.IsNullOrEmpty(name))
-            {
-                SetStatus("Game name cannot be empty.", error: true);
-                return;
-            }
+            string name = Sanitize(_gameName);
+            if (string.IsNullOrEmpty(name)) { SetStatus("Name cannot be empty.", true); return; }
 
-            string assetRoot   = $"Assets/{name}";
-            string configPath  = $"{assetRoot}/Configs";
-            string scriptsPath = $"{assetRoot}/Scripts";
-            string scenesPath  = $"{assetRoot}/Scenes";
+            string root     = $"Assets/{name}";
+            string cfgPath  = $"{root}/Configs";
+            string scenePath = $"{root}/Scenes";
 
-            CreateDirectories(assetRoot, configPath, scriptsPath, scenesPath);
-            CreateConfigs(configPath);
-
-            // Refresh first so asset paths resolve in the scene builder
+            CreateDirs(root, cfgPath, scenePath);
+            CreateConfigs(cfgPath);
             AssetDatabase.Refresh();
 
-            // Build the scene with fully-wired GameObjects (no Inspector wiring needed)
-            var sceneOpts = new SceneSetupUtility.SetupOptions
+            var opts = new SceneSetupUtility.SetupOptions
             {
                 GameName         = name,
-                ScenesPath       = scenesPath,
-                ConfigsPath      = configPath,
+                ScenesPath       = scenePath,
+                ConfigsPath      = cfgPath,
                 Type             = (SceneSetupUtility.GameType)(int)_gameType,
                 HasGenerator     = _modGenerator,
                 HasPrestige      = _modPrestige,
@@ -603,59 +476,52 @@ namespace EndlessEngine.Editor
                 HasClick         = _modClick,
                 HasCursor        = _modCursor,
                 HasZone          = _modZone,
+                HasHarvest       = _modHarvest,
+                HasClickLoop     = _modClickLoop,
+                HasBuilding      = _modBuilding,
             };
-            bool sceneOk = SceneSetupUtility.BuildScene(sceneOpts);
 
+            bool ok = SceneSetupUtility.BuildScene(opts);
             AssetDatabase.Refresh();
 
-            if (sceneOk)
+            if (ok)
             {
-                SetStatus($"Done! Open Assets/{name}/Scenes/{name}.unity and press Play.", error: false);
-                Debug.Log($"[NewGameWizard] '{name}' ({GameTypeDisplayName(_gameType)}) created at Assets/{name}/");
+                SetStatus($"Done! Open Assets/{name}/Scenes/{name}.unity → Press Play", false);
+                Debug.Log($"[NewGameWizard] '{name}' ({DisplayName(_gameType)}) → Assets/{name}/");
             }
             else
             {
-                // Scene build failed — still useful, just open the scene manually
-                SetStatus($"Configs created at Assets/{name}/ — scene build had an issue, see Console.", error: true);
+                SetStatus("Scene build had an issue — check Console.", true);
             }
         }
 
-        // ── Config Asset Creation ──────────────────────────────────────────────────
+        // ── Config creation ───────────────────────────────────────────────────────
 
         private void CreateConfigs(string dir)
         {
             var econ = CreateSO<EndlessEngine.Config.EconomyConfigSO>(dir, "EconomyConfig");
-            if (econ != null)
-            {
-                ApplyEconomyPreset(econ);
-                EditorUtility.SetDirty(econ);
-            }
+            if (econ != null) { ApplyEconomyPreset(econ); EditorUtility.SetDirty(econ); }
 
-            // Also create a SchemaVersion asset (required by SaveService)
             var schema = CreateSO<EndlessEngine.Config.SchemaVersionSO>(dir, "SchemaVersion");
-            if (schema != null)
-                EditorUtility.SetDirty(schema);
+            if (schema != null) EditorUtility.SetDirty(schema);
 
             if (_modGenerator)
             {
-                // Create a default generator config
                 var mine = CreateSO<EndlessEngine.Config.GeneratorConfigSO>(dir, "GoldMine");
                 if (mine != null)
                 {
-                    mine.GeneratorId      = "gold_mine";
-                    mine.DisplayName      = "Gold Mine";
-                    mine.Description      = "Passively produces gold.";
+                    mine.GeneratorId        = "gold_mine";
+                    mine.DisplayName        = "Gold Mine";
+                    mine.Description        = "Passively produces gold.";
                     mine.BaseYieldPerSecond = 1f;
-                    mine.BaseCost         = 50;
-                    mine.CostScalingFactor = 1.15f;
+                    mine.BaseCost           = 50;
+                    mine.CostScalingFactor  = 1.15f;
                     EditorUtility.SetDirty(mine);
                 }
-
-                // Save path so we can wire it into the database after Refresh
                 AssetDatabase.Refresh();
                 var db = CreateSO<EndlessEngine.Config.GeneratorDatabaseSO>(dir, "GeneratorDatabase");
-                if (db == null)
-                    db = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.GeneratorDatabaseSO>($"{dir}/GeneratorDatabase.asset");
+                if (db == null) db = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.GeneratorDatabaseSO>(
+                    $"{dir}/GeneratorDatabase.asset");
                 if (db != null && mine != null)
                 {
                     db.Generators = new[] { mine };
@@ -663,11 +529,51 @@ namespace EndlessEngine.Editor
                 }
             }
 
-            if (_modCursor)
-                CreateSO<EndlessEngine.Config.CursorActivityConfigSO>(dir, "CursorActivityConfig");
+            if (_modClickLoop)
+            {
+                var clCfg = CreateSO<EndlessEngine.ClickLoop.ClickLoopConfigSO>(dir, "ClickLoopConfig");
+                if (clCfg != null) EditorUtility.SetDirty(clCfg);
+
+                // 3 click target configs
+                for (int i = 0; i < 3; i++)
+                {
+                    var ct = CreateSO<EndlessEngine.ClickLoop.ClickTargetConfigSO>(dir, $"ClickTarget_{i}");
+                    if (ct != null)
+                    {
+                        ct.TargetId    = $"target_{i}";
+                        ct.DisplayName = $"Target {i + 1}";
+                        ct.MaxHP       = 10f + i * 5f;
+                        ct.BaseYield   = 3f + i * 2f;
+                        ct.RespawnSeconds = 3f;
+                        EditorUtility.SetDirty(ct);
+                    }
+                }
+            }
+
+            if (_modHarvest)
+            {
+                var area = CreateSO<EndlessEngine.Harvest.HarvestAreaConfigSO>(dir, "HarvestAreaConfig");
+                if (area != null) EditorUtility.SetDirty(area);
+
+                var node = CreateSO<EndlessEngine.Harvest.HarvestNodeConfigSO>(dir, "HarvestNode");
+                if (node != null)
+                {
+                    node.NodeId        = "default_node";
+                    node.DisplayName   = "Resource Node";
+                    node.MaxHP         = 10f;
+                    node.DamagePerTick = 1f;
+                    node.BaseYield     = 5f;
+                    node.RespawnSeconds = 4f;
+                    node.AwardYieldPerTick = true;
+                    EditorUtility.SetDirty(node);
+                }
+            }
 
             if (_modClick)
                 CreateSO<EndlessEngine.Config.ClickSourceConfigSO>(dir, "ClickSourceConfig");
+
+            if (_modCursor)
+                CreateSO<EndlessEngine.Config.CursorActivityConfigSO>(dir, "CursorActivityConfig");
 
             if (_modZone)
                 CreateSO<EndlessEngine.Config.ZoneDatabaseSO>(dir, "ZoneDatabase");
@@ -682,230 +588,129 @@ namespace EndlessEngine.Editor
 
             if (_modPrestige)
             {
-                var prestige = CreateSO<EndlessEngine.Config.PrestigeConfigSO>(dir, "PrestigeConfig");
-                if (prestige != null) { ApplyPrestigePreset(prestige); EditorUtility.SetDirty(prestige); }
+                var pres = CreateSO<EndlessEngine.Config.PrestigeConfigSO>(dir, "PrestigeConfig");
+                if (pres != null) { ApplyPrestigePreset(pres); EditorUtility.SetDirty(pres); }
             }
 
             if (_modMultiCurrency)
                 CreateSO<EndlessEngine.Config.CurrencyDatabaseSO>(dir, "CurrencyDatabase");
+
+            if (_modBuilding)
+                CreateSO<EndlessEngine.Config.BuildingConfigSO>(dir, "StarterBuilding");
         }
+
+        // ── SO factory ────────────────────────────────────────────────────────────
 
         private static T CreateSO<T>(string dir, string assetName) where T : ScriptableObject
         {
             string path = $"{dir}/{assetName}.asset";
-            string fullPath = Path.Combine(Application.dataPath, "..", path);
-            if (File.Exists(fullPath)) return null;  // already exists — don't overwrite
+            if (File.Exists(Path.Combine(Application.dataPath, "..", path))) return null;
             var so = ScriptableObject.CreateInstance<T>();
             AssetDatabase.CreateAsset(so, path);
             return so;
         }
 
-        // ── Bootstrap Script ───────────────────────────────────────────────────────
+        // ── UI helpers ────────────────────────────────────────────────────────────
 
-        private void CreateBootstrap(string dir, string name)
+        private static Label SectionLabel(string text)
         {
-            string path = Path.Combine(Application.dataPath, "..", dir, $"{name}Bootstrap.cs");
-            if (File.Exists(path)) return;
-
-            var sb = new System.Text.StringBuilder();
-            sb.AppendLine("using System.Collections;");
-            sb.AppendLine("using UnityEngine;");
-            sb.AppendLine("using EndlessEngine.Economy;");
-            sb.AppendLine("using EndlessEngine.Flow;");
-            sb.AppendLine("using EndlessEngine.SaveAndLoad;");
-            if (_modGenerator) sb.AppendLine("using EndlessEngine.Generator;");
-            bool needConfig = _modGenerator || _modCursor || _modClick || _modZone || _modWave || _modPrestige || _modMultiCurrency;
-            if (needConfig)   sb.AppendLine("using EndlessEngine.Config;");
-            if (_modCursor || _modClick || _modZone) sb.AppendLine("using EndlessEngine.Modules;");
-            if (_modMultiCurrency) sb.AppendLine("using EndlessEngine.Economy;");
-            if (_modWave)    { sb.AppendLine("using EndlessEngine.Wave;"); sb.AppendLine("using EndlessEngine.Enemy;"); sb.AppendLine("using EndlessEngine.Health;"); }
-            if (_modPrestige){ sb.AppendLine("using EndlessEngine.Prestige;"); }
-            sb.AppendLine();
-            sb.AppendLine($"/// <summary>");
-            sb.AppendLine($"/// Bootstrap for {name}.");
-            sb.AppendLine($"/// Game Type: {GameTypeDisplayName(_gameType)}");
-            sb.AppendLine($"/// Generated by Endless Engine New Game Wizard.");
-            sb.AppendLine($"/// Assign all [SerializeField] references in the Inspector, then press Play.");
-            sb.AppendLine($"/// </summary>");
-            sb.AppendLine("[DefaultExecutionOrder(-500)]");
-            sb.AppendLine($"public class {name}Bootstrap : MonoBehaviour");
-            sb.AppendLine("{");
-            sb.AppendLine("    [Header(\"Core\")]");
-            sb.AppendLine("    [SerializeField] private SaveService            _saveService;");
-            sb.AppendLine("    [SerializeField] private EconomyService         _economyService;");
-            sb.AppendLine("    [SerializeField] private GameFlowStateMachine   _gameFlow;");
-            sb.AppendLine("    [SerializeField] private TickEngine             _tickEngine;");
-            sb.AppendLine("    [SerializeField] private EconomyConfigSO        _economyConfig;");
-            sb.AppendLine();
-
-            if (_modGenerator)
-            {
-                sb.AppendLine("    [Header(\"Generator Module\")]");
-                sb.AppendLine("    [SerializeField] private GeneratorSystem        _generatorSystem;");
-                sb.AppendLine("    [SerializeField] private PassiveIncomeService   _passiveIncomeService;");
-                sb.AppendLine("    [SerializeField] private GeneratorDatabaseSO    _generatorDatabase;");
-                sb.AppendLine();
-            }
-            if (_modCursor)
-            {
-                sb.AppendLine("    [Header(\"Cursor Module\")]");
-                sb.AppendLine("    [SerializeField] private CursorYieldService     _cursorYield;");
-                sb.AppendLine("    [SerializeField] private CursorActivityConfigSO _cursorConfig;");
-                sb.AppendLine();
-            }
-            if (_modClick)
-            {
-                sb.AppendLine("    [Header(\"Click Module\")]");
-                sb.AppendLine("    [SerializeField] private ClickYieldService      _clickYield;");
-                sb.AppendLine("    [SerializeField] private ClickSourceConfigSO    _clickConfig;");
-                sb.AppendLine();
-            }
-            if (_modZone)
-            {
-                sb.AppendLine("    [Header(\"Zone Module\")]");
-                sb.AppendLine("    [SerializeField] private ZoneSystem             _zoneSystem;");
-                sb.AppendLine("    [SerializeField] private ZoneDatabaseSO         _zoneDatabase;");
-                sb.AppendLine();
-            }
-            if (_modWave)
-            {
-                sb.AppendLine("    [Header(\"Wave / Combat Module\")]");
-                sb.AppendLine("    [SerializeField] private WaveSpawnManager       _waveSpawnManager;");
-                sb.AppendLine("    [SerializeField] private EnemyManager           _enemyManager;");
-                sb.AppendLine("    [SerializeField] private HealthSystem           _healthSystem;");
-                sb.AppendLine("    [SerializeField] private WaveConfigSO           _waveConfig;");
-                sb.AppendLine("    [SerializeField] private RunConfigSO            _runConfig;");
-                sb.AppendLine();
-            }
-            if (_modPrestige)
-            {
-                sb.AppendLine("    [Header(\"Prestige Module\")]");
-                sb.AppendLine("    [SerializeField] private PrestigeStateManager   _prestigeManager;");
-                sb.AppendLine("    [SerializeField] private PrestigeConfigSO       _prestigeConfig;");
-                sb.AppendLine();
-            }
-            if (_modMultiCurrency)
-            {
-                sb.AppendLine("    [Header(\"Multi-Currency Module\")]");
-                sb.AppendLine("    [SerializeField] private CurrencyService        _currencyService;");
-                sb.AppendLine("    [SerializeField] private CurrencyDatabaseSO     _currencyDatabase;");
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("    private IEnumerator Start()");
-            sb.AppendLine("    {");
-            sb.AppendLine("        // 1. Economy");
-            sb.AppendLine("        _economyService?.Initialize(upgradeTreeQuery: null, saveNotifier: _saveService);");
-            sb.AppendLine();
-
-            if (_modGenerator)
-            {
-                sb.AppendLine("        // 2. Generator");
-                sb.AppendLine("        if (_generatorSystem != null && _economyService != null)");
-                sb.AppendLine("        {");
-                sb.AppendLine("            var cfgs = _generatorDatabase != null ? _generatorDatabase.Generators : new GeneratorConfigSO[0];");
-                sb.AppendLine("            _generatorSystem.Initialize(cfgs, _economyService, _saveService);");
-                sb.AppendLine("        }");
-                sb.AppendLine("        if (_passiveIncomeService != null)");
-                sb.AppendLine("            _passiveIncomeService.Initialize(_generatorSystem, _economyService, _gameFlow);");
-                sb.AppendLine();
-            }
-            if (_modCursor)
-            {
-                sb.AppendLine("        // 3. Cursor yield");
-                sb.AppendLine("        // _cursorYield?.Initialize(_cursorConfig, _economyService, _gameFlow, inputProvider);");
-                sb.AppendLine("        // TODO: assign an IInputProvider before calling Initialize.");
-                sb.AppendLine();
-            }
-            if (_modClick)
-            {
-                sb.AppendLine("        // 4. Click yield");
-                sb.AppendLine("        // _clickYield?.Initialize(_clickConfig, _economyService);");
-                sb.AppendLine("        // TODO: call Initialize with your IInputProvider if using one.");
-                sb.AppendLine();
-            }
-            if (_modZone)
-            {
-                sb.AppendLine("        // 5. Zone system");
-                sb.AppendLine("        // _zoneSystem?.Initialize(_zoneDatabase?.Zones, _economyService, _gameFlow, inputProvider, _saveService);");
-                sb.AppendLine("        // TODO: assign an IInputProvider before calling Initialize.");
-                sb.AppendLine();
-            }
-            if (_modPrestige)
-            {
-                sb.AppendLine("        // 6. Prestige wires itself via ISaveStateProvider.");
-                sb.AppendLine("        // Registration handled below.");
-                sb.AppendLine();
-            }
-            if (_modMultiCurrency)
-            {
-                sb.AppendLine("        // 6b. Multi-Currency");
-                sb.AppendLine("        _currencyService?.Initialize(_currencyDatabase);");
-                sb.AppendLine();
-            }
-
-            sb.AppendLine("        // 7. Register save providers");
-            sb.AppendLine("        if (_saveService != null)");
-            sb.AppendLine("        {");
-            sb.AppendLine("            _saveService.RegisterStateProvider(_economyService);");
-            if (_modGenerator)     sb.AppendLine("            if (_generatorSystem  != null) _saveService.RegisterStateProvider(_generatorSystem);");
-            if (_modZone)          sb.AppendLine("            if (_zoneSystem        != null) _saveService.RegisterStateProvider(_zoneSystem);");
-            if (_modPrestige)      sb.AppendLine("            if (_prestigeManager   != null) _saveService.RegisterStateProvider(_prestigeManager);");
-            if (_modMultiCurrency) sb.AppendLine("            if (_currencyService   != null) _saveService.RegisterStateProvider(_currencyService);");
-            sb.AppendLine("        }");
-            sb.AppendLine();
-            sb.AppendLine("        // 8. Load save");
-            sb.AppendLine("        if (_saveService != null)");
-            sb.AppendLine("        {");
-            sb.AppendLine("            bool done = false;");
-            sb.AppendLine("            _ = _saveService.LoadAsync().ContinueWith(_ => done = true,");
-            sb.AppendLine("                System.Threading.Tasks.TaskScheduler.FromCurrentSynchronizationContext());");
-            sb.AppendLine("            yield return new UnityEngine.WaitUntil(() => done);");
-            sb.AppendLine("        }");
-            sb.AppendLine("        else yield return null;");
-            sb.AppendLine();
-            sb.AppendLine("        Debug.Log($\"[{GetType().Name}] Bootstrap complete.\");");
-            sb.AppendLine("    }");
-            sb.AppendLine("}");
-
-            File.WriteAllText(path, sb.ToString());
+            var l = new Label(text);
+            l.style.fontSize   = 11;
+            l.style.color      = new Color(0.5f, 0.72f, 1f);
+            l.style.unityFontStyleAndWeight = FontStyle.Bold;
+            l.style.marginTop  = 8;
+            l.style.marginBottom = 3;
+            return l;
         }
 
-        // ── Utilities ──────────────────────────────────────────────────────────────
+        private static VisualElement Row()
+        {
+            var r = new VisualElement();
+            r.style.flexDirection = FlexDirection.Row;
+            r.style.alignItems    = Align.Center;
+            r.style.marginBottom  = 6;
+            return r;
+        }
 
-        private static void CreateDirectories(params string[] paths)
+        private static Label Bold(string text, float width)
+        {
+            var l = new Label(text);
+            l.style.width       = width;
+            l.style.fontSize    = 12;
+            l.style.unityFontStyleAndWeight = FontStyle.Bold;
+            return l;
+        }
+
+        private static VisualElement CoreRow() => MakeRow(
+            isCore: true, name: "Core (always)",
+            tag:    "TickEngine · EconomyService · SaveService · UpgradeTree",
+            value:  true, onChange: null);
+
+        private static VisualElement ModRow(string name, string tag, bool val, System.Action<bool> cb)
+            => MakeRow(isCore: false, name: name, tag: tag, value: val, onChange: cb);
+
+        private static VisualElement MakeRow(bool isCore, string name, string tag,
+            bool value, System.Action<bool> onChange)
+        {
+            var row = new VisualElement();
+            row.style.flexDirection  = FlexDirection.Row;
+            row.style.alignItems     = Align.Center;
+            row.style.height         = 30;
+            row.style.marginBottom   = 2;
+            row.style.paddingLeft    = 8;
+            row.style.paddingRight   = 8;
+            row.style.backgroundColor = isCore ? new Color(0.17f, 0.21f, 0.17f) : new Color(0.15f, 0.15f, 0.15f);
+            row.style.borderTopLeftRadius     = 3;
+            row.style.borderTopRightRadius    = 3;
+            row.style.borderBottomLeftRadius  = 3;
+            row.style.borderBottomRightRadius = 3;
+
+            var tog = new Toggle { value = value };
+            tog.style.marginRight = 6;
+            if (isCore) tog.SetEnabled(false);
+            else tog.RegisterValueChangedCallback(e => onChange?.Invoke(e.newValue));
+
+            var nl = new Label(name);
+            nl.style.fontSize = 11;
+            nl.style.unityFontStyleAndWeight = FontStyle.Bold;
+            nl.style.minWidth = 100;
+
+            var spacer = new VisualElement(); spacer.style.flexGrow = 1;
+
+            var tl = new Label(tag);
+            tl.style.fontSize   = 9;
+            tl.style.color      = new Color(0.5f, 0.5f, 0.5f);
+            tl.style.unityTextAlign = TextAnchor.MiddleRight;
+            tl.style.overflow   = Overflow.Hidden;
+            tl.style.flexShrink = 1;
+            tl.style.maxWidth   = 300;
+
+            row.Add(tog); row.Add(nl); row.Add(spacer); row.Add(tl);
+            return row;
+        }
+
+        // ── Utilities ─────────────────────────────────────────────────────────────
+
+        private static void CreateDirs(params string[] paths)
         {
             foreach (var p in paths)
             {
                 string full = Path.Combine(Application.dataPath, "..",
                     p.Replace('/', Path.DirectorySeparatorChar));
-                if (!Directory.Exists(full))
-                    Directory.CreateDirectory(full);
+                if (!Directory.Exists(full)) Directory.CreateDirectory(full);
             }
         }
 
-        private static string SanitizeName(string raw)
+        private static string Sanitize(string raw)
         {
             if (string.IsNullOrWhiteSpace(raw)) return string.Empty;
             var sb = new System.Text.StringBuilder();
             bool cap = true;
             foreach (char c in raw)
             {
-                if (char.IsLetter(c))
-                {
-                    sb.Append(cap ? char.ToUpper(c) : c);
-                    cap = false;
-                }
-                else if (char.IsDigit(c))
-                {
-                    if (sb.Length > 0)
-                        sb.Append(c);
-                    cap = false;
-                }
-                else if (c == ' ' || c == '_' || c == '-')
-                {
-                    cap = true;
-                }
+                if (char.IsLetter(c)) { sb.Append(cap ? char.ToUpper(c) : c); cap = false; }
+                else if (char.IsDigit(c)) { if (sb.Length > 0) sb.Append(c); cap = false; }
+                else if (c == ' ' || c == '_' || c == '-') cap = true;
             }
             return sb.ToString();
         }
@@ -914,9 +719,7 @@ namespace EndlessEngine.Editor
         {
             if (_statusLabel == null) return;
             _statusLabel.text  = msg;
-            _statusLabel.style.color = error
-                ? new Color(1f, 0.4f, 0.4f)
-                : new Color(0.4f, 1f, 0.5f);
+            _statusLabel.style.color = error ? new Color(1f, 0.35f, 0.35f) : new Color(0.35f, 1f, 0.45f);
         }
     }
 }
