@@ -80,6 +80,11 @@ namespace EndlessEngine.SaveAndLoad
         {
             _providers.Add(provider);
             _providers.Sort((a, b) => a.ProviderOrder.CompareTo(b.ProviderOrder));
+
+            // If save data is already loaded (late registration from optional bootstraps),
+            // immediately restore this provider's state so it doesn't start at defaults.
+            if (_state == SaveServiceState.Ready && _currentSave != null)
+                provider.OnAfterLoad(_currentSave);
         }
 
         /// <summary>Returns the current in-memory SaveData (null if not yet loaded).</summary>

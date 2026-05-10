@@ -391,18 +391,24 @@ namespace EndlessEngine.Editor
                 case GameType.TowerDefense:
                     so.BaseMultiplierPerPrestige = 2.0f;
                     so.MaxPermanentMultiplier    = 1000f;
+                    so.MinWaveForPrestige        = 10;
                     break;
                 case GameType.PrestigeHeavy:
                     so.BaseMultiplierPerPrestige = 3.0f;
                     so.MaxPermanentMultiplier    = 10_000f;
+                    so.MinWaveForPrestige        = 0;
                     break;
                 case GameType.ResearchIdle:
                     so.BaseMultiplierPerPrestige = 1.8f;
                     so.MaxPermanentMultiplier    = 500f;
+                    so.MinWaveForPrestige        = 0;
                     break;
                 default:
+                    // Non-wave game types: gate on gold instead of waves
                     so.BaseMultiplierPerPrestige = 1.5f;
                     so.MaxPermanentMultiplier    = 200f;
+                    so.MinWaveForPrestige        = 0;
+                    so.MinGoldToPrestige         = 1_000;
                     break;
             }
         }

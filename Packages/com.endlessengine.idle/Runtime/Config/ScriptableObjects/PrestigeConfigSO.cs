@@ -10,8 +10,8 @@ namespace EndlessEngine.Config
     public class PrestigeConfigSO : ScriptableObject
     {
         [Header("Prestige Gate")]
-        [Tooltip("Minimum wave number the player must reach before prestige is available.")]
-        public int MinWaveForPrestige = 20;
+        [Tooltip("Minimum wave number the player must reach before prestige is available. Set 0 for non-wave games (gate on gold instead).")]
+        public int MinWaveForPrestige = 0;
 
         [Tooltip("Minimum gold required to prestige (0 = no gold gate).")]
         public long MinGoldToPrestige = 0;

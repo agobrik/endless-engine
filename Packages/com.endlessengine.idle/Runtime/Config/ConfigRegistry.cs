@@ -158,7 +158,7 @@ namespace EndlessEngine.Config
             if (!_isLoaded)
                 throw new ConfigNotLoadedException(accessorName);
 #endif
-            return field;
+            return field ?? System.Array.Empty<UpgradeNodeConfigSO>();
         }
 
         // ── Test Injection ───────────────────────────────────────────────────────
