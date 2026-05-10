@@ -48,9 +48,11 @@ namespace EndlessEngine.Harvest
         // ── Injection ─────────────────────────────────────────────────────────────
 
         /// <summary>Call from bootstrapper before first Update.</summary>
-        public void Inject(IInputProvider input)
+        public void Inject(IInputProvider input, HarvestAreaConfigSO config = null, LayerMask? harvestLayer = null)
         {
             _input = input;
+            if (config != null) _config = config;
+            if (harvestLayer.HasValue) _harvestLayer = harvestLayer.Value;
         }
 
         // ── Unity Lifecycle ───────────────────────────────────────────────────────

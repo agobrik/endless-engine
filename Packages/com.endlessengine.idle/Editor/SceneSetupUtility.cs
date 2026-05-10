@@ -223,10 +223,12 @@ namespace EndlessEngine.Editor
             // ClickLoopBootstrap component
             var clb = bootstrapGO.AddComponent<ClickLoopBootstrap>();
             var clbSO = new SerializedObject(clb);
-            // Wire ClickLoopConfig if it exists
             var clConfig = AssetDatabase.LoadAssetAtPath<EndlessEngine.ClickLoop.ClickLoopConfigSO>(
                 $"{opts.ConfigsPath}/ClickLoopConfig.asset");
             SetSORef(clbSO, "_clickConfig", clConfig);
+            // LayerMask -1 = Everything so OverlapPoint detects ClickTarget colliders on any layer
+            var clLayerProp = clbSO.FindProperty("_clickTargetLayer");
+            if (clLayerProp != null) clLayerProp.intValue = -1;
             clbSO.ApplyModifiedPropertiesWithoutUndo();
 
             // Background arena
@@ -269,6 +271,9 @@ namespace EndlessEngine.Editor
             var col = go.AddComponent<CircleCollider2D>();
             col.radius = 0.5f;
 
+            // Disable before AddComponent so ClickTarget.Awake() doesn't fire with null _config.
+            // Config is set via SerializedObject, then the GO is re-enabled to let Awake run.
+            go.SetActive(false);
             var ct = go.AddComponent<EndlessEngine.ClickLoop.ClickTarget>();
             if (cfg != null)
             {
@@ -276,6 +281,7 @@ namespace EndlessEngine.Editor
                 SetSORef(ctso, "_config", cfg);
                 ctso.ApplyModifiedPropertiesWithoutUndo();
             }
+            go.SetActive(true);
 
             // Glow ring
             var glow = new GameObject("Glow");
@@ -299,6 +305,9 @@ namespace EndlessEngine.Editor
             var areaConfig = AssetDatabase.LoadAssetAtPath<EndlessEngine.Harvest.HarvestAreaConfigSO>(
                 $"{opts.ConfigsPath}/HarvestAreaConfig.asset");
             SetSORef(hlbSO, "_areaConfig", areaConfig);
+            // LayerMask -1 = Everything so HarvestCursor detects HarvestNode colliders on any layer
+            var hlLayerProp = hlbSO.FindProperty("_harvestLayer");
+            if (hlLayerProp != null) hlLayerProp.intValue = -1;
             hlbSO.ApplyModifiedPropertiesWithoutUndo();
 
             // Ground plane
@@ -370,7 +379,9 @@ namespace EndlessEngine.Editor
             col.radius = 0.55f;
             col.isTrigger = true;
 
-            // HarvestNode component
+            // Disable before AddComponent so HarvestNode.Awake() doesn't fire with null _config.
+            // Config is set via SerializedObject, then the GO is re-enabled to let Awake run.
+            rootGO.SetActive(false);
             var hn = rootGO.AddComponent<EndlessEngine.Harvest.HarvestNode>();
             if (cfg != null)
             {
@@ -378,6 +389,7 @@ namespace EndlessEngine.Editor
                 SetSORef(hnso, "_config", cfg);
                 hnso.ApplyModifiedPropertiesWithoutUndo();
             }
+            rootGO.SetActive(true);
 
             // HP bar
             BuildWorldHPBar(rootGO, new Color(0.2f, 0.8f, 0.2f), new Vector3(0, 0.9f, 0), 0.9f);

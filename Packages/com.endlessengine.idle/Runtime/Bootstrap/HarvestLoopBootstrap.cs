@@ -23,6 +23,8 @@ namespace EndlessEngine.Bootstrap
         [SerializeField] private HarvestAreaConfigSO   _areaConfig;
         [SerializeField] private HarvestNodeConfigSO[] _nodeConfigs;
         [SerializeField] private InputProviderUnity    _inputProvider;
+        [Tooltip("LayerMask for HarvestNode colliders. Set to Everything (-1) to detect all layers.")]
+        [SerializeField] private LayerMask             _harvestLayer = ~0;
 
         private IEnumerator Start()
         {
@@ -34,14 +36,16 @@ namespace EndlessEngine.Bootstrap
             if (_inputProvider == null)
                 _inputProvider = gameObject.AddComponent<InputProviderUnity>();
 
-            // Create HarvestCursor
+            // Create HarvestCursor (parented to this GameObject)
             var cursorGO = new GameObject("HarvestCursor");
+            cursorGO.transform.SetParent(transform, false);
             var cursor   = cursorGO.AddComponent<HarvestCursor>();
-            cursor.Inject(_inputProvider);
+            cursor.Inject(_inputProvider, _areaConfig, _harvestLayer);
 
-            // Create HarvestLoopService
-            var hlsGO   = new GameObject("HarvestLoopService");
-            var harvest  = hlsGO.AddComponent<HarvestLoopService>();
+            // Create HarvestLoopService (parented to this GameObject)
+            var hlsGO  = new GameObject("HarvestLoopService");
+            hlsGO.transform.SetParent(transform, false);
+            var harvest = hlsGO.AddComponent<HarvestLoopService>();
 
             if (_areaConfig != null)
             {

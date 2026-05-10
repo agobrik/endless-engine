@@ -4,7 +4,6 @@ using EndlessEngine.Config;
 using EndlessEngine.Enemy;
 using EndlessEngine.Wave;
 using EndlessEngine.Combat;
-using EndlessEngine.Bootstrap;
 
 namespace EndlessEngine.Bootstrap
 {
