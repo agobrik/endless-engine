@@ -5,6 +5,10 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using EndlessEngine.Bootstrap;
+using EndlessEngine.Prestige;
+using EndlessEngine.Economy;
+using EndlessEngine.Building;
+using EndlessEngine.Research;
 
 namespace EndlessEngine.Editor
 {
@@ -142,6 +146,9 @@ namespace EndlessEngine.Editor
                     break;
             }
 
+            // ── Optional services (Prestige, Building, Research, Merge) ─────────────
+            WireOptionalServices(bootstrapGO, opts);
+
             // ── HUD (all types) ──────────────────────────────────────────────────
             BuildHUD(opts, bootstrapGO);
 
@@ -153,6 +160,74 @@ namespace EndlessEngine.Editor
 
             Debug.Log($"[SceneSetupUtility] Scene created: {scenePath}");
             return true;
+        }
+
+        // ── Optional service wiring ───────────────────────────────────────────────
+
+        private static void WireOptionalServices(GameObject bootstrapGO, SetupOptions opts)
+        {
+            bool needPrestige = opts.HasPrestige
+                || opts.Type == GameType.PrestigeHeavy;
+
+            bool needBuilding = opts.HasBuilding
+                || opts.Type == GameType.BuildingIdle
+                || opts.Type == GameType.FarmIdle;
+
+            bool needResearch = opts.Type == GameType.ResearchIdle;
+
+            bool needMerge    = opts.Type == GameType.MergeIdle;
+
+            // ── Prestige ──────────────────────────────────────────────────────────
+            if (needPrestige)
+            {
+                bootstrapGO.AddComponent<PrestigeStateManager>();
+                bootstrapGO.AddComponent<PrestigeBootstrap>();
+            }
+
+            // ── BuildingService ───────────────────────────────────────────────────
+            if (needBuilding)
+            {
+                // Service on child GO; bootstrap on parent (same GO as AutoSetupBootstrap)
+                var bsGO = new GameObject("BuildingService");
+                bsGO.transform.SetParent(bootstrapGO.transform, false);
+                bsGO.AddComponent<BuildingService>();
+
+                var bb = bootstrapGO.AddComponent<BuildingBootstrap>();
+                var bbSO = new SerializedObject(bb);
+                var startingCfg = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.BuildingConfigSO>(
+                    $"{opts.ConfigsPath}/StarterBuilding.asset");
+                SetSORef(bbSO, "_starterConfig", startingCfg);
+                bbSO.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // ── ResearchService ───────────────────────────────────────────────────
+            if (needResearch)
+            {
+                var rsGO = new GameObject("ResearchService");
+                rsGO.transform.SetParent(bootstrapGO.transform, false);
+                rsGO.AddComponent<ResearchService>();
+
+                var rb = bootstrapGO.AddComponent<ResearchBootstrap>();
+                var rbSO = new SerializedObject(rb);
+                var resDb = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.ResearchTreeConfigSO>(
+                    $"{opts.ConfigsPath}/ResearchDatabase.asset");
+                SetSORef(rbSO, "_researchTree", resDb);
+                rbSO.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // ── MergeService + InventoryService ───────────────────────────────────
+            if (needMerge)
+            {
+                var invGO = new GameObject("InventoryService");
+                invGO.transform.SetParent(bootstrapGO.transform, false);
+                invGO.AddComponent<InventoryService>();
+
+                var msGO = new GameObject("MergeService");
+                msGO.transform.SetParent(bootstrapGO.transform, false);
+                msGO.AddComponent<MergeService>();
+
+                bootstrapGO.AddComponent<MergeBootstrap>();
+            }
         }
 
         // ── Camera sky colors per type ────────────────────────────────────────────

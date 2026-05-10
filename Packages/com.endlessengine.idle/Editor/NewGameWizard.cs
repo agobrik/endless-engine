@@ -435,6 +435,7 @@ namespace EndlessEngine.Editor
                                   l.Add($"{r}Configs/EnemyStatConfig.asset"); }
             if (_modPrestige)   l.Add($"{r}Configs/PrestigeConfig.asset");
             if (_modResearch)   l.Add($"{r}Configs/ResearchDatabase.asset");
+            if (_modMerge)      l.Add($"{r}Configs/StarterMergeConfig.asset");
             if (_modBuilding)   l.Add($"{r}Configs/StarterBuilding.asset");
             if (_modMultiCurrency) l.Add($"{r}Configs/CurrencyDatabase.asset");
             l.Add($"");
@@ -597,6 +598,12 @@ namespace EndlessEngine.Editor
 
             if (_modBuilding)
                 CreateSO<EndlessEngine.Config.BuildingConfigSO>(dir, "StarterBuilding");
+
+            if (_modResearch)
+                CreateSO<EndlessEngine.Config.ResearchTreeConfigSO>(dir, "ResearchDatabase");
+
+            if (_modMerge)
+                CreateSO<EndlessEngine.Config.MergeConfigSO>(dir, "StarterMergeConfig");
         }
 
         // ── SO factory ────────────────────────────────────────────────────────────
