@@ -6,6 +6,7 @@ using EndlessEngine.Generator;
 using EndlessEngine.Harvest;
 using EndlessEngine.ClickLoop;
 using EndlessEngine.Wave;
+using EndlessEngine.Research;
 
 namespace EndlessEngine.Bootstrap
 {
@@ -22,7 +23,7 @@ namespace EndlessEngine.Bootstrap
     ///   WaveLabel, EnemyCountLabel
     ///   HarvestLabel, ComboLabel
     ///   ClickIncomeLabel
-    ///   GemLabel
+    ///   GemLabel, ResearchLabel
     /// </summary>
     [AddComponentMenu("Endless Engine/Generated Game HUD")]
     public class GeneratedGameHUD : MonoBehaviour
@@ -44,6 +45,7 @@ namespace EndlessEngine.Bootstrap
         private Component _comboLabel;
         private Component _clickIncomeLabel;
         private Component _gemLabel;
+        private Component _researchLabel;
         private Button    _buyGeneratorButton;
         private Button    _prestigeButton;
 
@@ -82,11 +84,14 @@ namespace EndlessEngine.Bootstrap
             _gemLabel            = FindLabel("GemLabel");
             _buyGeneratorButton  = FindButton("BuyGeneratorButton");
             _prestigeButton      = FindButton("PrestigeButton");
+            _researchLabel       = FindLabel("ResearchLabel");
 
             // Subscribe to events
             EconomyService.OnResourcesChanged    += HandleGoldChanged;
             GeneratorSystem.OnGeneratorPurchased += HandleGeneratorPurchased;
             WaveSpawnManager.OnWaveStarted       += HandleWaveStarted;
+            ResearchService.OnNodeCompleted      += HandleResearchNodeCompleted;
+            ResearchService.OnResearchProgress   += HandleResearchProgress;
 
             // Harvest events — subscribe if HarvestLoopService present in scene
             var harvestSvc = FindFirstObjectByType<HarvestLoopService>();
@@ -119,6 +124,8 @@ namespace EndlessEngine.Bootstrap
             EconomyService.OnResourcesChanged    -= HandleGoldChanged;
             GeneratorSystem.OnGeneratorPurchased -= HandleGeneratorPurchased;
             WaveSpawnManager.OnWaveStarted       -= HandleWaveStarted;
+            ResearchService.OnNodeCompleted      -= HandleResearchNodeCompleted;
+            ResearchService.OnResearchProgress   -= HandleResearchProgress;
 
             var harvestSvc = FindFirstObjectByType<HarvestLoopService>();
             if (harvestSvc != null) { harvestSvc.OnYieldAwarded -= HandleHarvestYield; harvestSvc.OnComboChanged -= HandleComboChanged; }
@@ -189,6 +196,17 @@ namespace EndlessEngine.Bootstrap
         {
             _clickTotal += (long)amount;
             SetText(_clickIncomeLabel, $"Click gold: {Fmt(_clickTotal)}");
+        }
+
+        private void HandleResearchProgress(string treeId, string nodeId, int tick, int total)
+        {
+            SetText(_researchLabel, $"Research: {nodeId}  {tick}/{total}");
+        }
+
+        private void HandleResearchNodeCompleted(string treeId, string nodeId)
+        {
+            SetText(_researchLabel, $"✓ {nodeId} done!");
+            ShowSaveIndicator("Saved");
         }
 
         // ── Button handlers ───────────────────────────────────────────────────────

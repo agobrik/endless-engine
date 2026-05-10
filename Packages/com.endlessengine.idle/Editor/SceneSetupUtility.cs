@@ -725,11 +725,12 @@ namespace EndlessEngine.Editor
 
         private static void BuildHUD(SetupOptions opts, GameObject bootstrapGO)
         {
-            bool isWave    = opts.HasWave || opts.Type == GameType.IdleVsRPG
-                             || opts.Type == GameType.TowerDefense;
-            bool isHarvest = opts.HasHarvest || opts.Type == GameType.HarvestIdle;
-            bool isClick   = opts.HasClickLoop || opts.Type == GameType.ClickLoop;
-            bool isRight   = isWave || opts.Type == GameType.TowerDefense;
+            bool isWave     = opts.HasWave || opts.Type == GameType.IdleVsRPG
+                              || opts.Type == GameType.TowerDefense;
+            bool isHarvest  = opts.HasHarvest || opts.Type == GameType.HarvestIdle;
+            bool isClick    = opts.HasClickLoop || opts.Type == GameType.ClickLoop;
+            bool isResearch = opts.Type == GameType.ResearchIdle;
+            bool isRight    = isWave || opts.Type == GameType.TowerDefense;
 
             var canvasGO = new GameObject("Canvas");
             var canvas   = canvasGO.AddComponent<Canvas>();
@@ -811,6 +812,12 @@ namespace EndlessEngine.Editor
                     11, false, y, 0.07f, new Color(0.9f, 0.75f, 0.3f));
             }
 
+            if (isResearch)
+            {
+                y = AddLabel(bgGO, "ResearchLabel", "Research: idle",
+                    11, false, y, 0.07f, new Color(0.4f, 0.8f, 1f));
+            }
+
             if (isWave)
             {
                 y = AddLabel(bgGO, "WaveLabel", "Wave: 1",
@@ -855,6 +862,7 @@ namespace EndlessEngine.Editor
             if (opts.HasWave || opts.Type == GameType.IdleVsRPG) h += 60f;
             if (opts.HasHarvest || opts.Type == GameType.HarvestIdle) h += 60f;
             if (opts.HasClickLoop || opts.Type == GameType.ClickLoop) h += 60f;
+            if (opts.Type == GameType.ResearchIdle) h += 40f;
             if (opts.HasMultiCurrency) h += 40f;
             return Mathf.Clamp(h, 300f, 700f);
         }

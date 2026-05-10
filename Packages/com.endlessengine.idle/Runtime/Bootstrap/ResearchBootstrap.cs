@@ -35,7 +35,7 @@ namespace EndlessEngine.Bootstrap
                 ? new ResearchTreeConfigSO[] { _researchTree }
                 : new ResearchTreeConfigSO[0];
 
-            _research.Initialize(trees, bootstrap?.Economy);
+            _research.Initialize(trees, bootstrap?.Economy, currencyService: null);
 
             TickEngine.OnTick += _research.OnTick;
 
