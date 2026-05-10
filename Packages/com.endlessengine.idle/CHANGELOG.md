@@ -6,6 +6,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.3.2] - 2026-05-11
+
+### Fixed
+- **SaveService**: Late-registered providers (BuildingBootstrap, ResearchBootstrap, PrestigeBootstrap) now receive `OnAfterLoad` immediately if save data is already loaded — previously all optional-service state was lost on every game launch
+- **PrestigeConfigSO**: Default `MinWaveForPrestige` changed from 20 → 0; non-wave games (PureIdle, FarmIdle, BuildingIdle, ResearchIdle) were silently unable to prestige
+- **NewGameWizard**: `ApplyPrestigePreset()` now sets correct `MinWaveForPrestige` per game type — 0 for non-wave, 10 for wave/RPG/tower defense; non-wave types gate on gold (1000) instead
+- **ConfigRegistry**: `GetArray()` returns `Array.Empty` instead of null when upgrade configs not set — prevented NullReferenceException in `UpgradeTreeService.BuildTree()` foreach for game types with no upgrade nodes (e.g. MergeIdle)
+
+---
+
 ## [1.3.1] - 2026-05-11
 
 ### Fixed
