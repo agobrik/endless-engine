@@ -6,6 +6,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.3.4] - 2026-05-11
+
+### Fixed
+- **Critical — SceneSetupUtility enum**: `GameType` values were out of sync with `NewGameWizard.GameType` — the cast `(SceneSetupUtility.GameType)(int)_gameType` silently routed 9 of 12 types to the wrong scene builder (e.g. MergeIdle → PrestigeHeavy, HarvestIdle → MergeBoard). Enum values now match exactly.
+- **Missing .meta files**: `ClickLoopBootstrap`, `ClickTargetHandler`, `HarvestLoopBootstrap`, `WaveCombatBootstrap` had no `.meta` files — Unity would not compile them, causing `AddComponent<>` to fail silently at scene-build time for ClickLoop, HarvestIdle, IdleVsRPG, and TowerDefense.
+
+---
+
 ## [1.3.3] - 2026-05-11
 
 ### Fixed
