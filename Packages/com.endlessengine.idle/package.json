@@ -1,8 +1,8 @@
 {
   "name": "com.endlessengine.idle",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "displayName": "Endless Engine — Idle Game Toolkit",
-  "description": "Modular idle game engine for Unity 6.3 LTS. Core systems: economy, generators, prestige, wave/combat, upgrade/skill/research trees, merge mechanics, minigames, buildings, pets, events, leaderboard, save/load, and a full editor toolset.",
+  "description": "Modular idle game engine for Unity 6.3 LTS. Zero-config bootstrap (AutoSetupBootstrap), one-click New Game Wizard with scene builder, and full modular systems: economy, generators, prestige, wave/combat, upgrade/skill/research trees, merge, minigames, buildings, pets, events, leaderboard, save/load.",
   "unity": "6000.0",
   "unityRelease": "0f1",
   "documentationUrl": "https://github.com/agobrik/endless-engine/blob/main/Packages/com.endlessengine.idle/Documentation~/getting-started.md",
@@ -42,7 +42,7 @@
   "samples": [
     {
       "displayName": "MinimalIdle",
-      "description": "Minimal working idle game: 1 generator, 1 upgrade, gold economy, save/load.",
+      "description": "Start here. Import, open scene, press Play. 1 generator, 1 upgrade, gold economy with income rate display, auto save/load.",
       "path": "Samples~/MinimalIdle"
     },
     {

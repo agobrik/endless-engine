@@ -115,11 +115,20 @@ In Unity: **Window → Package Manager → + → Add package from disk…** → 
 
 ## Quick Start
 
-1. Open **Tools → Endless Engine → New Game Wizard**
-2. Select your game type and let the wizard create configs and scene skeleton
-3. Import a **Sample** from Package Manager for a working reference
+### Option A — New Game Wizard (recommended)
 
-**Or** read `Documentation~/getting-started.md` for a step-by-step walkthrough.
+1. **Tools → Endless Engine → New Game Wizard**
+2. Enter a game name, pick your game type, click **Generate Skeleton**
+3. Open the generated scene at `Assets/<GameName>/Scenes/<GameName>.unity`
+4. Press **Play** — the scene is fully wired, no Inspector setup required
+
+### Option B — Import a Sample
+
+1. **Window → Package Manager → Endless Engine → Samples → MinimalIdle → Import**
+2. Open the imported scene
+3. Press **Play**
+
+**Türkçe**: `Documentation~/HIZLI-BASLANGIC.md` dosyasına bakın.
 
 ## Samples
 

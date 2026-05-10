@@ -552,7 +552,8 @@ namespace EndlessEngine.Editor
             var list = new List<string>();
 
             list.Add($"{root}Configs/EconomyConfig.asset  [{GameTypeDisplayName(_gameType)} preset]");
-            if (_modGenerator)  list.Add($"{root}Configs/GeneratorDatabase.asset");
+            list.Add($"{root}Configs/SchemaVersion.asset");
+            if (_modGenerator)  { list.Add($"{root}Configs/GoldMine.asset"); list.Add($"{root}Configs/GeneratorDatabase.asset"); }
             if (_modCursor)     list.Add($"{root}Configs/CursorActivityConfig.asset");
             if (_modClick)      list.Add($"{root}Configs/ClickSourceConfig.asset");
             if (_modZone)       list.Add($"{root}Configs/ZoneDatabase.asset");
@@ -562,8 +563,7 @@ namespace EndlessEngine.Editor
             if (_modPrestige)       list.Add($"{root}Configs/PrestigeConfig.asset");
             if (_modMultiCurrency)  list.Add($"{root}Configs/CurrencyDatabase.asset");
 
-            list.Add($"{root}Scripts/{SanitizeName(_gameName)}Bootstrap.cs");
-            list.Add($"{root}Scenes/Game.unity  (empty — create manually)");
+            list.Add($"{root}Scenes/{SanitizeName(_gameName)}.unity  ← OPEN THIS, then press Play");
             return list;
         }
 
@@ -585,11 +585,34 @@ namespace EndlessEngine.Editor
 
             CreateDirectories(assetRoot, configPath, scriptsPath, scenesPath);
             CreateConfigs(configPath);
-            CreateBootstrap(scriptsPath, name);
+
+            // Refresh first so asset paths resolve in the scene builder
+            AssetDatabase.Refresh();
+
+            // Build the scene with fully-wired GameObjects (no Inspector wiring needed)
+            var sceneOpts = new SceneSetupUtility.SetupOptions
+            {
+                GameName         = name,
+                ScenesPath       = scenesPath,
+                ConfigsPath      = configPath,
+                HasGenerator     = _modGenerator,
+                HasPrestige      = _modPrestige,
+                HasMultiCurrency = _modMultiCurrency,
+            };
+            bool sceneOk = SceneSetupUtility.BuildScene(sceneOpts);
 
             AssetDatabase.Refresh();
-            SetStatus($"Skeleton created at Assets/{name}/  (type: {GameTypeDisplayName(_gameType)})", error: false);
-            Debug.Log($"[NewGameWizard] Created '{name}' skeleton ({GameTypeDisplayName(_gameType)}) at Assets/{name}/");
+
+            if (sceneOk)
+            {
+                SetStatus($"Done! Open Assets/{name}/Scenes/{name}.unity and press Play.", error: false);
+                Debug.Log($"[NewGameWizard] '{name}' ({GameTypeDisplayName(_gameType)}) created at Assets/{name}/");
+            }
+            else
+            {
+                // Scene build failed — still useful, just open the scene manually
+                SetStatus($"Configs created at Assets/{name}/ — scene build had an issue, see Console.", error: true);
+            }
         }
 
         // ── Config Asset Creation ──────────────────────────────────────────────────
@@ -603,8 +626,37 @@ namespace EndlessEngine.Editor
                 EditorUtility.SetDirty(econ);
             }
 
+            // Also create a SchemaVersion asset (required by SaveService)
+            var schema = CreateSO<EndlessEngine.Config.SchemaVersionSO>(dir, "SchemaVersion");
+            if (schema != null)
+                EditorUtility.SetDirty(schema);
+
             if (_modGenerator)
-                CreateSO<EndlessEngine.Config.GeneratorDatabaseSO>(dir, "GeneratorDatabase");
+            {
+                // Create a default generator config
+                var mine = CreateSO<EndlessEngine.Config.GeneratorConfigSO>(dir, "GoldMine");
+                if (mine != null)
+                {
+                    mine.GeneratorId      = "gold_mine";
+                    mine.DisplayName      = "Gold Mine";
+                    mine.Description      = "Passively produces gold.";
+                    mine.BaseYieldPerSecond = 1f;
+                    mine.BaseCost         = 50;
+                    mine.CostScalingFactor = 1.15f;
+                    EditorUtility.SetDirty(mine);
+                }
+
+                // Save path so we can wire it into the database after Refresh
+                AssetDatabase.Refresh();
+                var db = CreateSO<EndlessEngine.Config.GeneratorDatabaseSO>(dir, "GeneratorDatabase");
+                if (db == null)
+                    db = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.GeneratorDatabaseSO>($"{dir}/GeneratorDatabase.asset");
+                if (db != null && mine != null)
+                {
+                    db.Generators = new[] { mine };
+                    EditorUtility.SetDirty(db);
+                }
+            }
 
             if (_modCursor)
                 CreateSO<EndlessEngine.Config.CursorActivityConfigSO>(dir, "CursorActivityConfig");

@@ -6,6 +6,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.2.0] - 2026-05-10
+
+### Added
+
+**Zero-Configuration Bootstrap**
+- `AutoSetupBootstrap` — drop a single component, assign config SOs, press Play. All MonoBehaviour services auto-created on the same GameObject. No Inspector wiring needed.
+- `GeneratedGameHUD` — auto-wiring HUD generated alongside scenes. Finds all named UI elements by name, displays gold/income/generator count/upgrade status without any Inspector references.
+
+**New Game Wizard — Scene Builder**
+- Wizard now creates a fully-wired, play-ready `.unity` scene (not just config assets and a .cs file).
+- Generated scene includes Bootstrap, Canvas HUD, EventSystem, Camera — opens scene, press Play immediately.
+- Default generator config (`GoldMine`) auto-wired into `GeneratorDatabase`.
+- `SchemaVersion` asset created automatically.
+
+**Documentation**
+- `HIZLI-BASLANGIC.md` — Türkçe hızlı başlangıç kılavuzu (1 sayfa, 5 adım).
+- `SceneSetupUtility` — internal editor utility for programmatic scene construction.
+
+**MinimalIdle Sample Improvements**
+- `MinimalIdleUI` now auto-finds services at runtime (`FindFirstObjectByType`) — works without Inspector references.
+- Displays income rate, generator count with yield, upgrade rank/bonus, mine button with live cost.
+
+### Changed
+- `NewGameWizard.Generate()` now builds a complete scene instead of only configs + bootstrap script.
+- `README.md` quick start updated to reflect one-click workflow.
+
+---
+
 ## [1.1.0] - 2026-05-02
 
 ### Added

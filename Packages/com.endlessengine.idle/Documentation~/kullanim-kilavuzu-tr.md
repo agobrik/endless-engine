@@ -1,11 +1,13 @@
 # Endless Engine — Türkçe Kullanım Kılavuzu
 
-**Paket:** `com.endlessengine.idle` v1.1.0  
+**Paket:** `com.endlessengine.idle` v1.2.0  
 **Motor:** Unity 6.3 LTS  
 **Hedef Kitle:** Unity ile idle / incremental oyun geliştiren C# geliştiricileri  
-**Son Güncelleme:** 2026-05-02
+**Son Güncelleme:** 2026-05-10
 
-Bu kılavuz Endless Engine'i sıfırdan kurarak tam çalışan bir idle oyunu yapmanız için gereken her şeyi kapsar. İlk okumada baştan sona geçin; sonra ihtiyaç duydukça ilgili bölüme dönün.
+> **Yeni başlıyorsanız:** Önce `HIZLI-BASLANGIC.md` dosyasını okuyun — 5 adımda çalışan bir oyun elde edersiniz. Bu kılavuz tüm API'nin detaylı referansıdır.
+
+Bu kılavuz Endless Engine'i sıfırdan kurarak tam çalışan bir idle oyunu yapmanız için gereken her şeyi kapsar. Hızlı başlangıç için `HIZLI-BASLANGIC.md` → tam API referansı için bu kılavuz.
 
 ---
 

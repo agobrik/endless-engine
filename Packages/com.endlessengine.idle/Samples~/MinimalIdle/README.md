@@ -1,63 +1,56 @@
 # MinimalIdle — Endless Engine Sample
 
-A minimal working idle game demonstrating the core Endless Engine systems:
+**Play immediately after import — no Inspector wiring needed.**
 
-- 1 Generator (gold mine, 5 gold/tick)
-- 1 Upgrade (mine efficiency — doubles gold rate)
-- Gold economy with save/load
-- TickEngine driving passive income
+A complete working idle game:
+- 1 Generator (gold mine, 5 gold/s)
+- 1 Upgrade (mine efficiency — doubles gold rate, 5 ranks)
+- Gold display with income rate, mine count, upgrade status
+- Auto-save / load on close/open
 
-## What It Shows
+## How to Play
 
-| System | Class | Purpose |
-|--------|-------|---------|
-| Economy | `EconomyService` | Tracks gold, fires `OnResourcesChanged` |
-| Generator | `GeneratorSystem` + `GeneratorConfigSO` | Produces gold per tick |
-| Tick | `TickEngine` | 1 Hz heartbeat wired to `PassiveIncomeService` |
-| Upgrade | `UpgradeTreeService` + `UpgradeNodeConfigSO` | One efficiency node |
-| Save | `SaveService` | Persists economy + generator state across play sessions |
-| Bootstrap | `MinimalIdleBootstrap` | Wires all systems (no scene refs needed beyond configs) |
+1. **Window → Package Manager → Endless Engine → Samples → MinimalIdle → Import**
+2. Open `Assets/Samples/MinimalIdle/Scenes/MinimalIdle.unity`
+3. Press **Play**
 
-## How to Use
+That's it. Gold accumulates instantly. Buy mines to increase income. Buy upgrades to multiply it.
+Stop and Play again — progress is saved automatically.
 
-1. Import this sample via **Package Manager → Endless Engine → Samples → MinimalIdle**.
-2. Open `Assets/Samples/MinimalIdle/Scenes/MinimalIdle.unity`.
-3. Press **Play** — gold accumulates, click **Buy Upgrade** to double the rate.
-4. Stop and Play again — gold total persists via SaveService.
+## What This Demonstrates
+
+| System | Class | What it does |
+|--------|-------|-------------|
+| Economy | `EconomyService` | Gold ledger, events on every change |
+| Generator | `GeneratorSystem` | Per-second income from purchased mines |
+| Tick | `TickEngine` | 1 Hz heartbeat drives all passive income |
+| Upgrade | `UpgradeTreeService` | Rank-based efficiency multiplier |
+| Save | `SaveService` | Persists all state to disk automatically |
+| Bootstrap | `MinimalIdleBootstrap` | Wires everything, no Addressables required |
+| UI | `MinimalIdleUI` | Auto-finds services, no Inspector slots needed |
 
 ## Key Files
 
 ```
 Scripts/
-  MinimalIdleBootstrap.cs   — wires all services, drives the main loop
-  MinimalIdleUI.cs          — displays gold count + upgrade button
+  MinimalIdleBootstrap.cs   — wires all services in the correct order
+  MinimalIdleUI.cs          — auto-finds services, handles all button/label updates
 Configs/
-  EconomyConfig.asset       — EconomyConfigSO (HardCap=1B, StartingGold=0)
-  SchemaVersion.asset       — SchemaVersionSO (CurrentSchemaVersion=1)
-  PrestigeConfig.asset      — PrestigeConfigSO (BaseMultiplierPerPrestige=1.5)
-  RealmIdentityConfig.asset — RealmIdentityConfigSO (slug=base)
-  GoldMine.asset            — GeneratorConfigSO (GoldPerTick=5, BaseCost=0)
-  MineEfficiency.asset      — UpgradeNodeConfigSO (Cost=50, StatMultiplier=2)
-  GeneratorDatabase.asset   — GeneratorDatabaseSO (references GoldMine)
+  EconomyConfig.asset       — HardCap=1B, StartingGold=0
+  GoldMine.asset            — GeneratorConfigSO (5 gold/s, cost 50)
+  MineEfficiency.asset      — UpgradeNodeConfigSO (×2/rank, cost 50, 5 ranks)
+  GeneratorDatabase.asset   — holds the GoldMine reference
+  SchemaVersion.asset       — save schema versioning
+  PrestigeConfig.asset      — prestige multiplier settings
+  RealmIdentityConfig.asset — arena/world identity
 ```
-
-## Inspector Wiring
-
-After importing the sample, assign the following in the Bootstrap GameObject Inspector:
-
-| Field | Asset |
-|-------|-------|
-| Economy Config | `EconomyConfig.asset` |
-| Schema Version | `SchemaVersion.asset` |
-| Prestige Config | `PrestigeConfig.asset` |
-| Realm Config | `RealmIdentityConfig.asset` |
-| Generator Database | `GeneratorDatabase.asset` |
 
 ## Extending This Sample
 
-- Add more generators: duplicate `GoldMine.asset`, change `BaseYieldPerSecond`, add to `GeneratorDatabase`.
-- Add prestige: wire `PrestigeStateManager` following the same optional-module pattern in `VerticalSliceBootstrap`.
-- Add a minigame: add `MinigameService` + `ActiveSkillConfigSO` — same optional pattern.
+**Add more generators**: duplicate `GoldMine.asset`, change `GeneratorId`, `DisplayName`, `BaseYieldPerSecond`, `BaseCost`, then add it to `GeneratorDatabase`.
 
-See `Packages/com.endlessengine.idle/Runtime/Bootstrap/VerticalSliceBootstrap.cs` for a full
-wiring example with every optional module enabled.
+**Add prestige**: wire `PrestigeStateManager` as an optional module — see `VerticalSliceBootstrap` for the pattern.
+
+**Add more upgrades**: create additional `UpgradeNodeConfigSO` assets, add to `ConfigRegistry.Upgrades` (or use `InjectForTesting` with an array).
+
+**Go to full game**: see `Tools → Endless Engine → New Game Wizard` to generate a complete skeleton with the modules you need.
