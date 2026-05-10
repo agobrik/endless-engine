@@ -6,6 +6,20 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.3.3] - 2026-05-11
+
+### Fixed
+- **MergeIdle**: Board cells now have `MergeCellHandler` wired — players can click two matching items to merge them; previously board was visually correct but completely non-interactive
+- **BuildingIdle**: Grid slots now have `BuildingSlotHandler` wired — players can click a slot to call `BuildingService.TryPlace()`; slot turns green on success
+- **PrestigeStateManager**: `CanPrestige` now correctly gates on `MinGoldToPrestige` via injected `EconomyService`; the gold check was always skipped before because `_economy` was never injected
+- **SceneSetupUtility / EnemyAgent**: Removed invalid `AddComponent<EnemyAgent>()` — `EnemyAgent` is a plain C# class, not a MonoBehaviour; this caused a runtime exception in all wave game types
+
+### Added
+- `MergeCellHandler` — two-click selection + merge handler for MergeIdle board cells
+- `BuildingSlotHandler` — click handler for BuildingIdle grid slots; configures `buildingId`, `gridX`, `gridY` at scene build time
+
+---
+
 ## [1.3.2] - 2026-05-11
 
 ### Fixed

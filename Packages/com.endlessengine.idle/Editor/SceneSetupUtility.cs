@@ -501,7 +501,7 @@ namespace EndlessEngine.Editor
             rb.gravityScale = 0; rb.freezeRotation = true;
             rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
             enemy.AddComponent<CircleCollider2D>();
-            enemy.AddComponent<EndlessEngine.Enemy.EnemyAgent>();
+            // EnemyAgent is a plain C# class (not MonoBehaviour) — managed by EnemyManager, not added as component
             BuildWorldHPBar(enemy, new Color(0.1f, 0.8f, 0.1f), new Vector3(0, 0.7f, 0), 0.8f);
 
             // Player visual (blue diamond)
@@ -618,6 +618,7 @@ namespace EndlessEngine.Editor
                 sr.sortingOrder = 1;
                 cell.transform.localScale = Vector3.one * 1.2f;
                 cell.AddComponent<BoxCollider2D>();
+                cell.AddComponent<EndlessEngine.Bootstrap.MergeCellHandler>();
             }
 
             // 2 seed items (T1 gold coins)
@@ -718,6 +719,8 @@ namespace EndlessEngine.Editor
                 sr.sprite = MakeRect(gridColors[i]);
                 sr.sortingOrder = 1;
                 b.AddComponent<BoxCollider2D>();
+                var slot = b.AddComponent<EndlessEngine.Bootstrap.BuildingSlotHandler>();
+                slot.Configure($"building_{i}", i % 4, i / 4);
             }
         }
 

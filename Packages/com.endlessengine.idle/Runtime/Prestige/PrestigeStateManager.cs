@@ -53,6 +53,11 @@ namespace EndlessEngine.Prestige
         [SerializeField]
         private SaveService _saveService;
 
+        private EndlessEngine.Economy.EconomyService _economy;
+
+        /// <summary>Called by PrestigeBootstrap after AutoSetupBootstrap.IsReady.</summary>
+        public void InjectEconomy(EndlessEngine.Economy.EconomyService economy) => _economy = economy;
+
         // ── Unity lifecycle ───────────────────────────────────────────────────────
 
         private void OnEnable()  => OnPrestigeComplete += HandlePrestigeComplete;
@@ -81,6 +86,9 @@ namespace EndlessEngine.Prestige
 #endif
 
                 if (_currentWaveNumber < cfg.MinWaveForPrestige) return false;
+
+                if (cfg.MinGoldToPrestige > 0 && (_economy == null || _economy.CurrentResources < cfg.MinGoldToPrestige))
+                    return false;
 
                 // MaxPrestigeCount=0 means unlimited
                 if (cfg.MaxPrestigeCount > 0 && PrestigeCount >= cfg.MaxPrestigeCount) return false;

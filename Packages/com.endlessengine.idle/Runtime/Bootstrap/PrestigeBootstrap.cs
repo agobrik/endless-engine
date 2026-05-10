@@ -28,6 +28,10 @@ namespace EndlessEngine.Bootstrap
                 yield break;
             }
 
+            // Inject economy so CanPrestige can check MinGoldToPrestige
+            if (bootstrap?.Economy != null)
+                pm.InjectEconomy(bootstrap.Economy);
+
             // Wire SaveService via reflection (it is a [SerializeField] private field)
             if (bootstrap?.Save != null)
             {
