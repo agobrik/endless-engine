@@ -808,8 +808,10 @@ namespace EndlessEngine.Editor
                 y = AddLabel(bgGO, "ClickIncomeLabel", "Click yield: 0",
                     11, false, y, 0.07f, new Color(1f, 0.7f, 0.2f));
 
-                y = AddLabel(bgGO, "ComboLabel", "Combo: ×1.0",
-                    11, false, y, 0.07f, new Color(0.9f, 0.75f, 0.3f));
+                // Only add ComboLabel if harvest hasn't already added it (same GO name → GameObject.Find conflict)
+                if (!isHarvest)
+                    y = AddLabel(bgGO, "ComboLabel", "Combo: ×1.0",
+                        11, false, y, 0.07f, new Color(0.9f, 0.75f, 0.3f));
             }
 
             if (isResearch)

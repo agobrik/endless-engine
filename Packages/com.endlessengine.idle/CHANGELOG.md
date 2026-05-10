@@ -6,6 +6,29 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.3.1] - 2026-05-11
+
+### Fixed
+- **ClickLoop**: `ClickTarget.Awake()` no longer fires with null `_config` — scene builder now disables GO before `AddComponent`, sets config via SerializedObject, then re-enables
+- **HarvestIdle**: same Awake-timing fix for `HarvestNode`; `HarvestCursor._harvestLayer` now wired to Everything (-1) so cursor detects nodes
+- **ClickLoop**: `ClickLoopBootstrap._clickTargetLayer` now wired to Everything (-1) so `Physics2D.OverlapPoint` detects targets
+- **HarvestLoopBootstrap**: cursor/service GameObjects now parented to bootstrap transform; `HarvestCursor.Inject()` extended to accept config + layer
+- **MergeIdle**: `InventoryService` + `MergeService` now instantiated and initialized by new `MergeBootstrap` component
+- **ResearchIdle**: `ResearchService` now instantiated, hooked into `TickEngine.OnTick`, and registered with SaveService by new `ResearchBootstrap`
+- **BuildingIdle / FarmIdle**: `BuildingService` now instantiated and initialized by new `BuildingBootstrap` component
+- **PrestigeHeavy** (and all prestige types): `PrestigeStateManager` now instantiated and its `_saveService` wired by new `PrestigeBootstrap`
+- **NewGameWizard**: `CreateConfigs()` now actually creates `ResearchDatabase.asset` and `StarterMergeConfig.asset` (were listed in preview but never written)
+- **HUD**: `ResearchLabel` added for ResearchIdle — shows active node progress and completion; subscribes to `ResearchService.OnResearchProgress` / `OnNodeCompleted`
+- **HUD**: Fixed potential `ComboLabel` duplicate-name conflict when both Harvest and Click modules are active simultaneously (Custom preset)
+
+### Added
+- `BuildingBootstrap` — initializes `BuildingService` for BuildingIdle and FarmIdle
+- `ResearchBootstrap` — initializes `ResearchService` and hooks TickEngine
+- `MergeBootstrap` — initializes `InventoryService` + `MergeService`
+- `PrestigeBootstrap` — wires `PrestigeStateManager._saveService` and registers with SaveService
+
+---
+
 ## [1.3.0] - 2026-05-11
 
 ### Added
