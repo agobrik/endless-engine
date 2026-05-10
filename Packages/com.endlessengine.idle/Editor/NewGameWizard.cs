@@ -595,9 +595,14 @@ namespace EndlessEngine.Editor
                 GameName         = name,
                 ScenesPath       = scenesPath,
                 ConfigsPath      = configPath,
+                Type             = (SceneSetupUtility.GameType)(int)_gameType,
                 HasGenerator     = _modGenerator,
                 HasPrestige      = _modPrestige,
                 HasMultiCurrency = _modMultiCurrency,
+                HasWave          = _modWave,
+                HasClick         = _modClick,
+                HasCursor        = _modCursor,
+                HasZone          = _modZone,
             };
             bool sceneOk = SceneSetupUtility.BuildScene(sceneOpts);
 

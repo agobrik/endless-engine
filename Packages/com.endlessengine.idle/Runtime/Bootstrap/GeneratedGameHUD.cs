@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using EndlessEngine.Economy;
 using EndlessEngine.Generator;
+using EndlessEngine.Wave;
 
 namespace EndlessEngine.Bootstrap
 {
@@ -29,6 +30,8 @@ namespace EndlessEngine.Bootstrap
         private Component _generatorCountLabel;
         private Component _prestigeLabel;
         private Component _saveLabel;
+        private Component _waveLabel;
+        private Component _enemyCountLabel;
         private Button    _buyGeneratorButton;
         private Button    _prestigeButton;
 
@@ -55,17 +58,20 @@ namespace EndlessEngine.Bootstrap
             yield return new WaitUntil(() => _bootstrap.IsReady);
 
             // Find UI elements by name
-            _goldLabel          = FindLabel("GoldLabel");
-            _incomeLabel        = FindLabel("IncomeLabel");
+            _goldLabel           = FindLabel("GoldLabel");
+            _incomeLabel         = FindLabel("IncomeLabel");
             _generatorCountLabel = FindLabel("GeneratorCountLabel");
-            _prestigeLabel      = FindLabel("PrestigeLabel");
-            _saveLabel          = FindLabel("SaveLabel");
-            _buyGeneratorButton = FindButton("BuyGeneratorButton");
-            _prestigeButton     = FindButton("PrestigeButton");
+            _prestigeLabel       = FindLabel("PrestigeLabel");
+            _saveLabel           = FindLabel("SaveLabel");
+            _waveLabel           = FindLabel("WaveLabel");
+            _enemyCountLabel     = FindLabel("EnemyCountLabel");
+            _buyGeneratorButton  = FindButton("BuyGeneratorButton");
+            _prestigeButton      = FindButton("PrestigeButton");
 
             // Subscribe to events
-            EconomyService.OnResourcesChanged += HandleGoldChanged;
-            GeneratorSystem.OnGeneratorPurchased += HandleGeneratorPurchased;
+            EconomyService.OnResourcesChanged     += HandleGoldChanged;
+            GeneratorSystem.OnGeneratorPurchased  += HandleGeneratorPurchased;
+            WaveSpawnManager.OnWaveStarted        += HandleWaveStarted;
 
             // Wire buttons
             _buyGeneratorButton?.onClick.AddListener(OnBuyGenerator);
@@ -80,8 +86,9 @@ namespace EndlessEngine.Bootstrap
 
         private void OnDestroy()
         {
-            EconomyService.OnResourcesChanged   -= HandleGoldChanged;
+            EconomyService.OnResourcesChanged    -= HandleGoldChanged;
             GeneratorSystem.OnGeneratorPurchased -= HandleGeneratorPurchased;
+            WaveSpawnManager.OnWaveStarted       -= HandleWaveStarted;
         }
 
         private void Update()
@@ -129,6 +136,11 @@ namespace EndlessEngine.Bootstrap
             }
             SetText(_saveLabel, "Saving...");
             _saveIndicatorTimer = 2f;
+        }
+
+        private void HandleWaveStarted(int waveNumber)
+        {
+            SetText(_waveLabel, $"Wave: {waveNumber}");
         }
 
         private void OnBuyGenerator()

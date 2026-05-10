@@ -6,6 +6,32 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [1.2.1] - 2026-05-10
+
+### Added
+
+**New Game Wizard — Game-Type-Specific Scenes**
+- `SceneSetupUtility` now generates scenes tailored to each game type:
+  - **Clicker Idle** — orange `ClickTarget` sphere in the world with `CircleCollider2D` + `ClickTargetHandler` (click it to earn gold immediately on Play)
+  - **Idle-vs / RPG** — visible red enemy circles with `SpriteRenderer`, `Rigidbody2D`, `EnemyAgent`; enemy prefab auto-wired into `WaveSpawnManager`; `WaveCombatBootstrap` starts wave 1 automatically
+  - **Merge Idle** — 3×3 merge board placeholder with two pre-placed tier-1 items
+  - **All types** — HUD panels now match game type (wave counter for IdleVsRPG, click income for ClickerIdle, etc.)
+- `ClickTargetHandler` — new runtime component attached to click targets; calls `ClickYieldService.SimulateClickForTesting` in dev builds, falls back to direct economy award
+- `WaveCombatBootstrap` — new runtime component that initializes `WaveSpawnManager`, `EnemyManager`, `AutoBattleController` after `AutoSetupBootstrap.IsReady`; includes null-safe `IPlayerQuery` and `IDamageDispatcher` stubs so enemies spawn without a full player setup
+- `GeneratedGameHUD` — now subscribes to `WaveSpawnManager.OnWaveStarted` and updates WaveLabel / EnemyCountLabel
+
+### Changed
+- `NewGameWizard.Generate()` now passes full game type + all module flags to `SceneSetupUtility.SetupOptions`
+- `SceneSetupUtility.SetupOptions` expanded: `Type`, `HasWave`, `HasClick`, `HasCursor`, `HasZone`
+- `SceneSetupUtility.GameType` enum mirrors `NewGameWizard.GameType` for type-safe scene dispatch
+- HUD panel layout adapts: wave-type scene pins HUD to top-left; other types center it
+- Canvas `CanvasScaler` now uses `ScaleWithScreenSize` (1080×1920, match 0.5) for better mobile layout
+
+**Documentation**
+- `Documentation~/mastery-guide.md` — comprehensive 33-section guide covering every system: architecture, all 25+ services, SO reference, bootstrap recipes for every game type, full event bus reference, save data schema, troubleshooting table
+
+---
+
 ## [1.2.0] - 2026-05-10
 
 ### Added
