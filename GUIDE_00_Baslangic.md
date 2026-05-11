@@ -1183,3 +1183,1745 @@ Bu rehberi tamamladıktan sonra oyun türünüze göre ilgili rehbere geçin:
 | Merge Dragons tarzı | GUIDE_04_MergeIdle.md |
 | Antimatter Dimensions tarzı | GUIDE_05_PrestHeavy.md |
 | Hay Day / Building Idle | GUIDE_06_BuildingIdle.md |
+
+---
+
+---
+
+# BÖLÜM II — TAM SİSTEM ENTEGRASYON REHBERİ
+
+> Bu bölüm Endless Engine'deki **her sistemi** kapsar.  
+> Wizard'ın ürettiği iskelet üzerine istediğiniz sistemi nasıl ekleyeceğinizi,  
+> sistemlerin birbirine nasıl bağlandığını, hangi SO'ların ne işe yaradığını  
+> ve hangi kombinasyonların birlikte nasıl çalıştığını öğrenirsiniz.  
+> Oyun türünden bağımsızdır — Tower Defense'e Harvest ekleyin, Pure Idle'a  
+> Wave Combat ekleyin, her kombinasyon mümkündür.
+
+---
+
+## İçindekiler (Sistem Rehberi)
+
+- [S1. Sisteme Genel Bakış — Ne Var, Ne İşe Yarar](#s1-sisteme-genel-bakış)
+- [S2. Zorunlu Temel — Her Oyunda Olması Gerekenler](#s2-zorunlu-temel)
+- [S3. Upgrade Tree Sistemi](#s3-upgrade-tree-sistemi)
+- [S4. Skill Tree Sistemi](#s4-skill-tree-sistemi)
+- [S5. İkincil Para Birimi (CurrencyService)](#s5-ikincil-para-birimi)
+- [S6. Envanter Sistemi (InventoryService)](#s6-envanter-sistemi)
+- [S7. Dönüşüm Sistemi (ConversionService)](#s7-dönüşüm-sistemi)
+- [S8. Harvest Loop Sistemi](#s8-harvest-loop-sistemi)
+- [S9. Click Loop Sistemi](#s9-click-loop-sistemi)
+- [S10. Wave ve Combat Sistemi](#s10-wave-ve-combat-sistemi)
+- [S11. Building Sistemi](#s11-building-sistemi)
+- [S12. Research Sistemi](#s12-research-sistemi)
+- [S13. Prestige Sistemi](#s13-prestige-sistemi)
+- [S14. Realm Sistemi](#s14-realm-sistemi)
+- [S15. İstatistik Takibi (StatisticsService)](#s15-istatistik-takibi)
+- [S16. Sistem Kombinasyonları — Gerçek Oyun Örnekleri](#s16-sistem-kombinasyonları)
+- [S17. Tam Bootstrap Şablonu — Tüm Sistemler](#s17-tam-bootstrap-şablonu)
+
+---
+
+## S1. Sisteme Genel Bakış
+
+Endless Engine'de 21 servis vardır. Her servis bağımsız olarak eklenebilir veya çıkarılabilir.  
+Zorunlu olan sadece 3 tanesidir; geri kalanı isteğe bağlıdır.
+
+### Servis Haritası
+
+```
+ZORUNLU ÇEKİRDEK
+├── EconomyService          — Altın bakiyesi, satın alma
+├── GeneratorSystem         — Pasif gelir kaynakları
+└── SaveService             — Kayıt/yükleme
+
+GELİR SİSTEMLERİ (birini veya birkaçını seçin)
+├── PassiveIncomeService    — Generatorlardan otomatik gelir (tick tabanlı)
+├── ClickLoopService        — Tıklama ile gelir (aktif)
+└── HarvestLoopService      — İmleç/alan hasat ile gelir (aktif)
+
+AKTİF DÖNGÜ SİSTEMLERİ (isteğe bağlı, birden fazlası olabilir)
+├── WaveSpawnManager        — Düşman dalgası yönetimi
+├── AutoBattleController    — Otomatik savaş döngüsü
+├── BuildingService         — Bina yerleştirme ve üretim
+└── MergeService            — Merge mekaniği (harici, new ile oluşturulur)
+
+PROGRESSION SİSTEMLERİ (isteğe bağlı)
+├── UpgradeTreeService      — Satın alınan upgrade node'ları
+├── SkillTreeService        — Puan harcanan kalıcı skill'ler
+├── ResearchService         — Zaman bazlı araştırma ağacı
+└── PrestigeStateManager    — Soft reset + kalıcı çarpan
+
+PARA BİRİMİ / ENVANTER (isteğe bağlı)
+├── CurrencyService         — İkincil para birimleri (gem, shard, vb.)
+├── InventoryService        — Eşya envanteri
+└── ConversionService       — Para/eşya dönüşüm tarifleri
+
+YARDIMCI SİSTEMLER
+├── StatisticsService       — İstatistik takibi
+├── RealmConfigSystem       — Çok alemli konfigürasyon
+└── UpgradeSelectionService — Wave arası upgrade kart seçimi
+```
+
+### Zorunlu Bağımlılıklar
+
+```
+EconomyService
+    ↑ beslenir: PassiveIncomeService, ClickLoopService, HarvestLoopService, Wave (enemy drop)
+    ↑ sorgular: UpgradeTreeService (upgrade maliyetleri)
+    ↑ bildirir: SaveService
+
+GeneratorSystem
+    → EconomyService (satın alma için)
+    → SaveService
+
+PassiveIncomeService
+    → GeneratorSystem (yield hesabı için)
+    → EconomyService (geliri ekler)
+    → TickEngine (otomatik tick)
+
+UpgradeTreeService
+    → ConfigRegistry (upgrade config'lerini alır)
+    → SaveService (node rank'larını yükler)
+    ↑ sorgulanır: EconomyService, UpgradeApplicationSystem
+
+SaveService
+    ← RegisterStateProvider() ile tüm servisler kayıt olur
+```
+
+---
+
+## S2. Zorunlu Temel
+
+Her oyunda bulunması gereken minimum kurulum. Bunu yapmadan hiçbir sistem çalışmaz.
+
+### S2.1 Gerekli GameObjects
+
+Sahnenize şu GameObject'leri ekleyin:
+
+```
+Bootstrap (boş GameObject, [DefaultExecutionOrder(-500)] script'i burada)
+├── EconomyService component
+├── GeneratorSystem component
+├── UpgradeTreeService component
+├── PassiveIncomeService component
+├── SaveService component
+└── TickEngine component
+```
+
+### S2.2 Gerekli ScriptableObject'ler
+
+**1. EconomyConfigSO** oluşturun (`Assets/_Game/Configs/Economy/`):
+```
+Sağ tık → Create → Endless Engine → Economy → EconomyConfig
+```
+Önemli field'lar:
+| Field | Açıklama | Başlangıç Değeri |
+|---|---|---|
+| IdleYieldRateBase | Pasif gelir baz çarpanı | 1.0 |
+| ResourceHardCap | Maksimum altın | 1e100 |
+| StartingGold | Yeni oyun başlangıç altını | 0 |
+| NumberBackend | DoubleNumber veya BigDouble | DoubleNumber |
+| OfflineCapHours | Maksimum offline birikim süresi | 8 |
+
+**2. SchemaVersionSO** oluşturun:
+```
+Sağ tık → Create → Endless Engine → Core → SchemaVersion
+```
+CurrentSchemaVersion = 1 (başlangıçta)
+
+**3. GeneratorConfigSO** (en az bir tane):
+```
+Sağ tık → Create → Endless Engine → Generator → GeneratorConfig
+```
+| Field | Açıklama | Örnek Değer |
+|---|---|---|
+| GeneratorId | Benzersiz string ID | "gold_mine" |
+| DisplayName | Gösterilecek isim | "Altın Madeni" |
+| BaseYieldPerSecond | Saniye başı baz gelir | 1.0 |
+| BaseCost | İlk satın alma maliyeti | 10 |
+| CostScalingFactor | Her alımda maliyet çarpanı | 1.07 |
+| MaxCount | Maksimum adet (0 = sınırsız) | 0 |
+
+**4. GeneratorDatabaseSO** oluşturun:
+```
+Sağ tık → Create → Endless Engine → Generator → GeneratorDatabase
+```
+Oluşturduğunuz tüm GeneratorConfigSO'ları bu listeye ekleyin.
+
+### S2.3 Minimum Bootstrap Script
+
+```csharp
+using System.Collections;
+using System.Threading.Tasks;
+using UnityEngine;
+using EndlessEngine.Core;
+using EndlessEngine.Economy;
+using EndlessEngine.Generator;
+using EndlessEngine.Upgrade;
+using EndlessEngine.SaveAndLoad;
+
+[DefaultExecutionOrder(-500)]
+public class GameBootstrap : MonoBehaviour
+{
+    [Header("Configs")]
+    [SerializeField] private EconomyConfigSO _economyConfig;
+    [SerializeField] private SchemaVersionSO _schemaVersion;
+
+    [Header("Services")]
+    [SerializeField] private EconomyService _economyService;
+    [SerializeField] private GeneratorSystem _generatorSystem;
+    [SerializeField] private UpgradeTreeService _upgradeTreeService;
+    [SerializeField] private PassiveIncomeService _passiveIncomeService;
+    [SerializeField] private SaveService _saveService;
+
+    [Header("Generator Database")]
+    [SerializeField] private GeneratorDatabaseSO _generatorDatabase;
+
+    private IEnumerator Start()
+    {
+        // 1. BigNumber backend'i yapılandır
+        BigNumberFactory.Configure(_economyConfig.NumberBackend);
+
+        // 2. Config registry'yi doldur (upgrade config'leri S3'te eklenir)
+        ConfigRegistry.InjectForTesting(
+            economy: _economyConfig,
+            schema: _schemaVersion,
+            upgrades: null   // ← upgrade eklenince buraya gelecek
+        );
+
+        // 3. UpgradeTree config'leri oku
+        _upgradeTreeService?.HandleConfigsLoaded();
+
+        // 4. EconomyService başlat
+        _economyService.Initialize(_upgradeTreeService, _saveService);
+
+        // 5. GeneratorSystem başlat
+        _generatorSystem.Initialize(_generatorDatabase.Generators, _economyService, _saveService);
+
+        // 6. PassiveIncomeService başlat
+        _passiveIncomeService.Initialize(_generatorSystem, _economyService, gameFlow: null);
+
+        // 7. Save provider'ları kaydet
+        _saveService.RegisterStateProvider(_economyService);
+        _saveService.RegisterStateProvider(_upgradeTreeService);
+        _saveService.RegisterStateProvider(_generatorSystem);
+
+        // 8. Kayıt yükle (tamamlanana kadar bekle)
+        bool done = false;
+        _ = _saveService.LoadAsync().ContinueWith(
+            _ => done = true,
+            TaskScheduler.FromCurrentSynchronizationContext());
+        yield return new WaitUntil(() => done);
+
+        // 9. Buradan sonra tüm sistemler hazır
+        OnGameReady();
+    }
+
+    private void OnGameReady()
+    {
+        Debug.Log("Oyun hazır!");
+        // UI'ı burada aktif edin
+    }
+}
+```
+
+**Inspector bağlantıları:**
+1. Bootstrap GameObject'i seçin
+2. Script'teki her `[SerializeField]` alanına ilgili component veya asset'i sürükleyin
+3. `_economyService` → Bootstrap GameObject'indeki EconomyService component'i
+4. `_generatorDatabase` → `Assets/_Game/Configs/Generators/` klasöründeki GeneratorDatabase asset'i
+
+---
+
+## S3. Upgrade Tree Sistemi
+
+Upgrade tree, oyuncunun altın harcayarak kalıcı stat bonusları aldığı sistemdir.  
+Tower Defense'e de, Harvest oyununa da, Pure Idle'a da eklenebilir.
+
+### S3.1 UpgradeNodeConfigSO Oluşturma
+
+Her upgrade için ayrı bir SO oluşturun:
+```
+Sağ tık → Create → Endless Engine → Upgrade → UpgradeNode
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| NodeId | Benzersiz string ID | "yield_boost_1" |
+| DisplayName | Gösterilecek isim | "Verim Artışı I" |
+| Description | Açıklama metni | "Tüm generatorların verimini %20 artırır" |
+| MaxRank | Kaç kez satın alınabilir | 5 |
+| BaseCost | İlk rank maliyeti | 100 |
+| CostScalingFactor | Her rank'ta maliyet çarpanı | 1.5 |
+| AffectedStat | Hangi stat etkilenir | GeneratorYield |
+| EffectPerRank | Her rank başına etki miktarı | 0.20 |
+| EffectType | AdditivePercent / AdditiveFlat / Multiplicative | AdditivePercent |
+| PrerequisiteNodeIDs | Bu upgrade'den önce alınması gerekenler | [] |
+| MinWaveRequirement | Kaçıncı wave'den sonra satın alınabilir | 0 |
+| PrestigeGateRequirement | Kaç prestige sonrası açılır | 0 |
+| SelectionWeight | Wave arası kart seçiminde görünme ağırlığı | 1.0 |
+
+**StatType değerleri (AffectedStat için):**
+
+| StatType | Etki Alanı |
+|---|---|
+| GeneratorYield | Tüm generator verimleri |
+| ClickDamage | Tıklama hasarı |
+| ClickYieldMultiplier | Tıklama başı altın çarpanı |
+| ClickCritChance | Tıklama kritik şansı |
+| ClickCritMultiplier | Kritik hasar çarpanı |
+| ClickAutoRate | Otomatik tıklama hızı |
+| HarvestYieldMultiplier | Hasat geliri çarpanı |
+| IdleYieldRate | Pasif gelir hız çarpanı |
+| OfflineYieldRate | Offline gelir verimliliği |
+| PrestigeMultiplier | Prestige çarpan bonusu |
+| Damage | Savaş hasarı |
+| MaxHP | Maksimum can |
+| CritChance | Savaş kritik şansı |
+| CritMultiplier | Savaş kritik çarpanı |
+| StartingGoldBonus | Prestige sonrası başlangıç altın bonusu |
+
+### S3.2 Upgrade'leri Bootstrap'a Bağlama
+
+Birden fazla upgrade node'u için önce bir dizi oluşturun.  
+Bootstrap script'ine ekleyin:
+
+```csharp
+[Header("Upgrade Configs")]
+[SerializeField] private UpgradeNodeConfigSO[] _upgradeNodes;
+```
+
+`ConfigRegistry.InjectForTesting` çağrısını güncelleyin:
+
+```csharp
+ConfigRegistry.InjectForTesting(
+    economy: _economyConfig,
+    schema: _schemaVersion,
+    upgrades: _upgradeNodes   // ← artık dolu
+);
+```
+
+Inspector'da `_upgradeNodes` dizisine oluşturduğunuz tüm UpgradeNodeConfigSO'ları sürükleyin.
+
+### S3.3 Upgrade UI Oluşturma
+
+**UpgradePanel** sahne yapısı:
+```
+Canvas
+└── UpgradePanel
+    └── ScrollView
+        └── Viewport
+            └── Content (Vertical Layout Group)
+                └── UpgradeCard prefab (Instantiate ile doldurulur)
+```
+
+**UpgradeCard.cs** (prefab'a eklenecek script):
+
+```csharp
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using EndlessEngine.Upgrade;
+using EndlessEngine.Economy;
+
+public class UpgradeCard : MonoBehaviour
+{
+    [SerializeField] private TMP_Text _nameText;
+    [SerializeField] private TMP_Text _descText;
+    [SerializeField] private TMP_Text _costText;
+    [SerializeField] private TMP_Text _rankText;
+    [SerializeField] private Button _buyButton;
+
+    private UpgradeTreeService _upgradeTree;
+    private EconomyService _economy;
+    private string _nodeId;
+
+    public void Initialize(string nodeId, UpgradeTreeService upgradeTree, EconomyService economy)
+    {
+        _nodeId = nodeId;
+        _upgradeTree = upgradeTree;
+        _economy = economy;
+
+        var node = _upgradeTree.GetNode(nodeId);
+        _nameText.text = node.Config.DisplayName;
+        _descText.text = node.Config.Description;
+
+        _buyButton.onClick.AddListener(OnBuyClicked);
+        Refresh();
+    }
+
+    public void Refresh()
+    {
+        if (_upgradeTree == null || !_upgradeTree.IsReady) return;
+        var node = _upgradeTree.GetNode(_nodeId);
+        bool available = _upgradeTree.IsNodeAvailable(_nodeId);
+        bool canAfford = _economy.CurrentResources >= _upgradeTree.GetNodeCost(_nodeId);
+
+        _rankText.text = $"{node.CurrentRank}/{node.Config.MaxRank}";
+        _costText.text = node.CurrentRank >= node.Config.MaxRank
+            ? "MAKS"
+            : $"{_upgradeTree.GetNodeCost(_nodeId):N0} altın";
+        _buyButton.interactable = available && canAfford && node.CurrentRank < node.Config.MaxRank;
+    }
+
+    private void OnBuyClicked()
+    {
+        _economy.TryPurchase(_nodeId);
+        Refresh();
+    }
+}
+```
+
+**UpgradePanel controller** (UpgradePanel GameObject'e ekleyin):
+
+```csharp
+using UnityEngine;
+using EndlessEngine.Upgrade;
+using EndlessEngine.Economy;
+
+public class UpgradePanelController : MonoBehaviour
+{
+    [SerializeField] private UpgradeCard _cardPrefab;
+    [SerializeField] private Transform _content;
+    [SerializeField] private UpgradeTreeService _upgradeTree;
+    [SerializeField] private EconomyService _economy;
+
+    private readonly System.Collections.Generic.List<UpgradeCard> _cards = new();
+
+    private void Start()
+    {
+        // UpgradeTree hazır olana kadar bekle
+        if (_upgradeTree.IsReady) BuildCards();
+        else StartCoroutine(WaitForTree());
+
+        _economy.OnResourcesChanged += OnResourcesChanged;
+    }
+
+    private System.Collections.IEnumerator WaitForTree()
+    {
+        yield return new WaitUntil(() => _upgradeTree.IsReady);
+        BuildCards();
+    }
+
+    private void BuildCards()
+    {
+        foreach (var node in _upgradeTree.GetAvailableNodes())
+        {
+            var card = Instantiate(_cardPrefab, _content);
+            card.Initialize(node.Config.NodeId, _upgradeTree, _economy);
+            _cards.Add(card);
+        }
+    }
+
+    private void OnResourcesChanged(double _)
+    {
+        foreach (var card in _cards)
+            card.Refresh();
+    }
+
+    private void OnDestroy()
+    {
+        if (_economy != null) _economy.OnResourcesChanged -= OnResourcesChanged;
+    }
+}
+```
+
+### S3.4 Upgrade Ağacı Tasarımı — Önerilen Yapı
+
+```
+[yield_boost_1] GeneratorYield +20%  (maliyet: 100)
+      ↓ önkoşul
+[yield_boost_2] GeneratorYield +40%  (maliyet: 500)
+      ↓ önkoşul
+[yield_boost_3] GeneratorYield +80%  (maliyet: 2500)
+
+[click_boost_1] ClickDamage +25%    (maliyet: 200)   ← ClickLoop kullananlar için
+      ↓ önkoşul
+[click_boost_2] ClickCritChance +5% (maliyet: 800)
+
+[prestige_prep_1] PrestigeMultiplier +10%  (PrestigeGate: 1)  ← 1 prestijden sonra açılır
+```
+
+`PrerequisiteNodeIDs` dizisine önceki node'un ID'sini yazarak zincir oluşturursunuz.
+
+---
+
+## S4. Skill Tree Sistemi
+
+Upgrade tree satın alınan stat bonuslarıysa, Skill Tree **puan harcanan kalıcı yeteneklerdir**.  
+Prestige veya zaman geçtikçe puan kazanılır ve bu puanlar kalıcı skilllere harcanır.
+
+### S4.1 SkillTreeConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Upgrade → SkillTree
+```
+
+SkillTreeConfigSO içinde node'ları tanımlarsınız. Her node:
+
+| Field | Açıklama |
+|---|---|
+| NodeId | Benzersiz ID |
+| DisplayName | Görünen isim |
+| PointCost | Kaç skill puanı gerekli |
+| PrerequisiteIds | Önce alınması gerekenler |
+| Refundable | Geri alınabilir mi (puanlar iade edilir) |
+| Effects[] | StatType + magnitude çiftleri |
+
+### S4.2 Bootstrap'a Ekleme
+
+Bootstrap script'ine ekleyin:
+
+```csharp
+[Header("Skill Tree")]
+[SerializeField] private SkillTreeService _skillTreeService;
+[SerializeField] private SkillTreeConfigSO[] _skillTrees;
+```
+
+`Start()` içinde (SaveService.RegisterStateProvider'lardan önce):
+
+```csharp
+_skillTreeService.Initialize(_skillTrees, startingPoints: 0);
+_saveService.RegisterStateProvider(_skillTreeService);
+```
+
+### S4.3 Skill Puanı Kazandırma
+
+Puanları istediğiniz zaman ekleyebilirsiniz — prestige'de, level'da, achievement'da:
+
+```csharp
+// Prestige sonrası 1 puan ver
+_prestigeStateManager.OnPrestigeComplete += (count, mult) =>
+{
+    _skillTreeService.AddPoints(1);
+};
+
+// Belirli bir wave'e ulaşınca puan ver
+_waveSpawnManager.OnWaveStarted += waveNumber =>
+{
+    if (waveNumber % 10 == 0) // Her 10 wave'de 1 puan
+        _skillTreeService.AddPoints(1);
+};
+```
+
+### S4.4 Skill UI
+
+```csharp
+public class SkillNodeButton : MonoBehaviour
+{
+    [SerializeField] private TMP_Text _nameText;
+    [SerializeField] private TMP_Text _costText;
+    [SerializeField] private Button _button;
+
+    private SkillTreeService _skillTree;
+    private string _treeId;
+    private string _nodeId;
+
+    public void Initialize(string treeId, string nodeId, SkillTreeService skillTree)
+    {
+        _treeId = treeId;
+        _nodeId = nodeId;
+        _skillTree = skillTree;
+        _skillTree.OnSkillPointsChanged += _ => Refresh();
+        _skillTree.OnNodeUnlocked += (t, n) => { if (t == treeId) Refresh(); };
+        Refresh();
+    }
+
+    private void Refresh()
+    {
+        bool unlocked = _skillTree.IsUnlocked(_treeId, _nodeId);
+        _button.interactable = !unlocked && _skillTree.SkillPoints > 0;
+        _nameText.text = unlocked ? $"[✓] {_nodeId}" : _nodeId;
+    }
+
+    private void OnButtonClicked() => _skillTree.TryUnlock(_treeId, _nodeId);
+}
+```
+
+---
+
+## S5. İkincil Para Birimi
+
+Oyununuzda altın dışında gem, kristal, rune gibi para birimleri istiyorsanız CurrencyService kullanın.
+
+### S5.1 CurrencyConfigSO Oluşturma
+
+Her para birimi için bir SO:
+```
+Sağ tık → Create → Endless Engine → Economy → CurrencyConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| CurrencyId | Benzersiz ID | "gem" |
+| DisplayName | Görünen isim | "Mücevher" |
+| StartingAmount | Başlangıç miktarı | 0 |
+| HardCap | Maksimum birikim | 10000 |
+| ResetsOnPrestige | Prestige'de sıfırlanır mı | false |
+
+**Prestige'de sıfırlanacak para birimleri** (run currency'leri):
+- Örn: `souls`, `shards` — `ResetsOnPrestige = true`
+
+**Kalıcı para birimleri** (meta currency):
+- Örn: `gems`, `crystals` — `ResetsOnPrestige = false`
+
+### S5.2 CurrencyDatabaseSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Economy → CurrencyDatabase
+```
+Tüm CurrencyConfigSO'ları bu listeye ekleyin.
+
+### S5.3 Bootstrap'a Ekleme
+
+```csharp
+[Header("Currency")]
+[SerializeField] private CurrencyService _currencyService;
+[SerializeField] private CurrencyDatabaseSO _currencyDatabase;
+```
+
+`Start()` içinde:
+```csharp
+_currencyService.Initialize(_currencyDatabase);
+_saveService.RegisterStateProvider(_currencyService);
+```
+
+### S5.4 Kullanım
+
+```csharp
+// Para birimi ekle
+_currencyService.Add("gem", 5);
+
+// Harcamayı dene
+if (_currencyService.TrySpend("gem", 10))
+{
+    // Başarılı
+}
+
+// Bakiye kontrol
+double gemBalance = _currencyService.GetBalance("gem");
+
+// Formatlı gösterim (UI için)
+string display = _currencyService.GetFormatted("gem"); // "5 Mücevher"
+```
+
+### S5.5 Prestige'den Kazanılan Currency
+
+```csharp
+// PrestigeStateManager'ın OnPrestigeComplete event'ına bağlanın
+_prestigeStateManager.OnPrestigeComplete += (count, mult) =>
+{
+    double reward = Mathf.Pow(count, 1.5f); // Prestige sayısına göre artan ödül
+    _currencyService.Add("crystal", reward);
+};
+```
+
+---
+
+## S6. Envanter Sistemi
+
+Oyuncunun eşya taşıdığı, item biriktirdiği oyunlar için (Merge, Building tarzı).
+
+### S6.1 ItemConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Economy → ItemConfig
+```
+
+| Field | Açıklama |
+|---|---|
+| ItemId | "wood", "stone", "gem_t1" |
+| DisplayName | "Odun" |
+| MaxStackSize | Stack başına maksimum adet |
+
+### S6.2 Bootstrap'a Ekleme
+
+```csharp
+[Header("Inventory")]
+[SerializeField] private InventoryService _inventoryService;
+[SerializeField] private ItemConfigSO[] _allItems;
+```
+
+```csharp
+_inventoryService.Initialize(_allItems, maxSlots: 20);
+_saveService.RegisterStateProvider(_inventoryService);
+```
+
+### S6.3 Kullanım
+
+```csharp
+// Eşya ekle (returns actual amount added — slot doluysa eksik ekler)
+int added = _inventoryService.Add("wood", 5);
+
+// Eşya çıkar
+bool removed = _inventoryService.Remove("wood", 3);
+
+// Kontrol
+bool hasEnough = _inventoryService.Has("stone", 10);
+int woodCount = _inventoryService.GetCount("wood");
+
+// Tüm eşyalar
+foreach (var kv in _inventoryService.Stacks)
+    Debug.Log($"{kv.Key}: {kv.Value}");
+```
+
+---
+
+## S7. Dönüşüm Sistemi
+
+"10 odun → 1 tahta", "1000 altın → 1 gem" gibi tarif tabanlı dönüşümler için.
+
+### S7.1 ConversionRecipeSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Economy → ConversionRecipe
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| RecipeId | "wood_to_plank" | |
+| InputCurrencyId | null veya currency ID | "gold" |
+| InputAmount | Girdi miktarı | 1000 |
+| OutputCurrencyId | null veya currency ID | "gem" |
+| OutputAmount | Çıktı miktarı | 1 |
+| InputItemId | null veya item ID | null |
+| OutputItemId | null veya item ID | null |
+| CooldownSeconds | İki kullanım arası bekleme | 0 |
+
+### S7.2 Bootstrap'a Ekleme
+
+```csharp
+[Header("Conversion")]
+[SerializeField] private ConversionService _conversionService;
+[SerializeField] private ConversionDatabaseSO _conversionDatabase;
+```
+
+```csharp
+_conversionService.Initialize(_conversionDatabase, _economyService, _currencyService);
+```
+
+### S7.3 Kullanım
+
+```csharp
+// Tarifi çalıştır
+if (_conversionService.TryConvert("wood_to_plank", count: 1))
+{
+    Debug.Log("Dönüşüm başarılı");
+}
+
+// Soğuma kontrolü
+float cd = _conversionService.GetCooldownRemaining("daily_trade");
+```
+
+---
+
+## S8. Harvest Loop Sistemi
+
+İmleç veya parmak ile hasat alanı üzerine gelince otomatik hasar + gelir.  
+Tower Defense sahnesine eklenebilir, Pure Idle'a eklenebilir — her oyun türüyle çalışır.
+
+### S8.1 Sahneye Eklenecekler
+
+```
+HarvestArea (boş GameObject)
+├── HarvestLoopService component
+├── HarvestCursor component
+└── CursorRadiusIndicator (opsiyonel, Circle sprite)
+
+HarvestNodes
+├── Node_1 (HarvestNode component)
+├── Node_2
+└── Node_3
+```
+
+**HarvestCursor component:**
+- Mouse/touch pozisyonunu takip eder
+- Radius içindeki HarvestNode'ları tespit eder
+
+**HarvestNode component:**
+- CircleCollider2D gerektirir (isTrigger = true)
+- Config referansı alır
+
+### S8.2 HarvestNodeConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Harvest → HarvestNodeConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| NodeId | "ore_node_1" | |
+| DamagePerTick | Her tick'te alınan hasar | 10 |
+| MaxHP | Toplam can | 100 |
+| RespawnTime | Saniye cinsinden yeniden doğma | 5 |
+| AwardYieldPerTick | Her tick gelir mi? | true |
+| YieldPerTick | Tick başına altın | 2 |
+| YieldOnDepletion | Tükenenince bonus altın | 50 |
+
+### S8.3 HarvestAreaConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Harvest → HarvestAreaConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| BaseRadius | İmleç etkili alanı | 2.0 |
+| BaseTickInterval | Tick arası süre (saniye) | 0.5 |
+| ComboDecayDelay | Kombo düşmeye başlama süresi (sn) | 2.0 |
+| ComboDecayRate | Saniyede kombo düşüşü | 0.5 |
+| MaxComboMultiplier | Maksimum kombo çarpanı | 3.0 |
+| OfflineCapHours | Maksimum offline birikim | 8 |
+| OfflineEfficiency | Offline verim oranı (0–1) | 0.3 |
+
+### S8.4 Bootstrap'a Ekleme
+
+```csharp
+[Header("Harvest")]
+[SerializeField] private HarvestLoopService _harvestLoopService;
+[SerializeField] private HarvestCursor _harvestCursor;
+[SerializeField] private HarvestAreaConfigSO _harvestAreaConfig;
+[SerializeField] private InputProviderUnity _inputProvider;
+```
+
+```csharp
+// Start() içinde, SaveService.LoadAsync'ten önce:
+_harvestLoopService.Initialize(
+    cursor: _harvestCursor,
+    config: _harvestAreaConfig,
+    economy: _economyService,
+    statistics: _statisticsService  // null olabilir
+);
+_saveService.RegisterStateProvider(_harvestLoopService);
+
+// InputProvider'ı kur
+_inputProvider = gameObject.AddComponent<InputProviderUnity>();
+_harvestCursor.Inject(_inputProvider);
+```
+
+### S8.5 Harvest + Upgrade Tree Kombinasyonu
+
+Upgrade tree'deki `HarvestYieldMultiplier` stat'ı doğrudan harvest gelirine etki eder:
+
+```csharp
+// UpgradeNodeConfigSO ayarları:
+AffectedStat = HarvestYieldMultiplier
+EffectType   = AdditivePercent
+EffectPerRank = 0.25  // Her rank %25 daha fazla hasat geliri
+```
+
+`UpgradeApplicationSystem.GetEffectiveStat(StatType.HarvestYieldMultiplier)` otomatik hesaplar.  
+HarvestLoopService bu stat'ı her yield hesaplamasında otomatik uygular.
+
+---
+
+## S9. Click Loop Sistemi
+
+Tıklama ile hasar verme ve gelir kazanma. Clicker veya aktif battle oyunları için.
+
+### S9.1 ClickTargetConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → ClickLoop → ClickTargetConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| TargetId | "ore_rock" | |
+| DamagePerClick | Her tıklamada hasar | 10 |
+| MaxHP | Toplam can | 100 |
+| RespawnTime | Yeniden doğma süresi (sn) | 3 |
+| AwardYieldPerClick | Her tıklamada mı gelir verir | true |
+| YieldPerClick | Tıklama başı altın | 1 |
+| YieldOnDestruction | Yok edilince bonus | 20 |
+
+### S9.2 ClickLoopConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → ClickLoop → ClickLoopConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| ComboDecayDelay | Kombo bozulma gecikmesi (sn) | 1.5 |
+| ComboDecayRate | Saniyede kombo azalışı | 1.0 |
+| MaxComboMultiplier | Maksimum kombo | 5.0 |
+| BaseCritChance | Baz kritik şansı (0–1) | 0.05 |
+| BaseCritMultiplier | Kritik çarpanı | 2.0 |
+| BaseAutoClickRate | Otomatik tıklama/saniye (0 = yok) | 0 |
+| OfflineEfficiency | Offline verim (0–1) | 0.0 |
+
+### S9.3 Sahne Kurulumu
+
+```
+ClickTarget (GameObject, Collider2D veya Collider gerekli)
+└── ClickTarget component (TargetId referansı)
+
+Canvas → ClickDetector (Physics raycast için kamera önünde)
+```
+
+ClickableTarget'ların `TargetLayer` isimli bir Layer'da olması gerekir.  
+Unity → Edit → Project Settings → Tags and Layers → Layers → boş slota "ClickableTargets" ekleyin.  
+ClickTarget GameObject'lerini bu layer'a atayın.
+
+### S9.4 Bootstrap'a Ekleme
+
+```csharp
+[Header("Click Loop")]
+[SerializeField] private ClickLoopService _clickLoopService;
+[SerializeField] private ClickLoopConfigSO _clickLoopConfig;
+[SerializeField] private LayerMask _clickTargetLayer;
+[SerializeField] private InputProviderUnity _inputProvider;
+```
+
+```csharp
+_inputProvider = gameObject.AddComponent<InputProviderUnity>();
+
+_clickLoopService.Initialize(
+    config: _clickLoopConfig,
+    economy: _economyService,
+    input: _inputProvider,
+    targetLayer: _clickTargetLayer,
+    statistics: _statisticsService
+);
+_saveService.RegisterStateProvider(_clickLoopService);
+```
+
+---
+
+## S10. Wave ve Combat Sistemi
+
+Otomatik düşman dalgaları ve savaş. Tower Defense, Wave RPG, roguelike idle için.
+
+### S10.1 Gerekli Config SO'lar
+
+**WaveConfigSO:**
+```
+Sağ tık → Create → Endless Engine → Wave → WaveConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| TotalWavesPerRun | Run başına toplam wave | 30 |
+| BaseEnemyCountPerWave | Wave 1'deki düşman sayısı | 3 |
+| EnemyCountScalingFactor | Her wave'de düşman artış çarpanı | 1.1 |
+| HardCapEnemiesOnScreen | Aynı anda max düşman | 20 |
+| SpawnIntervalSeconds | Spawn arası süre | 0.5 |
+| WaveTransitionDelaySeconds | Wave geçiş bekleme süresi | 3.0 |
+| UpgradeSelectionWaveInterval | Kaç wave'de bir upgrade seçimi | 5 |
+| EliteWaveInterval | Kaç wave'de bir elite wave | 10 |
+| EliteStatMultiplier | Elite düşman stat çarpanı | 2.0 |
+| BossWaveInterval | Kaç wave'de bir boss | 0 (kapalı) |
+
+**EnemyStatConfigSO:**
+```
+Sağ tık → Create → Endless Engine → Wave → EnemyStatConfig
+```
+
+| Field | Örnek |
+|---|---|
+| BaseMaxHP | 50 |
+| BaseAttackDamage | 5 |
+| BaseContactDamage | 3 |
+| MoveSpeed | 2.0 |
+| WaveScalingExponent | 1.15 (her wave'de HP bu üstle büyür) |
+
+**PlayerBaseStatConfigSO:**
+```
+Sağ tık → Create → Endless Engine → Combat → PlayerBaseStatConfig
+```
+
+| Field | Örnek |
+|---|---|
+| BaseAttackDamage | 10 |
+| BaseMaxHP | 100 |
+| BaseCritChance | 0.05 |
+| BaseCritMultiplier | 2.0 |
+| BaseAttackInterval | 1.0 (saniye) |
+
+### S10.2 Sahne Kurulumu
+
+```
+Bootstrap
+├── WaveSpawnManager component
+├── EnemyManager component
+├── AutoBattleController component
+└── PrestigeStateManager component (wave sistemi PrestigeStateManager'ı bildirir)
+```
+
+Düşman prefabı hazırlayın:
+```
+EnemyPrefab (GameObject)
+├── SpriteRenderer (düşman görseli)
+├── Rigidbody2D (gravityScale: 0, collisionDetection: Continuous)
+├── CircleCollider2D
+├── EnemyAgent component
+└── HPBar (opsiyonel UI)
+```
+
+### S10.3 Bootstrap'a Ekleme
+
+```csharp
+[Header("Wave & Combat")]
+[SerializeField] private WaveSpawnManager _waveSpawnManager;
+[SerializeField] private EnemyManager _enemyManager;
+[SerializeField] private AutoBattleController _autoBattle;
+[SerializeField] private PrestigeStateManager _prestigeManager;
+[SerializeField] private WaveConfigSO _waveConfig;
+[SerializeField] private EnemyStatConfigSO _enemyStatConfig;
+[SerializeField] private PlayerBaseStatConfigSO _playerStatConfig;
+[SerializeField] private GameObject _enemyPrefab;
+```
+
+Start() içinde (LoadAsync tamamlandıktan SONRA):
+```csharp
+// Wave sistemi başlat
+_waveSpawnManager.Initialize(_enemyManager, _saveService);
+_saveService.RegisterStateProvider(_waveSpawnManager);
+
+// AutoBattle başlat
+var statProvider = new BaseStatUpgradeProvider(_upgradeTreeService);
+_autoBattle.Initialize(
+    enemyManager: _enemyManager,
+    waveSpawnManager: _waveSpawnManager,
+    statProvider: statProvider,
+    playerConfig: _playerStatConfig,
+    waveConfig: _waveConfig,
+    playerId: 0
+);
+
+// KRİTİK: Bu iki satır olmadan altın gelmez ve wave bitmez
+_enemyManager.OnEnemyKilled += OnEnemyKilledAddGold;
+_enemyManager.OnEnemyKilled += _autoBattle.HandleEnemyKilledByManager;
+
+// EnemyManager'a prefab ve config ver
+_enemyManager.SetEnemyPrefab(_enemyPrefab);
+_enemyManager.SetEnemyStatConfig(_enemyStatConfig);
+
+// PrestigeStateManager wave'i takip etsin
+_waveSpawnManager.OnWaveStarted += _prestigeManager.SetCurrentWave;
+
+// Savaşı başlat
+_autoBattle.StartCombat();
+_waveSpawnManager.StartFirstWave();
+```
+
+```csharp
+private void OnEnemyKilledAddGold(EnemyAgent agent)
+    => _economyService?.AddResources(agent.GoldDropAmount);
+
+private void OnDestroy()
+{
+    if (_enemyManager != null)
+    {
+        _enemyManager.OnEnemyKilled -= OnEnemyKilledAddGold;
+        _enemyManager.OnEnemyKilled -= _autoBattle.HandleEnemyKilledByManager;
+    }
+}
+```
+
+### S10.4 Wave Arası Upgrade Seçimi
+
+```csharp
+[Header("Upgrade Selection")]
+[SerializeField] private UpgradeSelectionService _upgradeSelection;
+[SerializeField] private UpgradeSelectionConfigSO _upgradeSelectionConfig;
+```
+
+```csharp
+_upgradeSelection.Initialize(_upgradeTreeService, _upgradeTreeService, _economyService);
+
+// Wave arası kart göster
+_waveSpawnManager.OnUpgradeSelectionTriggered += () =>
+{
+    _upgradeSelection.SetCurrentWave(_waveSpawnManager.CurrentWaveNumber);
+    ShowUpgradeCards(_upgradeSelection);
+};
+```
+
+---
+
+## S11. Building Sistemi
+
+Izgara bazlı bina yerleştirme ve üretim. Hay Day, Forge tarzı oyunlar için.
+
+### S11.1 BuildingConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Building → BuildingConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| BuildingId | "lumber_mill" | |
+| DisplayName | "Kereste Fabrikası" | |
+| GridWidth | Izgara genişliği (hücre) | 2 |
+| GridHeight | Izgara yüksekliği (hücre) | 1 |
+| PlacementCost | Yerleştirme maliyeti | 500 |
+| PlacementCurrencyId | "gold" veya başka currency | "gold" |
+| ProductionCurrencyId | Üretilen şey | "wood" |
+| ProductionPerTick | Tick başına üretim | 5 |
+| MaxInstances | Aynı anda max kaç tane | 3 |
+| UpgradeTiers[] | Yükseltme seviyeleri (maliyet + çarpan) | — |
+
+### S11.2 Bootstrap'a Ekleme
+
+```csharp
+[Header("Building")]
+[SerializeField] private BuildingService _buildingService;
+[SerializeField] private BuildingConfigSO[] _buildingConfigs;
+```
+
+```csharp
+_buildingService.Initialize(_buildingConfigs, _economyService);
+_saveService.RegisterStateProvider(_buildingService);
+
+// KRİTİK: Manuel tick bağlantısı olmadan binalar üretim yapmaz
+TickEngine.OnTick += dt => _buildingService.OnTick(dt);
+```
+
+### S11.3 Kullanım
+
+```csharp
+// Bina yerleştir (grid koordinatları ile)
+var result = _buildingService.TryPlace("lumber_mill", gridX: 2, gridY: 3);
+if (result.Success)
+    Debug.Log($"Bina yerleştirildi: {result.InstanceId}");
+
+// Bina yükselt
+_buildingService.TryUpgrade(instanceId);
+
+// Bina kaldır
+_buildingService.Remove(instanceId);
+
+// Tüm binalar
+foreach (var kv in _buildingService.GetAllInstances())
+    Debug.Log($"{kv.Value.Config.DisplayName} at ({kv.Value.GridX},{kv.Value.GridY})");
+```
+
+---
+
+## S12. Research Sistemi
+
+Zaman bazlı araştırma ağacı. "30 dakika araştır → yeni özellik açılır."
+
+### S12.1 ResearchNodeConfigSO Oluşturma
+
+ResearchTreeConfigSO içinde inline tanımlanır:
+```
+Sağ tık → Create → Endless Engine → Research → ResearchTree
+```
+
+Her node için:
+| Field | Açıklama | Örnek |
+|---|---|---|
+| NodeId | "advanced_mining" | |
+| DisplayName | "Gelişmiş Madencilik" | |
+| ResearchTicks | Kaç tick sürer | 3600 (1 saat, tick=1sn ise) |
+| GoldCost | Araştırmaya başlama maliyeti | 5000 |
+| PrerequisiteIds | Önce tamamlanması gerekenler | ["basic_mining"] |
+| Effects[] | Tamamlanınca aktif olan stat etkileri | GeneratorYield +30% |
+
+### S12.2 Bootstrap'a Ekleme
+
+```csharp
+[Header("Research")]
+[SerializeField] private ResearchService _researchService;
+[SerializeField] private ResearchTreeConfigSO[] _researchTrees;
+```
+
+```csharp
+_researchService.Initialize(_researchTrees, _economyService, _currencyService);
+_saveService.RegisterStateProvider(_researchService);
+
+// KRİTİK: Manuel tick bağlantısı
+TickEngine.OnTick += dt => _researchService.OnTick(dt);
+```
+
+### S12.3 Kullanım
+
+```csharp
+// Araştırma sırasına ekle
+if (_researchService.TryEnqueue("tech_tree", "advanced_mining"))
+    Debug.Log("Araştırma kuyruğa eklendi");
+
+// İptal et (altını geri alır)
+_researchService.TryDequeue("tech_tree", "advanced_mining");
+
+// Durum kontrolü
+bool done = _researchService.IsCompleted("tech_tree", "advanced_mining");
+var (progress, total) = _researchService.GetActiveProgress();
+```
+
+### S12.4 Research + Building Kombinasyonu
+
+Research tamamlanınca yeni bina tipi açılsın:
+```csharp
+_researchService.OnNodeCompleted += (treeId, nodeId) =>
+{
+    if (nodeId == "unlock_sawmill")
+        _buildingService.UnlockBuilding("sawmill"); // Kilit kaldır
+};
+```
+
+---
+
+## S13. Prestige Sistemi
+
+Soft reset ile kalıcı çarpan kazanma. Tüm oyun türlerine eklenebilir.
+
+### S13.1 PrestigeConfigSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Prestige → PrestigeConfig
+```
+
+| Field | Açıklama | Örnek |
+|---|---|---|
+| MinWaveForPrestige | Prestige için gereken wave | 0 (wave yoksa) |
+| MinGoldToPrestige | Prestige için gereken altın | 1000000 |
+| MaxPrestigeCount | Maksimum prestige sayısı | 999 |
+| BaseMultiplierPerPrestige | Prestige başına çarpan | 1.5 |
+| MaxPermanentMultiplier | Maksimum kalıcı çarpan | 1000 |
+| StatsAmplifiedByPrestige | Hangi stat'lar çarpandan etkilenir | [GeneratorYield, ClickDamage] |
+
+**Wave kullanan oyunlarda:** `MinWaveForPrestige = 10` (en az 10 wave gerekli)  
+**Wave kullanmayan oyunlarda:** `MinWaveForPrestige = 0`, `MinGoldToPrestige = 1000000`
+
+### S13.2 Bootstrap'a Ekleme
+
+```csharp
+[Header("Prestige")]
+[SerializeField] private PrestigeStateManager _prestigeManager;
+[SerializeField] private PrestigeConfigSO _prestigeConfig;
+```
+
+```csharp
+_prestigeManager.InjectEconomy(_economyService);
+_saveService.RegisterStateProvider(_prestigeManager);
+```
+
+### S13.3 Prestige Butonu
+
+```csharp
+public class PrestigeButton : MonoBehaviour
+{
+    [SerializeField] private Button _button;
+    [SerializeField] private TMP_Text _label;
+    [SerializeField] private PrestigeStateManager _prestigeManager;
+
+    private void Update()
+    {
+        bool can = _prestigeManager.CanPrestige;
+        _button.interactable = can;
+        float mult = _prestigeManager.GetPermanentMultiplier();
+        _label.text = can
+            ? $"Prestige ({mult:F1}x çarpan)"
+            : "Prestige (henüz hazır değil)";
+    }
+
+    public void OnPrestigeClicked()
+    {
+        if (_prestigeManager.CanPrestige)
+            _prestigeManager.TryPrestige();
+    }
+}
+```
+
+### S13.4 Prestige Sırasında Sıfırlanmayacak Sistemler
+
+| Sistem | Prestige'de ne olur |
+|---|---|
+| EconomyService (gold) | Sıfırlanır (StartingGold'a döner) |
+| GeneratorSystem | Sıfırlanır (count = 0) |
+| UpgradeTreeService | Sıfırlanır (rank = 0) |
+| CurrencyService | ResetsOnPrestige = true olanlar sıfırlanır |
+| SkillTreeService | Korunur |
+| BuildingService | Korunur |
+| StatisticsService | Korunur |
+| ResearchService | Tamamlananlar korunur, kuyruk temizlenir |
+
+---
+
+## S14. Realm Sistemi
+
+Farklı "alemler" — her alemin kendi config seti var. Prestige ile yeni alemler açılır.
+
+### S14.1 Realm Config Oluşturma
+
+**RealmIdentityConfigSO:**
+```
+Sağ tık → Create → Endless Engine → Realm → RealmIdentity
+```
+
+| Field | Açıklama |
+|---|---|
+| Slug | "forest_realm" |
+| DisplayName | "Orman Alemi" |
+| UnlockPrestigeThreshold | Kaç prestige sonrası açılır |
+
+**RealmPackSO** (her alem için ayrı config seti):
+```
+Sağ tık → Create → Endless Engine → Realm → RealmPack
+```
+Linked configs: alem'e özgü EconomyConfigSO, GeneratorDatabaseSO vb.
+
+**RealmRegistrySO:**
+```
+Sağ tık → Create → Endless Engine → Realm → RealmRegistry
+```
+Tüm RealmIdentityConfigSO'ları ekleyin.
+
+### S14.2 Bootstrap'a Ekleme
+
+```csharp
+[Header("Realm")]
+[SerializeField] private RealmConfigSystem _realmSystem;
+[SerializeField] private RealmRegistrySO _realmRegistry;
+```
+
+RealmConfigSystem event'lara kendi kendine bağlanır — Initialize çağrısı gerekmez.  
+PrestigeStateManager'ın `OnRealmUnlocked` event'ını otomatik dinler.
+
+---
+
+## S15. İstatistik Takibi
+
+Oynanış verilerini kaydetmek, Steam achievement'ları tetiklemek veya oyun içi profil göstermek için.
+
+### S15.1 StatDefinitionSO Oluşturma
+
+```
+Sağ tık → Create → Endless Engine → Statistics → StatDefinition
+```
+
+| Field | Açıklama |
+|---|---|
+| StatId | "total_gold_earned" |
+| DisplayName | "Toplam Kazanılan Altın" |
+| IsPeakValue | false = biriktirici, true = en yüksek değer |
+
+### S15.2 Bootstrap'a Ekleme
+
+```csharp
+[Header("Statistics")]
+[SerializeField] private StatisticsService _statisticsService;
+[SerializeField] private StatDefinitionSO[] _statDefinitions;
+```
+
+```csharp
+_statisticsService.Initialize(_statDefinitions);
+_saveService.RegisterStateProvider(_statisticsService);
+```
+
+### S15.3 İstatistik Kaydetme
+
+```csharp
+// Altın kazanıldığında
+_economyService.OnResourcesChanged += newBalance =>
+    _statisticsService.SetIfHigher("peak_gold", newBalance);
+
+// Düşman öldürüldüğünde
+_enemyManager.OnEnemyKilled += _ =>
+    _statisticsService.Add("total_kills", 1);
+
+// Prestige'de
+_prestigeManager.OnPrestigeComplete += (count, _) =>
+    _statisticsService.Add("total_prestiges", 1);
+```
+
+### S15.4 Steam Achievement Tetikleme
+
+```csharp
+_statisticsService.OnStatChanged += (statId, value) =>
+{
+    if (statId == "total_kills" && value >= 1000)
+        SteamIntegration.UnlockAchievement("KILLS_1000");
+    if (statId == "total_prestiges" && value >= 1)
+        SteamIntegration.UnlockAchievement("FIRST_PRESTIGE");
+};
+```
+
+---
+
+## S16. Sistem Kombinasyonları — Gerçek Oyun Örnekleri
+
+### Kombinasyon A: Tower Defense + Harvest + Upgrade Tree
+
+```
+Senaryo: Düşmanlara hasat imleci ile hasar ver, öldürünce altın düşür,
+altınla hem generator hem upgrade al. Upgrade tree hasatı güçlendirir.
+
+Sistemler:
+✓ EconomyService + GeneratorSystem + PassiveIncomeService
+✓ HarvestLoopService (imleç hasarı)
+✓ WaveSpawnManager + EnemyManager + AutoBattleController
+✓ UpgradeTreeService (HarvestYieldMultiplier + GeneratorYield node'ları)
+✓ SaveService + TickEngine
+
+Bootstrap sırası:
+1. BigNumberFactory.Configure
+2. ConfigRegistry.InjectForTesting(economy, schema, upgrades: harvestAndGeneratorNodes)
+3. _upgradeTreeService.HandleConfigsLoaded()
+4. _economyService.Initialize(_upgradeTreeService, _saveService)
+5. _generatorSystem.Initialize(...)
+6. _passiveIncomeService.Initialize(...)
+7. _harvestLoopService.Initialize(_harvestCursor, _harvestConfig, _economyService)
+8. _waveSpawnManager.Initialize(_enemyManager, _saveService)
+9. _autoBattle.Initialize(...)
+10. RegisterStateProvider: economy, upgradeTree, generatorSystem, harvestLoop, waveSpawnManager
+11. LoadAsync() — bekle
+12. OnEnemyKilled event'larını bağla
+13. StartCombat() + StartFirstWave()
+```
+
+### Kombinasyon B: Pure Idle + Research + Building
+
+```
+Senaryo: Generator idle geliri, araştırma ile yeni binalar aç,
+binalar ekstra currency üretsin.
+
+Sistemler:
+✓ EconomyService + GeneratorSystem + PassiveIncomeService
+✓ CurrencyService (wood, stone gibi ikincil currency)
+✓ BuildingService (binalar wood üretir)
+✓ ResearchService (yeni bina tiplerini açar)
+✓ UpgradeTreeService
+✓ SaveService + TickEngine
+
+Önemli notlar:
+- BuildingService → TickEngine.OnTick manuel bağlantı ŞART
+- ResearchService → TickEngine.OnTick manuel bağlantı ŞART
+- CurrencyService'i SaveService'e registerla
+- Building production currency'si CurrencyService'te tanımlı olmalı
+```
+
+### Kombinasyon C: Clicker + Prestige + Skill Tree
+
+```
+Senaryo: Aktif tıklama oyunu, prestij ile gem kazan,
+gem ile kalıcı skill ağacı node'larını aç.
+
+Sistemler:
+✓ EconomyService + GeneratorSystem
+✓ ClickLoopService (aktif gelir)
+✓ CurrencyService ("gem" kalıcı para)
+✓ PrestigeStateManager (prestijde gem ver)
+✓ SkillTreeService (gem harcayarak skill aç)
+✓ UpgradeTreeService
+
+Gem kazanma kodu:
+_prestigeManager.OnPrestigeComplete += (count, mult) =>
+{
+    double gems = Mathf.Pow(count + 1, 1.5f);
+    _currencyService.Add("gem", gems);
+};
+
+Skill puan kazanma:
+_currencyService.OnCurrencyChanged += (id, amount) =>
+{
+    // Alternatif: her gem harcaması yerine ayrı puan sistemi
+};
+// Ya da direkt:
+_skillTreeService.AddPoints(pointAmount);
+```
+
+### Kombinasyon D: Merge + Building + Research
+
+```
+Senaryo: Merge ile eşya üret, eşyaları binaya ver,
+research ile daha iyi merge tarifler aç.
+
+Sistemler:
+✓ EconomyService
+✓ InventoryService (merge eşyaları)
+✓ MergeService (new MergeService() — MonoBehaviour DEĞİL)
+✓ BuildingService (eşya tüketip currency üretir)
+✓ ResearchService (yeni merge zinciri açar)
+✓ ConversionService (eşya → currency tarifler)
+
+Önemli not:
+MergeService = new MergeService()  // GetComponent ile ARAMA
+```
+
+---
+
+## S17. Tam Bootstrap Şablonu — Tüm Sistemler
+
+Aşağıdaki bootstrap tüm sistemleri içerir. İhtiyaç duymadıklarınızı silin.
+
+```csharp
+using System.Collections;
+using System.Threading.Tasks;
+using UnityEngine;
+using EndlessEngine.Core;
+using EndlessEngine.Economy;
+using EndlessEngine.Generator;
+using EndlessEngine.Upgrade;
+using EndlessEngine.Prestige;
+using EndlessEngine.Wave;
+using EndlessEngine.Combat;
+using EndlessEngine.Harvest;
+using EndlessEngine.ClickLoop;
+using EndlessEngine.Building;
+using EndlessEngine.Research;
+using EndlessEngine.Statistics;
+using EndlessEngine.SaveAndLoad;
+
+[DefaultExecutionOrder(-500)]
+public class FullGameBootstrap : MonoBehaviour
+{
+    // ── CORE CONFIGS ──────────────────────────────────────────
+    [Header("Core Configs")]
+    [SerializeField] private EconomyConfigSO _economyConfig;
+    [SerializeField] private SchemaVersionSO _schemaVersion;
+    [SerializeField] private UpgradeNodeConfigSO[] _upgradeNodes;
+
+    // ── CORE SERVICES ─────────────────────────────────────────
+    [Header("Core Services")]
+    [SerializeField] private EconomyService _economyService;
+    [SerializeField] private GeneratorSystem _generatorSystem;
+    [SerializeField] private GeneratorDatabaseSO _generatorDatabase;
+    [SerializeField] private UpgradeTreeService _upgradeTreeService;
+    [SerializeField] private PassiveIncomeService _passiveIncomeService;
+    [SerializeField] private SaveService _saveService;
+
+    // ── CURRENCY & INVENTORY ──────────────────────────────────
+    [Header("Currency & Inventory (opsiyonel)")]
+    [SerializeField] private CurrencyService _currencyService;
+    [SerializeField] private CurrencyDatabaseSO _currencyDatabase;
+    [SerializeField] private InventoryService _inventoryService;
+    [SerializeField] private ItemConfigSO[] _itemConfigs;
+    [SerializeField] private ConversionService _conversionService;
+    [SerializeField] private ConversionDatabaseSO _conversionDatabase;
+
+    // ── PRESTIGE ──────────────────────────────────────────────
+    [Header("Prestige (opsiyonel)")]
+    [SerializeField] private PrestigeStateManager _prestigeManager;
+    [SerializeField] private PrestigeConfigSO _prestigeConfig;
+
+    // ── HARVEST ───────────────────────────────────────────────
+    [Header("Harvest (opsiyonel)")]
+    [SerializeField] private HarvestLoopService _harvestLoopService;
+    [SerializeField] private HarvestCursor _harvestCursor;
+    [SerializeField] private HarvestAreaConfigSO _harvestAreaConfig;
+
+    // ── CLICK LOOP ────────────────────────────────────────────
+    [Header("Click Loop (opsiyonel)")]
+    [SerializeField] private ClickLoopService _clickLoopService;
+    [SerializeField] private ClickLoopConfigSO _clickLoopConfig;
+    [SerializeField] private LayerMask _clickTargetLayer;
+
+    // ── WAVE & COMBAT ─────────────────────────────────────────
+    [Header("Wave & Combat (opsiyonel)")]
+    [SerializeField] private WaveSpawnManager _waveSpawnManager;
+    [SerializeField] private EnemyManager _enemyManager;
+    [SerializeField] private AutoBattleController _autoBattle;
+    [SerializeField] private WaveConfigSO _waveConfig;
+    [SerializeField] private EnemyStatConfigSO _enemyStatConfig;
+    [SerializeField] private PlayerBaseStatConfigSO _playerStatConfig;
+    [SerializeField] private GameObject _enemyPrefab;
+
+    // ── BUILDING ──────────────────────────────────────────────
+    [Header("Building (opsiyonel)")]
+    [SerializeField] private BuildingService _buildingService;
+    [SerializeField] private BuildingConfigSO[] _buildingConfigs;
+
+    // ── RESEARCH ──────────────────────────────────────────────
+    [Header("Research (opsiyonel)")]
+    [SerializeField] private ResearchService _researchService;
+    [SerializeField] private ResearchTreeConfigSO[] _researchTrees;
+
+    // ── SKILL TREE ────────────────────────────────────────────
+    [Header("Skill Tree (opsiyonel)")]
+    [SerializeField] private SkillTreeService _skillTreeService;
+    [SerializeField] private SkillTreeConfigSO[] _skillTrees;
+
+    // ── STATISTICS ────────────────────────────────────────────
+    [Header("Statistics (opsiyonel)")]
+    [SerializeField] private StatisticsService _statisticsService;
+    [SerializeField] private StatDefinitionSO[] _statDefinitions;
+
+    private InputProviderUnity _inputProvider;
+
+    private IEnumerator Start()
+    {
+        // ── 1. BigNumber backend ───────────────────────────────
+        BigNumberFactory.Configure(_economyConfig.NumberBackend);
+
+        // ── 2. Config Registry ────────────────────────────────
+        ConfigRegistry.InjectForTesting(
+            economy: _economyConfig,
+            schema: _schemaVersion,
+            upgrades: _upgradeNodes  // null ise upgrade tree boş kalır
+        );
+
+        // ── 3. Upgrade Tree config'leri yükle ─────────────────
+        _upgradeTreeService?.HandleConfigsLoaded();
+
+        // ── 4. Core servisler başlat ──────────────────────────
+        _economyService.Initialize(_upgradeTreeService, _saveService);
+        _generatorSystem.Initialize(_generatorDatabase.Generators, _economyService, _saveService);
+        _passiveIncomeService.Initialize(_generatorSystem, _economyService, gameFlow: null);
+
+        // ── 5. İkincil currency & envanter (varsa) ────────────
+        if (_currencyService != null && _currencyDatabase != null)
+            _currencyService.Initialize(_currencyDatabase);
+
+        if (_inventoryService != null)
+            _inventoryService.Initialize(_itemConfigs, maxSlots: 30);
+
+        if (_conversionService != null && _conversionDatabase != null)
+            _conversionService.Initialize(_conversionDatabase, _economyService, _currencyService);
+
+        // ── 6. Prestige (varsa) ───────────────────────────────
+        if (_prestigeManager != null)
+            _prestigeManager.InjectEconomy(_economyService);
+
+        // ── 7. Input provider (Harvest veya Click kullanıyorsa) ─
+        if (_harvestLoopService != null || _clickLoopService != null)
+        {
+            _inputProvider = gameObject.AddComponent<InputProviderUnity>();
+        }
+
+        // ── 8. Harvest (varsa) ────────────────────────────────
+        if (_harvestLoopService != null)
+        {
+            _harvestLoopService.Initialize(_harvestCursor, _harvestAreaConfig,
+                _economyService, _statisticsService);
+            _harvestCursor.Inject(_inputProvider);
+        }
+
+        // ── 9. Click Loop (varsa) ─────────────────────────────
+        if (_clickLoopService != null)
+        {
+            _clickLoopService.Initialize(_clickLoopConfig, _economyService,
+                _inputProvider, _clickTargetLayer, _statisticsService);
+        }
+
+        // ── 10. Wave & Combat (varsa) ─────────────────────────
+        if (_waveSpawnManager != null)
+        {
+            _waveSpawnManager.Initialize(_enemyManager, _saveService);
+            var statProvider = new BaseStatUpgradeProvider(_upgradeTreeService);
+            _autoBattle.Initialize(_enemyManager, _waveSpawnManager,
+                statProvider, _playerStatConfig, _waveConfig, playerId: 0);
+        }
+
+        // ── 11. Building (varsa) ──────────────────────────────
+        if (_buildingService != null)
+        {
+            _buildingService.Initialize(_buildingConfigs, _economyService);
+            TickEngine.OnTick += dt => _buildingService.OnTick(dt);
+        }
+
+        // ── 12. Research (varsa) ──────────────────────────────
+        if (_researchService != null)
+        {
+            _researchService.Initialize(_researchTrees, _economyService, _currencyService);
+            TickEngine.OnTick += dt => _researchService.OnTick(dt);
+        }
+
+        // ── 13. Skill Tree (varsa) ────────────────────────────
+        if (_skillTreeService != null)
+            _skillTreeService.Initialize(_skillTrees, startingPoints: 0);
+
+        // ── 14. Statistics (varsa) ────────────────────────────
+        if (_statisticsService != null)
+            _statisticsService.Initialize(_statDefinitions);
+
+        // ── 15. Save provider'ları kaydet ─────────────────────
+        _saveService.RegisterStateProvider(_economyService);
+        _saveService.RegisterStateProvider(_upgradeTreeService);
+        _saveService.RegisterStateProvider(_generatorSystem);
+
+        if (_currencyService != null) _saveService.RegisterStateProvider(_currencyService);
+        if (_inventoryService != null) _saveService.RegisterStateProvider(_inventoryService);
+        if (_prestigeManager != null)  _saveService.RegisterStateProvider(_prestigeManager);
+        if (_harvestLoopService != null) _saveService.RegisterStateProvider(_harvestLoopService);
+        if (_clickLoopService != null) _saveService.RegisterStateProvider(_clickLoopService);
+        if (_buildingService != null)  _saveService.RegisterStateProvider(_buildingService);
+        if (_researchService != null)  _saveService.RegisterStateProvider(_researchService);
+        if (_skillTreeService != null) _saveService.RegisterStateProvider(_skillTreeService);
+        if (_statisticsService != null) _saveService.RegisterStateProvider(_statisticsService);
+        if (_waveSpawnManager != null) _saveService.RegisterStateProvider(_waveSpawnManager);
+
+        // ── 16. Kayıt yükle ───────────────────────────────────
+        bool done = false;
+        _ = _saveService.LoadAsync().ContinueWith(
+            _ => done = true,
+            TaskScheduler.FromCurrentSynchronizationContext());
+        yield return new WaitUntil(() => done);
+
+        // ── 17. Load sonrası event bağlantıları ───────────────
+        if (_waveSpawnManager != null)
+        {
+            // KRİTİK: Bu iki satır olmadan düşmanlar altın düşürmez ve wave bitmez
+            _enemyManager.OnEnemyKilled += OnEnemyKilledAddGold;
+            _enemyManager.OnEnemyKilled += _autoBattle.HandleEnemyKilledByManager;
+            _waveSpawnManager.OnWaveStarted += _prestigeManager.SetCurrentWave;
+
+            _autoBattle.StartCombat();
+            _waveSpawnManager.StartFirstWave();
+        }
+
+        // ── 18. Prestige event bağlantıları ───────────────────
+        if (_prestigeManager != null && _currencyService != null)
+        {
+            _prestigeManager.OnPrestigeComplete += (count, mult) =>
+            {
+                // Prestige'de gem ver (opsiyonel)
+                _currencyService.Add("gem", Mathf.Pow(count, 1.5f));
+            };
+        }
+
+        if (_prestigeManager != null && _skillTreeService != null)
+        {
+            _prestigeManager.OnPrestigeComplete += (count, _) =>
+            {
+                _skillTreeService.AddPoints(1); // Her prestige 1 skill puanı
+            };
+        }
+
+        Debug.Log("[Bootstrap] Oyun hazır.");
+    }
+
+    private void OnEnemyKilledAddGold(EnemyAgent agent)
+        => _economyService?.AddResources(agent.GoldDropAmount);
+
+    private void OnDestroy()
+    {
+        if (_enemyManager != null)
+        {
+            _enemyManager.OnEnemyKilled -= OnEnemyKilledAddGold;
+            if (_autoBattle != null)
+                _enemyManager.OnEnemyKilled -= _autoBattle.HandleEnemyKilledByManager;
+        }
+        if (_buildingService != null)
+            TickEngine.OnTick -= dt => _buildingService.OnTick(dt);
+        if (_researchService != null)
+            TickEngine.OnTick -= dt => _researchService.OnTick(dt);
+    }
+}
+```
+
+---
+
+## Hızlı Başvuru: Hangi Sistem Ne Zaman Kullanılır
+
+| İstediğin Şey | Kullanılacak Sistem |
+|---|---|
+| Pasif gelir (generator satın al, bekle) | GeneratorSystem + PassiveIncomeService |
+| Aktif tıklama geliri | ClickLoopService |
+| İmleç/alan hasat geliri | HarvestLoopService |
+| Stat bonusu satın al (altınla) | UpgradeTreeService + UpgradeNodeConfigSO |
+| Kalıcı yetenek ağacı (puan harca) | SkillTreeService + SkillTreeConfigSO |
+| Zaman bazlı araştırma | ResearchService + ResearchTreeConfigSO |
+| Izgara bazlı bina + üretim | BuildingService + BuildingConfigSO |
+| Düşman dalgaları + savaş | WaveSpawnManager + AutoBattleController |
+| Yumuşak sıfırlama + çarpan | PrestigeStateManager + PrestigeConfigSO |
+| Altın dışı para birimi | CurrencyService + CurrencyDatabaseSO |
+| Eşya/item yönetimi | InventoryService + ItemConfigSO |
+| Para/eşya dönüşüm tarifleri | ConversionService + ConversionDatabaseSO |
+| Farklı dünya konfigürasyonları | RealmConfigSystem + RealmRegistrySO |
+| Oyun içi istatistik/Steam achievement | StatisticsService + StatDefinitionSO |
