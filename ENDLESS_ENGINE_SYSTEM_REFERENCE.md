@@ -349,6 +349,8 @@ GameFlowStateMachine.OnEnteredPostRun += () => { };
 
 HP'li hedeflere tıklama, combo ve crit sistemi.
 
+> **Tasarım notu:** `ClickLoopBootstrap` inspector'ında bireysel `ClickTargetConfigSO` array'i yoktur. Click target'lar sahneye ayrı GameObject olarak yerleştirilir (SceneSetupUtility bunu otomatik yapar); her target'ın config'i kendi component'ında tutulur. Bu, `HarvestLoopBootstrap._nodeConfigs[]`'dan farklı bir yaklaşımdır.
+
 **Pipeline (her tıklamada):**
 1. Input algıla → `IInputProvider.GetPointerClickedThisFrame()`
 2. `Physics2D.OverlapPoint` ile ClickTarget bul
@@ -628,9 +630,9 @@ prestige.MaxPrestigeCount           // 0 = sınırsız
 Prestige-Heavy oyunlar için birden fazla prestige katmanı yönetir.
 
 ```csharp
-// Katman tetikleme (TryTrigger(layerIndex, currentWaveNumber) → bool):
+// Katman tetikleme:
 ascension.CanTrigger(int layerIndex, int currentWaveNumber) // bool
-ascension.TryTriggerAsync(int layerIndex, int currentWaveNumber) // Task<bool>
+ascension.TryTrigger(int layerIndex, int currentWaveNumber) // bool — hemen döner, async reset fire-and-forget
 
 // Sayım ve çarpan sorguları:
 ascension.GetCount(int layerIndex)    // int — bu katman kaç kez tetiklendi

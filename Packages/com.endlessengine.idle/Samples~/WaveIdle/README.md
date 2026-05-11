@@ -36,14 +36,14 @@ Create → Player Base Stat Config
   BaseCritChance = 0.05
 
 Create → Prestige Config
-  MinWaveToPrestige = 10
-  BaseMultiplierPerPrestige = 0.1
+  MinWaveForPrestige = 10
+  BaseMultiplierPerPrestige = 1.5
 ```
 
 ## Dalga Sonu Upgrade Ekranı Örneği
 
 ```csharp
-WaveSpawnManager.OnWaveCompleted += (wave) =>
+WaveSpawnManager.OnWaveCleared += (wave) =>
 {
     if (wave % ConfigRegistry.Wave.UpgradeSelectionWaveInterval == 0)
     {

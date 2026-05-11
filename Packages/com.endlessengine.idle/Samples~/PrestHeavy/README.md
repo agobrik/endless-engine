@@ -21,57 +21,62 @@ Prestige + ascension + skill tree + research queue + wave/combat tam zinciri ör
 1. **Package Manager → Endless Engine → Samples → PrestHeavy → Import**
 2. `Assets/Samples/PrestHeavy/Scenes/PrestHeavy.unity` sahnesini açın
 3. Inspector'da tüm alanları doldurun
-4. **Play** — dalga 10'da prestige, 50'de ascension!
+4. **Play** — dalga 10'da prestige, prestige 10'da ascension!
 
 ## Gerekli Config Asset'leri
 
 ```
-Create → Wave Config
+Create → Endless Engine → Config → Wave Config
   TotalWavesPerRun = 50
   WaveTransitionDelaySeconds = 2
   UpgradeSelectionWaveInterval = 5
 
-Create → Player Base Stat Config
-  BaseAttackDamage = 10
-  BaseMaxHP = 100
-  BaseAttackInterval = 1
-  BaseCritChance = 0.05
+Create → Endless Engine → Config → Enemy Stats
+  BaseMaxHP = 20
+  BaseAttackDamage = 5
+  WaveScalingExponent = 1.5
 
-Create → Prestige Config
-  MinWaveToPrestige = 10
-  BaseMultiplierPerPrestige = 0.1
+Create → Endless Engine → Config → Prestige Config
+  MinWaveForPrestige = 10
+  BaseMultiplierPerPrestige = 1.5
+  MaxPermanentMultiplier = 1000
 
-Create → Ascension Database SO
-  // AscensionNodeSO'ları buraya ekleyin
-  // Her node bir kalıcı bonus verir (ör. +%20 tüm hasar)
+Create → Endless Engine/Ascension Database SO
+  // PrestigeLayerConfigSO'ları Layers listesine ekleyin
+  // LayerIndex=1 → RequiredPreviousLayerCount=10 (10 prestige gerekir)
 
-Create → Research Tree Config SO
-  // ResearchNodeSO'ları zincir halinde tanımlayın
+Create → Endless Engine → Research → Research Tree Config
+  // ResearchNodeConfigSO'ları Nodes array'ine ekleyin
 ```
 
 ## Prestige + Ascension Farkı
 
-| Özellik | Prestige | Ascension |
-|---------|----------|-----------|
-| Tetikleyici | MinWaveToPrestige eşiği | N prestige sonrası |
-| Sıfırlanan | Dalga, upgrade, jeneratörler | Prestige sayısı dahil çoğu şey |
-| Kalıcı bonus | Altın çarpanı | Ascension node bonusları |
-| Kaç kez | Sınırsız | Sınırlı (AscensionDatabase kapasitesi) |
+| Özellik | Prestige (Layer 0) | Ascension (Layer 1+) |
+|---------|-------------------|----------------------|
+| Tetikleyici | `MinWaveForPrestige` eşiği | `RequiredPreviousLayerCount` prestige sonrası |
+| Sıfırlanan | Dalga, upgrade, jeneratörler | `ResetScope`'a göre (daha kapsamlı) |
+| Kalıcı bonus | `BaseMultiplierPerPrestige` çarpanı | `GetCascadeMultiplier()` kümülatif çarpan |
+| API | `PrestigeStateManager.TryPrestige()` | `AscensionStateManager.TryTrigger(layerIndex, wave)` |
 
 ## Araştırma Kuyruğu
 
 ```csharp
-// Araştırma başlatma
-_researchService.EnqueueResearch("node-id-advanced-damage");
+// Araştırma kuyruğa alma
+_researchService.TryEnqueue("tech_tree", "advanced_damage");
 
 // Her tick ilerler (Bootstrap'te bağlı):
-// _tickEngine.OnTick += _researchService.OnTick;
+// TickEngine.OnTick += dt => _researchService.OnTick(dt);
 
 // Tamamlandığında:
-ResearchService.OnResearchCompleted += (nodeId) =>
+ResearchService.OnNodeCompleted += (treeId, nodeId) =>
 {
-    Debug.Log($"Research complete: {nodeId}");
-    // Upgrade node'u otomatik aktif olur
+    Debug.Log($"Araştırma tamamlandı: {nodeId}");
+};
+
+// İlerleme takibi:
+ResearchService.OnResearchProgress += (treeId, nodeId, ticksDone, ticksTotal) =>
+{
+    researchBar.fillAmount = (float)ticksDone / ticksTotal;
 };
 ```
 
@@ -92,26 +97,31 @@ public void OnPrestigeClick() => _prestigeManager.TryPrestige();
 ```csharp
 void Update()
 {
-    ascensionBtn.interactable = _ascensionManager.CanAscend;
-    ascensionCountText.text = $"Ascension: {_ascensionManager.AscensionCount}";
+    int currentWave = _waveManager.CurrentWaveNumber;
+    ascensionBtn.interactable = _ascensionManager.CanTrigger(layerIndex: 1, currentWave);
+    cascadeText.text = $"Cascade: x{_ascensionManager.GetCascadeMultiplier():F2}";
+    ascensionCountText.text = $"Ascension: {_ascensionManager.GetCount(1)}";
 }
 
 public void OnAscensionClick()
 {
-    if (_ascensionManager.TryAscend())
-        ShowAscensionRewardScreen(_ascensionManager.LastUnlockedNodes);
+    int currentWave = _waveManager.CurrentWaveNumber;
+    _ascensionManager.TryTrigger(layerIndex: 1, currentWave);
 }
+
+// Tamamlanınca event:
+AscensionStateManager.OnAscensionComplete += (layerIndex, newCount, cascadeMult) =>
+{
+    Debug.Log($"Ascension {newCount} tamamlandı! Cascade: x{cascadeMult:F2}");
+};
 ```
 
 ## StatisticsService Bağlantısı
 
 ```csharp
-// Ömür boyu istatistik okuma
-long totalMerges = _statisticsService.GetLifetime(StatKey.TotalMerges);
-long totalPrestige = _statisticsService.GetLifetime(StatKey.TotalPrestige);
-long totalKills = _statisticsService.GetLifetime(StatKey.TotalEnemiesKilled);
+// İstatistik okuma
+long totalPrestige = _statisticsService.Get("total_prestige");
+long totalKills    = _statisticsService.Get("total_enemies_killed");
 
-// HUD'da göster
-statsText.text =
-    $"Prestige: {totalPrestige}  Kills: {totalKills}";
+statsText.text = $"Prestige: {totalPrestige}  Kills: {totalKills}";
 ```
