@@ -45,6 +45,9 @@ namespace EndlessEngine.Bootstrap
         [Tooltip("Realm identity config — leave null to use defaults")]
         [SerializeField] private RealmIdentityConfigSO _realmConfig;
 
+        [Tooltip("Upgrade node configs — auto-populated by the New Game Wizard")]
+        [SerializeField] private UpgradeNodeConfigSO[] _upgradeNodeConfigs;
+
         [Header("Options")]
         [Tooltip("Enable auto-save every 60 seconds")]
         [SerializeField] private bool _enableSave = true;
@@ -92,7 +95,9 @@ namespace EndlessEngine.Bootstrap
                 economy:  _economyConfig,
                 schema:   _schemaVersion,
                 prestige: _prestigeConfig,
-                realm:    _realmConfig);
+                realm:    _realmConfig,
+                upgrades: _upgradeNodeConfigs != null && _upgradeNodeConfigs.Length > 0
+                              ? _upgradeNodeConfigs : null);
 #endif
 
             // 4. Initialize services

@@ -4,10 +4,12 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using UnityEngine.UIElements;
 using EndlessEngine.Bootstrap;
 using EndlessEngine.Prestige;
 using EndlessEngine.Economy;
 using EndlessEngine.Building;
+using EndlessEngine.Generator;
 using EndlessEngine.Research;
 
 namespace EndlessEngine.Editor
@@ -69,6 +71,7 @@ namespace EndlessEngine.Editor
             public string   GameName;
             public string   ScenesPath;
             public string   ConfigsPath;
+            public string   UpgradeTreePath;
             public GameType Type;
             public bool     HasGenerator;
             public bool     HasPrestige;
@@ -262,6 +265,31 @@ namespace EndlessEngine.Editor
             SetSORef(so, "_schemaVersion",    schema);
             SetSORef(so, "_prestigeConfig",   prestige);
             SetBool(so, "_enableSave",        true);
+
+            // Load UpgradeNodeConfigSO assets from <ConfigsPath>/Upgrades/ for UpgradeTreeService
+            if (!string.IsNullOrEmpty(opts.UpgradeTreePath))
+            {
+                string upgradesDir = System.IO.Path.GetDirectoryName(
+                    opts.UpgradeTreePath.Replace('/', System.IO.Path.DirectorySeparatorChar))
+                    .Replace(System.IO.Path.DirectorySeparatorChar, '/') + "/Upgrades";
+
+                string[] guids = AssetDatabase.FindAssets("t:UpgradeNodeConfigSO", new[] { upgradesDir });
+                if (guids.Length > 0)
+                {
+                    var upgradesProp = so.FindProperty("_upgradeNodeConfigs");
+                    if (upgradesProp != null)
+                    {
+                        upgradesProp.arraySize = guids.Length;
+                        for (int i = 0; i < guids.Length; i++)
+                        {
+                            string assetPath = AssetDatabase.GUIDToAssetPath(guids[i]);
+                            var node = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.UpgradeNodeConfigSO>(assetPath);
+                            upgradesProp.GetArrayElementAtIndex(i).objectReferenceValue = node;
+                        }
+                    }
+                }
+            }
+
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -852,11 +880,126 @@ namespace EndlessEngine.Editor
             AddLabelFixed(bgGO, "SaveLabel", "",
                 8, false, 0.0f, 0.025f, new Color(0.3f, 0.3f, 0.3f));
 
-            // Runtime HUD controller
+            // UGUI fallback controller (works without UIToolkit)
             var hud   = canvasGO.AddComponent<GeneratedGameHUD>();
             var hudSO = new SerializedObject(hud);
             SetObjRef(hudSO, "_bootstrapSource", bootstrapGO);
             hudSO.ApplyModifiedPropertiesWithoutUndo();
+
+            // UIToolkit screen stack — only added when UXML assets exist in this project
+            BuildUIToolkitScreens(opts, bootstrapGO);
+        }
+
+        private static void BuildUIToolkitScreens(SetupOptions opts, GameObject bootstrapGO)
+        {
+            // ── HUD ──────────────────────────────────────────────────────────────────
+            const string hudUxmlPath = "Assets/UI/HUD/HUD.uxml";
+            var hudUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(hudUxmlPath);
+            if (hudUxml != null)
+            {
+                var hudGO   = new GameObject("Screen_HUD");
+                AddUIDocument(hudGO, hudUxml);
+
+                var hudCtrl   = hudGO.AddComponent<EndlessEngine.UI.HUDController>();
+                var hudCtrlSO = new SerializedObject(hudCtrl);
+                if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy)
+                {
+                    var psm = bootstrapGO.GetComponent<PrestigeStateManager>();
+                    if (psm != null) SetObjRef(hudCtrlSO, "_prestigeStateManager", psm);
+                }
+                hudCtrlSO.ApplyModifiedPropertiesWithoutUndo();
+            }
+
+            // ── Generator Screen ─────────────────────────────────────────────────────
+            if (opts.HasGenerator)
+            {
+                const string genUxmlPath = "Assets/UI/Generator/GeneratorScreen.uxml";
+                var genUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(genUxmlPath);
+                if (genUxml != null)
+                {
+                    var genGO = new GameObject("Screen_Generator");
+                    AddUIDocument(genGO, genUxml);
+
+                    var genCtrl   = genGO.AddComponent<EndlessEngine.UI.GeneratorScreenController>();
+                    var genCtrlSO = new SerializedObject(genCtrl);
+                    // GeneratorSystem is added at runtime by AutoSetupBootstrap, but we add it
+                    // explicitly here so it exists as a serialized reference in the scene.
+                    var genSys = bootstrapGO.AddComponent<EndlessEngine.Generator.GeneratorSystem>();
+                    SetObjRef(genCtrlSO, "_generatorSystem", genSys);
+                    genCtrlSO.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            // ── Upgrade Screen ───────────────────────────────────────────────────────
+            {
+                const string upgUxmlPath = "Assets/UI/Upgrade/UpgradeScreen.uxml";
+                var upgUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(upgUxmlPath);
+                if (upgUxml != null)
+                {
+                    var upgGO   = new GameObject("Screen_Upgrades");
+                    AddUIDocument(upgGO, upgUxml);
+                    var upgCtrl   = upgGO.AddComponent<EndlessEngine.UI.UpgradeScreenController>();
+                    var upgCtrlSO = new SerializedObject(upgCtrl);
+
+                    // Wire UpgradeTreeConfigSO from the wizard-generated asset
+                    if (!string.IsNullOrEmpty(opts.UpgradeTreePath))
+                    {
+                        var upgradeTree = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.UpgradeTreeConfigSO>(
+                            opts.UpgradeTreePath);
+                        if (upgradeTree != null)
+                            SetSORef(upgCtrlSO, "_upgradeTree", upgradeTree);
+                    }
+                    upgCtrlSO.ApplyModifiedPropertiesWithoutUndo();
+                }
+            }
+
+            // ── Prestige Overlay ─────────────────────────────────────────────────────
+            if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy)
+            {
+                const string presUxmlPath = "Assets/UI/Prestige/PrestigeOverlay.uxml";
+                var presUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(presUxmlPath);
+                if (presUxml != null)
+                {
+                    var presGO = new GameObject("Screen_Prestige");
+                    AddUIDocument(presGO, presUxml);
+                    presGO.AddComponent<EndlessEngine.UI.PrestigeScreenUI>();
+                }
+            }
+
+            // ── Research Screen ──────────────────────────────────────────────────────
+            if (opts.Type == GameType.ResearchIdle)
+            {
+                const string resUxmlPath = "Assets/UI/Research/ResearchScreen.uxml";
+                var resUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(resUxmlPath);
+                if (resUxml != null)
+                {
+                    var resGO = new GameObject("Screen_Research");
+                    AddUIDocument(resGO, resUxml);
+                    resGO.AddComponent<EndlessEngine.UI.ResearchScreenController>();
+                }
+            }
+
+            // ── Building Screen ──────────────────────────────────────────────────────
+            if (opts.HasBuilding)
+            {
+                const string bldUxmlPath = "Assets/UI/Building/BuildingGridScreen.uxml";
+                var bldUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(bldUxmlPath);
+                if (bldUxml != null)
+                {
+                    var bldGO = new GameObject("Screen_Building");
+                    AddUIDocument(bldGO, bldUxml);
+                    bldGO.AddComponent<EndlessEngine.UI.BuildingScreenController>();
+                }
+            }
+        }
+
+        private static void AddUIDocument(GameObject go, VisualTreeAsset uxml)
+        {
+            var doc      = go.AddComponent<UIDocument>();
+            var docSO    = new SerializedObject(doc);
+            var treeProp = docSO.FindProperty("m_VisualTreeAsset");
+            if (treeProp != null) treeProp.objectReferenceValue = uxml;
+            docSO.ApplyModifiedPropertiesWithoutUndo();
         }
 
         private static float CalcPanelHeight(SetupOptions opts)

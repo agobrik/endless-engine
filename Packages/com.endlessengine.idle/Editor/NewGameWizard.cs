@@ -444,10 +444,18 @@ namespace EndlessEngine.Editor
             if (_modMerge)      l.Add($"{r}Configs/StarterMergeConfig.asset");
             if (_modBuilding)   l.Add($"{r}Configs/StarterBuilding.asset");
             if (_modMultiCurrency) l.Add($"{r}Configs/CurrencyDatabase.asset");
+            l.Add($"{r}Configs/UpgradeTreeConfig.asset  (upgrade tree for UI screen)");
+            l.Add($"{r}Configs/Upgrades/  ({UpgradeNodeCount(_gameType)} UpgradeNodeConfigSO files for game logic)");
             l.Add($"");
             l.Add($"{r}Scenes/{Sanitize(_gameName)}.unity  ← Open this, then press Play");
             return l;
         }
+
+        private static int UpgradeNodeCount(GameType t) => t switch
+        {
+            GameType.MergeIdle => 3,
+            _                  => 4,
+        };
 
         private void RefreshPreview()
         {
@@ -475,6 +483,7 @@ namespace EndlessEngine.Editor
                 GameName         = name,
                 ScenesPath       = scenePath,
                 ConfigsPath      = cfgPath,
+                UpgradeTreePath  = $"{cfgPath}/UpgradeTreeConfig.asset",
                 Type             = (SceneSetupUtility.GameType)(int)_gameType,
                 HasGenerator     = _modGenerator,
                 HasPrestige      = _modPrestige,
@@ -610,6 +619,214 @@ namespace EndlessEngine.Editor
 
             if (_modMerge)
                 CreateSO<EndlessEngine.Config.MergeConfigSO>(dir, "StarterMergeConfig");
+
+            CreateUpgradeNodes(dir);
+        }
+
+        private void CreateUpgradeNodes(string dir)
+        {
+            // UpgradeTreeConfigSO — used by UpgradeScreenController (UI visual tree)
+            var tree = CreateSO<EndlessEngine.Config.UpgradeTreeConfigSO>(dir, "UpgradeTreeConfig");
+            if (tree != null)
+            {
+                tree.ProgressiveReveal = true;
+                tree.Nodes             = BuildUpgradeNodes(_gameType);
+                EditorUtility.SetDirty(tree);
+            }
+
+            // UpgradeNodeConfigSO assets — used by ConfigRegistry + UpgradeTreeService (game logic)
+            // Written into a sub-folder so they don't clutter the Configs root
+            string upgradeDir = $"{dir}/Upgrades";
+            string fullPath   = System.IO.Path.Combine(Application.dataPath, "..",
+                upgradeDir.Replace('/', System.IO.Path.DirectorySeparatorChar));
+            if (!System.IO.Directory.Exists(fullPath))
+                System.IO.Directory.CreateDirectory(fullPath);
+
+            var defs = BuildUpgradeNodes(_gameType);
+            foreach (var def in defs)
+                CreateUpgradeNodeSO(upgradeDir, def);
+        }
+
+        private static void CreateUpgradeNodeSO(string dir, EndlessEngine.Config.UpgradeNodeDefinition def)
+        {
+            var node = CreateSO<EndlessEngine.Config.UpgradeNodeConfigSO>(dir, def.NodeId);
+            if (node == null) return;
+            node.NodeId              = def.NodeId;
+            node.DisplayName         = def.DisplayName;
+            node.Description         = def.Description;
+            node.MaxRank             = def.MaxRank;
+            node.BaseCost            = def.BaseCost;
+            node.CostScalingFactor   = def.CostScalingFactor;
+            node.AffectedStat        = def.AffectedStat;
+            node.EffectPerRank       = def.EffectPerRank;
+            node.EffectType          = def.EffectType;
+            node.SelectionWeight     = def.SelectionWeight;
+            node.PrerequisiteNodeIDs = def.PrerequisiteNodeIDs;
+            EditorUtility.SetDirty(node);
+        }
+
+        private static System.Collections.Generic.List<EndlessEngine.Config.UpgradeNodeDefinition>
+            BuildUpgradeNodes(GameType type)
+        {
+            var list = new System.Collections.Generic.List<EndlessEngine.Config.UpgradeNodeDefinition>();
+            switch (type)
+            {
+                case GameType.PureIdle:
+                case GameType.ClickerIdle:
+                case GameType.ResearchIdle:
+                case GameType.PrestigeHeavy:
+                    list.Add(MakeDef("yield_1", "Yield Boost I",
+                        "Increases generator output by 20% per rank.",
+                        EndlessEngine.Config.StatType.GeneratorSpeed, 0.20f, 100, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 0, 0));
+                    list.Add(MakeDef("yield_2", "Yield Boost II",
+                        "Further increases generator output.",
+                        EndlessEngine.Config.StatType.GeneratorSpeed, 0.25f, 300, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 1, 0,
+                        prereq: "yield_1"));
+                    list.Add(MakeDef("offline_1", "Offline Bonus",
+                        "Increases offline yield rate by 30% per rank.",
+                        EndlessEngine.Config.StatType.OfflineYieldRate, 0.30f, 200, 1.6f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 0, 1));
+                    list.Add(MakeDef("prestige_multi_1", "Prestige Edge",
+                        "Increases prestige multiplier by 10% per rank.",
+                        EndlessEngine.Config.StatType.PrestigeMultiplier, 0.10f, 500, 1.8f,
+                        EndlessEngine.Config.UpgradeCategory.Prestige, 2, 0,
+                        prereq: "yield_2"));
+                    break;
+
+                case GameType.ClickLoop:
+                    list.Add(MakeDef("click_dmg_1", "Click Power I",
+                        "Increases click damage by 20% per rank.",
+                        EndlessEngine.Config.StatType.ClickDamage, 0.20f, 75, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Combat, 0, 0));
+                    list.Add(MakeDef("click_dmg_2", "Click Power II",
+                        "Further increases click damage.",
+                        EndlessEngine.Config.StatType.ClickDamage, 0.25f, 200, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Combat, 1, 0,
+                        prereq: "click_dmg_1"));
+                    list.Add(MakeDef("combo_1", "Combo Master",
+                        "Boosts click combo multiplier.",
+                        EndlessEngine.Config.StatType.ClickComboMultiplier, 0.15f, 150, 1.6f,
+                        EndlessEngine.Config.UpgradeCategory.Economy, 0, 1));
+                    list.Add(MakeDef("click_yield_1", "Yield Multiplier",
+                        "Increases click gold yield.",
+                        EndlessEngine.Config.StatType.ClickYieldMultiplier, 0.20f, 250, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Economy, 1, 1,
+                        prereq: "combo_1"));
+                    break;
+
+                case GameType.HarvestIdle:
+                    list.Add(MakeDef("harvest_yield_1", "Harvest Boost",
+                        "Increases harvest yield by 20% per rank.",
+                        EndlessEngine.Config.StatType.HarvestYieldMultiplier, 0.20f, 75, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 0, 0));
+                    list.Add(MakeDef("harvest_radius_1", "Wide Harvest",
+                        "Increases cursor harvest radius.",
+                        EndlessEngine.Config.StatType.HarvestRadius, 0.15f, 100, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 1, 0));
+                    list.Add(MakeDef("harvest_combo_1", "Harvest Combo",
+                        "Boosts harvest combo multiplier.",
+                        EndlessEngine.Config.StatType.HarvestComboMultiplier, 0.20f, 150, 1.6f,
+                        EndlessEngine.Config.UpgradeCategory.Economy, 0, 1,
+                        prereq: "harvest_yield_1"));
+                    list.Add(MakeDef("harvest_respawn_1", "Quick Respawn",
+                        "Decreases node respawn time.",
+                        EndlessEngine.Config.StatType.HarvestNodeRespawnRate, 0.15f, 200, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 1, 1,
+                        prereq: "harvest_radius_1"));
+                    break;
+
+                case GameType.IdleVsRPG:
+                case GameType.TowerDefense:
+                    list.Add(MakeDef("damage_1", "Attack Boost I",
+                        "Increases attack damage by 20% per rank.",
+                        EndlessEngine.Config.StatType.Damage, 0.20f, 100, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Combat, 0, 0));
+                    list.Add(MakeDef("damage_2", "Attack Boost II",
+                        "Further increases attack damage.",
+                        EndlessEngine.Config.StatType.Damage, 0.25f, 300, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Combat, 1, 0,
+                        prereq: "damage_1"));
+                    list.Add(MakeDef("crit_1", "Critical Hit",
+                        "Increases critical hit chance.",
+                        EndlessEngine.Config.StatType.CritChance, 0.05f, 200, 1.6f,
+                        EndlessEngine.Config.UpgradeCategory.Combat, 0, 1));
+                    list.Add(MakeDef("gold_drop_1", "Gold Rush",
+                        "Increases gold dropped by enemies.",
+                        EndlessEngine.Config.StatType.GoldDropMultiplier, 0.30f, 250, 1.6f,
+                        EndlessEngine.Config.UpgradeCategory.Economy, 1, 1,
+                        prereq: "damage_2"));
+                    break;
+
+                case GameType.MergeIdle:
+                    list.Add(MakeDef("merge_gold_1", "Sell Bonus",
+                        "Increases gold earned from selling items.",
+                        EndlessEngine.Config.StatType.GoldDropMultiplier, 0.25f, 50, 1.4f,
+                        EndlessEngine.Config.UpgradeCategory.Economy, 0, 0));
+                    list.Add(MakeDef("merge_idle_1", "Passive Income",
+                        "Adds a small passive gold rate.",
+                        EndlessEngine.Config.StatType.IdleYieldRate, 0.10f, 100, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 1, 0));
+                    list.Add(MakeDef("merge_gold_2", "Sell Bonus II",
+                        "Further increases gold from selling.",
+                        EndlessEngine.Config.StatType.GoldDropMultiplier, 0.30f, 200, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Economy, 0, 1,
+                        prereq: "merge_gold_1"));
+                    break;
+
+                case GameType.FarmIdle:
+                case GameType.BuildingIdle:
+                    list.Add(MakeDef("build_yield_1", "Yield Boost I",
+                        "Increases building income by 20% per rank.",
+                        EndlessEngine.Config.StatType.GeneratorSpeed, 0.20f, 100, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 0, 0));
+                    list.Add(MakeDef("build_yield_2", "Yield Boost II",
+                        "Further increases building income.",
+                        EndlessEngine.Config.StatType.GeneratorSpeed, 0.25f, 300, 1.5f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 1, 0,
+                        prereq: "build_yield_1"));
+                    list.Add(MakeDef("build_offline_1", "Offline Bonus",
+                        "Increases offline yield.",
+                        EndlessEngine.Config.StatType.OfflineYieldRate, 0.30f, 200, 1.6f,
+                        EndlessEngine.Config.UpgradeCategory.Production, 0, 1));
+                    list.Add(MakeDef("build_prestige_1", "Prestige Edge",
+                        "Increases prestige multiplier.",
+                        EndlessEngine.Config.StatType.PrestigeMultiplier, 0.10f, 500, 1.8f,
+                        EndlessEngine.Config.UpgradeCategory.Prestige, 1, 1,
+                        prereq: "build_yield_2"));
+                    break;
+            }
+            return list;
+        }
+
+        private static EndlessEngine.Config.UpgradeNodeDefinition MakeDef(
+            string id, string displayName, string desc,
+            EndlessEngine.Config.StatType stat, float effectPerRank,
+            float baseCost, float costScale,
+            EndlessEngine.Config.UpgradeCategory category,
+            int gridX, int gridY,
+            string prereq = null)
+        {
+            return new EndlessEngine.Config.UpgradeNodeDefinition
+            {
+                NodeId               = id,
+                DisplayName          = displayName,
+                Description          = desc,
+                AffectedStat         = stat,
+                EffectPerRank        = effectPerRank,
+                EffectType           = EndlessEngine.Config.UpgradeEffectType.PercentBonus,
+                MaxRank              = 5,
+                BaseCost             = baseCost,
+                CostScalingFactor    = costScale,
+                Category             = category,
+                GridX                = gridX,
+                GridY                = gridY,
+                SelectionWeight      = 10f,
+                PrerequisiteNodeIDs  = string.IsNullOrEmpty(prereq)
+                                           ? System.Array.Empty<string>()
+                                           : new[] { prereq },
+            };
         }
 
         // ── SO factory ────────────────────────────────────────────────────────────
