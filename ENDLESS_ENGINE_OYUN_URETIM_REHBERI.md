@@ -2,6 +2,7 @@
 ## "Sıfırdan Steam Oyununa" Adım Adım Kılavuz
 
 > Bu doküman, Endless Engine toolset'i kullanarak gerçek bir idle/incremental oyun üretmek isteyen herkes için yazılmıştır.
+> **Tüm field isimleri, metod imzaları ve yapılar kaynak koddan doğrulanmıştır.**
 
 ---
 
@@ -27,7 +28,7 @@
 ### Kurulum
 
 1. Unity 6.3 LTS'i aç
-2. `Window → Package Manager → Add package from disk`
+2. `Window → Package Manager → + → Add package from disk`
 3. `Packages/com.endlessengine.idle/package.json` dosyasını seç
 4. Paketin yüklendiğini menüde `Tools → Endless Engine` görerek doğrula
 
@@ -71,7 +72,7 @@
 **Uzun araştırma kuyrukları istiyorum:**
 → **Research Idle**
 
-**Şehir inşaa sistemi istiyorum:**
+**Şehir inşa sistemi istiyorum:**
 → **Building Idle**
 
 **Çok güçlü prestige döngüsü istiyorum:**
@@ -97,6 +98,21 @@ Wizard otomatik olarak şunu yapar:
 
 > Bu prototipte her şey varsayılan değerlerle gelir. Sonraki adımlar bunları oyununa göre özelleştirmek içindir.
 
+### AutoSetupBootstrap Nedir?
+
+Wizard'ın oluşturduğu sahnedeki `Bootstrap` GameObject'inde **AutoSetupBootstrap** component'ı bulunur. Inspector'da şu alanlar görünür:
+
+| Alan | Tipi | Açıklama |
+|------|------|----------|
+| `_economyConfig` | EconomyConfigSO | Ekonomi ayarları (hard cap, starting gold vb.) |
+| `_generatorDatabase` | GeneratorDatabaseSO | Tüm generator'ların koleksiyonu |
+| `_schemaVersion` | SchemaVersionSO | Kayıt şeması versiyon asset'i |
+| `_prestigeConfig` | PrestigeConfigSO | Prestige ayarları (null = prestige kapalı) |
+| `_realmConfig` | RealmIdentityConfigSO | Realm ayarları (null = varsayılan) |
+| `_enableSave` | bool | Otomatik kayıt açık/kapalı |
+
+> **Önemli:** AutoSetupBootstrap yalnızca temel sistemleri (Economy, Generator, UpgradeTree, Save, Tick) başlatır. Wave, ClickLoop, Harvest, Research, Building gibi sistemler kendi Bootstrap script'leri ile başlatılır — Wizard bunları otomatik ekler.
+
 ---
 
 ## 3. ADIM 2 — GENERATOR'LARI TASARLA
@@ -105,7 +121,7 @@ Wizard otomatik olarak şunu yapar:
 
 `Tools → Endless Engine → Generator Editor`
 
-Editor otomatik olarak `Assets/[OyunAdın]/Configs/GeneratorDatabase.asset` dosyasını yükler.
+Editor, Inspector'da seçili `GeneratorDatabaseSO` asset'ini yükler. Wizard'ın oluşturduğu asset: `Assets/[OyunAdın]/Configs/GeneratorDatabase.asset`
 
 ### Wizard'ın Oluşturduğu Varsayılan
 
@@ -132,10 +148,10 @@ Bu bir başlangıç noktası. Gerçek bir idle oyununda 8-15 generator olur.
 | 6 | Uzay İstasyonu | 1.200 | 1.400.000 | 1.15 |
 
 **Generator Editörde:**
-1. `+ Add` butonuna bas → yeni generator asset oluşur
+1. `+ Add` butonuna bas → yeni GeneratorConfigSO asset oluşur
 2. Sol panelden seç → sağda Inspector açılır
 3. Değerleri gir
-4. Maliyet eğrisi grafiği anlık güncellenir — ilk 10 kopya için gösterir
+4. Maliyet eğrisi grafiği anlık güncellenir
 5. `Save` bas
 
 ### Unlock Sistemi
@@ -163,7 +179,11 @@ UnlockRequirement = 10         (10 tane alınmadan bir sonrakini gösterme)
 
 `Tools → Endless Engine → Upgrade Tree Editor`
 
-İlk kez açtığında boş gelir. `Load Asset` ile wizard'ın oluşturduğu tree'yi veya `New Tree` ile yenisini yükle.
+İlk kez açtığında boş gelir. `Load Asset` ile wizard'ın oluşturduğu `UpgradeTreeConfig.asset` dosyasını veya `New Tree` ile yenisini yükle.
+
+### UpgradeTreeConfigSO Yapısı
+
+Tüm node'lar tek bir `UpgradeTreeConfigSO` asset içinde `Nodes` (List\<UpgradeNodeDefinition\>) listesi olarak saklanır — her node için ayrı asset dosyası oluşturulmaz.
 
 ### Node Ekleme
 
@@ -171,29 +191,46 @@ UnlockRequirement = 10         (10 tane alınmadan bir sonrakini gösterme)
 2. Sağdaki Inspector'da dolduracakların:
 
 **Identity:**
-- **Node ID:** benzersiz, küçük harf, alt çizgi (örn. `dmg_01`) — ID Registry'de çakışma kontrol et
-- **Display Name:** oyuncunun gördüğü isim ("Güçlü Darbeler")
-- **Description:** kısa açıklama
+| Field | Açıklama |
+|-------|----------|
+| `NodeId` | Benzersiz, küçük harf, alt çizgi (örn. `dmg_01`) — yayın sonrası asla değiştirme |
+| `DisplayName` | Oyuncunun gördüğü isim ("Güçlü Darbeler") |
+| `Description` | Kısa açıklama |
 
 **Stats:**
-- **Category:** Production (sarı), Combat (kırmızı), Survival (yeşil), Economy (mavi), Prestige (mor)
-- **Stat:** hangi istatistiği etkiliyor (StatType enum'dan)
-- **Effect Type:** PercentBonus (%X ekler) veya FlatBonus (X ekler)
-- **Per Rank:** her rankta etki değeri (0.10 = %10)
-- **Max Rank:** kaç kez alınabilir
+| Field | Açıklama |
+|-------|----------|
+| `Category` | `Production` / `Combat` / `Survival` / `Economy` / `Prestige` |
+| `AffectedStat` | StatType enum — hangi istatistiği etkiliyor |
+| `EffectType` | `PercentBonus` (%X ekler) veya `FlatBonus` (X ekler) |
+| `EffectPerRank` | Her rankta etki değeri (0.10 = %10) |
+| `MaxRank` | Kaç kez alınabilir |
 
 **Economy:**
-- **Base Cost:** ilk rank maliyeti
-- **Cost Scale:** her rankta çarpan (1.5 = ikinci rank 1.5x daha pahalı)
-- **Card Weight:** upgrade kartı olarak seçilme şansı (daha yüksek = daha sık çıkar)
-- **Prestige Gate:** kaçıncı prestige'den sonra görünür (0 = hep görünür)
+| Field | Açıklama |
+|-------|----------|
+| `BaseCost` | İlk rank maliyeti |
+| `CostScalingFactor` | Her rankta çarpan (1.5 = ikinci rank 1.5x pahalı) |
+| `SelectionWeight` | Upgrade kartı olarak seçilme şansı (yüksek = sık çıkar) |
+| `PrestigeGateRequirement` | Kaçıncı prestige'den sonra görünür (0 = hep görünür) |
 
 **Tree Behaviour:**
-- **Max Out Edges:** bu node'dan kaç bağlantı çıkabilir (0 = sınırsız)
+| Field | Açıklama |
+|-------|----------|
+| `PrerequisiteNodeIDs` | Bu node için önce alınması gereken node ID'leri |
+| `MaxOutgoingEdges` | Bu node'dan kaç bağlantı çıkabilir (0 = sınırsız) |
+| `HideUntilUnlockable` | true = önkoşullar sağlanana kadar UI'da gizle |
+
+**Layout (tree canvas konumu):**
+| Field | Açıklama |
+|-------|----------|
+| `GridX` | Canvas'taki sütun index'i (0-based) |
+| `GridY` | Canvas'taki satır index'i (0-based) |
 
 ### Node'ları Bağlama
 
-Bir node'un çıkış portunu (sağ nokta) başka bir node'un giriş portuna (sol nokta) sürükle. Bu, hedef node için prerequisite oluşturur.
+Bir node'un çıkış portunu (sağ nokta) başka bir node'un giriş portuna (sol nokta) sürükle.
+Bu, hedef node'un `PrerequisiteNodeIDs` listesine otomatik eklenir.
 
 ### Örnek Tree Yapıları
 
@@ -211,14 +248,23 @@ Bir node'un çıkış portunu (sağ nokta) başka bir node'un giriş portuna (so
 
 **Prestige-gated ağaç:**
 ```
-Prestige 0: Temel node'lar
-Prestige 1: Güçlendirilmiş node'lar (PrestigeGate=1)
-Prestige 3: Efsanevi node'lar (PrestigeGate=3)
+PrestigeGateRequirement=0: Temel node'lar (herkese görünür)
+PrestigeGateRequirement=1: Güçlendirilmiş node'lar (1. prestige'den sonra)
+PrestigeGateRequirement=3: Efsanevi node'lar (3. prestige'den sonra)
 ```
 
 ### Kaydetme
 
 `Save` butonuna bas. Kaydedilmeden pencereyi kapatmak istersen "Kaydet mi?" diye sorar.
+
+### Çoklu Upgrade Tree
+
+Farklı içerik alanları için farklı UpgradeTreeConfigSO asset'leri oluşturabilirsin:
+- `UpgradeTreeConfig_Production.asset`
+- `UpgradeTreeConfig_Combat.asset`
+- `UpgradeTreeConfig_Prestige.asset`
+
+Her tree'yi sahnedeki `UpgradeTreeService` component'ının Inspector'ına ekle. (AutoSetupBootstrap kullananlar için UpgradeTreeService ilk bulduğu tree'yi otomatik kullanır — birden fazla tree için UpgradeTreeService'e doğrudan referans vererek `LoadTree(treeConfig)` çağırmalısın.)
 
 ---
 
@@ -263,6 +309,22 @@ Her satır bir oturum:
 | 30. oturumda toplam Perm Mult | ×10 - ×100 |
 | Oturum başına altın büyümesi | önceki oturumun 2-5 katı |
 
+### EconomyConfigSO Alanları
+
+`Assets/[OyunAdın]/Configs/EconomyConfig.asset`
+
+| Field | Varsayılan | Açıklama |
+|-------|-----------|----------|
+| `IdleYieldRateBase` | 10 | Prestige 0'da saniye başına gelir |
+| `BaseMultiplierPerPrestige` | 1.5 | Her prestige'de gelir çarpanı |
+| `IdleYieldMultiplierCap` | 100 | Çarpan tavanı |
+| `StartingGold` | 0 | Yeni oyunda/prestige sonrası başlangıç altını |
+| `ResourceHardCap` | 1_000_000_000 | Maximum altın miktarı |
+| `NumberBackend` | DoubleNumber | `DoubleNumber` (≤1e15) veya `BigDouble` (çok büyük sayılar) |
+| `OfflineCapHours` | 8 | Çevrimdışı kazancı kaç saate kadar hesaplanır |
+| `BaseGoldDropPerEnemy` | 1 | Wave başı düşman altın dropu (base) |
+| `GoldDropScalingExponent` | 1.2 | Altın dropu dalga ölçekleme katsayısı |
+
 ### Yaygın Sorunlar ve Düzeltmeler
 
 **Sorun: Oyuncu hiç prestige yapamıyor**
@@ -274,29 +336,28 @@ Her satır bir oturum:
 
 **Sorun: Geç oyunda altın büyümesi durdu**
 → Generator yield değerlerini artır
-→ Prestige çarpanı sınırını artır (`MaxPermanentMultiplier`)
+→ `PrestigeConfig.MaxPermanentMultiplier` değerini artır
 
 **Sorun: Ekonomi çok hızlı patladı, hard cap'e çarptı**
 → `EconomyConfig.ResourceHardCap` değerini artır
-→ `EconomyConfig.BaseGoldDropScalingExponent` değerini azalt
+→ `EconomyConfig.NumberBackend = BigDouble` yap
 
 ---
 
 ## 6. ADIM 5 — PRESTİGE SİSTEMİ KUR
 
-### Config Değerleri (PrestigeConfigSO)
+### PrestigeConfigSO Alanları
 
-```
-Assets/[OyunAdın]/Configs/PrestigeConfig.asset
-```
+`Assets/[OyunAdın]/Configs/PrestigeConfig.asset`
 
-| Alan | Önerilen Değer | Açıklama |
-|------|---------------|----------|
-| BaseMultiplierPerPrestige | 1.5 - 2.0 | Her prestige'de kalıcı gelir çarpanı |
-| MaxPermanentMultiplier | 1000 - 10000 | Çarpan tavanı |
-| MinGoldToPrestige | Oyununa göre | Altın kapısı (0 = kapalı) |
-| MinWaveForPrestige | 0 (wave yok) / 10 (wave var) | Wave kapısı |
-| MaxPrestigeCount | 0 = sınırsız | Prestige sınırı |
+| Field | Önerilen Değer | Açıklama |
+|-------|---------------|----------|
+| `MinWaveForPrestige` | 0 (wave yok) / 10 (wave var) | Wave kapısı |
+| `MinGoldToPrestige` | Oyununa göre | Altın kapısı (0 = kapalı) |
+| `MaxPrestigeCount` | 0 = sınırsız | Prestige sınırı |
+| `BaseMultiplierPerPrestige` | 1.5 - 2.0 | Her prestige'de kalıcı gelir çarpanı |
+| `MaxPermanentMultiplier` | 1000 - 10000 | Çarpan tavanı |
+| `StatsAmplifiedByPrestige` | StatType[] | Prestige çarpanının etkileyeceği stat'lar |
 
 ### Prestige Sıfırlaması Neyi Etkiler
 
@@ -310,14 +371,42 @@ Assets/[OyunAdın]/Configs/PrestigeConfig.asset
 **Sıfırlanmayan şeyler:**
 - Kalıcı çarpan (`GetPermanentMultiplier()`)
 - Prestige sayısı
-- Prestige-gated upgrade node'lar (bir sonraki prestige'de görünür)
+- `PrestigeGateRequirement > 0` olan upgrade node'lar (bir sonraki prestige'de görünür)
+
+### Prestige Butonunu Aktif/Pasif Yapma
+
+```csharp
+void Update()
+{
+    var pm = FindFirstObjectByType<PrestigeStateManager>();
+    prestigeButton.interactable = pm != null && pm.CanPrestige;
+}
+```
 
 ### Çok Katmanlı Prestige (Prestige-Heavy)
 
-`AscensionStateManager` ile katman sistemi:
-- Her katman kendi çarpanını ve reset kurallarını tanımlar
-- `AscensionDatabaseSO` — tüm katmanların koleksiyonu
-- `AscensionLayerConfigSO` — tek katman ayarları
+`AscensionStateManager` + `AscensionDatabaseSO` ile:
+
+**AscensionDatabaseSO** — tüm katmanların koleksiyonu
+- `Layers` → `PrestigeLayerConfigSO[]`
+
+**PrestigeLayerConfigSO** — tek katman ayarları
+
+| Field | Açıklama |
+|-------|----------|
+| `LayerIndex` | Katman numarası (0-based) |
+| `DisplayName` | Katman adı ("Prestige", "Ascension" vb.) |
+| `ActionVerb` | Buton metni ("Prestige", "Ascend" vb.) |
+| `MinWaveRequired` | Bu katman için min dalga |
+| `RequiredPreviousLayerCount` | Bir önceki katmanın kaç kez tetiklenmesi gerekir |
+| `MaxCount` | Bu katman kaç kez tetiklenebilir (0 = sınırsız) |
+| `ResetScope` | Neyin sıfırlanacağı |
+| `ResetGenerators` | true = generator'lar sıfırlanır |
+| `ResetSecondaryCurrencies` | true = ikincil para birimleri sıfırlanır |
+| `BaseMultiplierPerTrigger` | Her tetiklemede çarpan artışı |
+| `MaxPermanentMultiplier` | Bu katman için çarpan tavanı |
+| `RewardCurrencyId` | Tetiklemede verilen para birimi ID'si |
+| `BaseCurrencyReward` | Tetiklemedeki temel ödül miktarı |
 
 ---
 
@@ -327,26 +416,33 @@ Assets/[OyunAdın]/Configs/PrestigeConfig.asset
 
 ### 7.1 Click Loop (ClickLoop Idle, Clicker Idle)
 
-**Click Target'ları Ayarla** (`Assets/[OyunAdın]/Configs/ClickTarget_0.asset` vb.):
+**ClickTargetConfigSO** — `Assets/[OyunAdın]/Configs/ClickTarget_0.asset` vb.
 
-```
-TargetId:          "target_0"
-MaxHP:             10.0          (ne kadar tıklama gerekir)
-DamagePerClick:    1.0
-BaseYield:         3.0           (yok edilince verilen altın)
-RespawnSeconds:    3.0           (kaç saniyede geri döner)
-AwardYieldPerClick: false        (true = her tıkta altın, false = yok edilince)
-ComboContribution:  1.0          (combo'ya katkı)
-```
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `TargetId` | `"target_0"` | Benzersiz ID |
+| `DisplayName` | `"Taş"` | Gösterilen isim |
+| `MaxHP` | 10.0 | Kaç tıklama gerekir |
+| `DamagePerClick` | 1.0 | Tıklama başına hasar |
+| `BaseYield` | 3.0 | Yok edilince verilen altın |
+| `AwardYieldPerClick` | false | true = her tıkta altın, false = yok edilince |
+| `RespawnSeconds` | 3.0 | Kaç saniyede geri döner |
+| `ComboContribution` | 1.0 | Combo sayacına katkı |
+| `YieldCurrencyId` | `"gold"` | Hangi para birimine ödül verir |
 
-**Click Loop Config** (`Assets/[OyunAdın]/Configs/ClickLoopConfig.asset`):
-```
-BaseAutoClickRate:    0.0        (0 = auto-click yok, 2.0 = saniyede 2 auto)
-BaseCritChance:       0.05       (%5 crit şansı)
-BaseCritMultiplier:   2.0        (crit 2x altın)
-ComboDecaySeconds:    2.0        (2 saniye tıklama olmazsa combo sıfırlanır)
-MaxComboMultiplier:   5.0        (combo tavanı)
-```
+**ClickLoopConfigSO** — `Assets/[OyunAdın]/Configs/ClickLoopConfig.asset`
+
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `ComboDecayDelay` | 2.0 | Tıklama durduğunda combo azalmaya başlamadan önceki süre (saniye) |
+| `ComboDecayRate` | 1.0 | Saniyede azalan combo puanı |
+| `ComboPointsPerStep` | 1.0 | Her tıkta kazanılan combo puanı |
+| `MaxComboMultiplier` | 5.0 | Combo tavanı |
+| `BaseCritChance` | 0.05 | %5 crit şansı |
+| `BaseCritMultiplier` | 2.0 | Crit 2x altın |
+| `BaseAutoClickRate` | 0.0 | 0 = auto-click yok, 2.0 = saniyede 2 auto |
+| `OfflineCapHours` | 4.0 | Çevrimdışı auto-click kazancı tavanı |
+| `OfflineEfficiency` | 0.5 | Çevrimdışı kazanç verimliliği |
 
 **Upgrade Tree'de Click istatistikleri:**
 - `StatType.ClickDamage` — hasar artışı
@@ -358,53 +454,69 @@ MaxComboMultiplier:   5.0        (combo tavanı)
 
 ### 7.2 Harvest Idle
 
-**Harvest Area Config** (`Assets/[OyunAdın]/Configs/HarvestAreaConfig.asset`):
-```
-BaseTickInterval:    0.1         (saniyede kaç tick, 0.1 = 10/s)
-MaxComboMultiplier:  8.0
-ComboDecaySeconds:   1.5
-```
+**HarvestAreaConfigSO** — `Assets/[OyunAdın]/Configs/HarvestAreaConfig.asset`
 
-**Harvest Node Config** (`Assets/[OyunAdın]/Configs/HarvestNode.asset`):
-```
-NodeId:             "rock_node"
-MaxHP:              10.0
-DamagePerTick:      1.0
-BaseYield:          5.0
-RespawnSeconds:     4.0
-AwardYieldPerTick:  true         (her tick'te altın)
-ComboContribution:  1.0
-```
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `BaseTickInterval` | 0.1 | Saniyede kaç tick (0.1 = 10/s) |
+| `ComboDecayDelay` | 1.5 | Combo azalmadan önce bekleme süresi (saniye) |
+| `ComboDecayRate` | 2.0 | Saniyede azalan combo |
+| `ComboPointsPerMultiplierStep` | 5.0 | Bir sonraki çarpan seviyesi için gereken puan |
+| `MaxComboMultiplier` | 8.0 | Combo tavanı |
+| `OfflineCapHours` | 4.0 | Çevrimdışı kazanç tavanı |
+| `OfflineEfficiency` | 0.5 | Çevrimdışı verimlilik |
 
-Birden fazla node tipi için birden fazla `HarvestNodeConfigSO` oluştur. HarvestLoopBootstrap'ta `_nodeConfigs` array'ine ekle.
+**HarvestNodeConfigSO** — `Assets/[OyunAdın]/Configs/HarvestNode_Rock.asset` vb.
+
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `NodeId` | `"rock_node"` | Benzersiz ID |
+| `DisplayName` | `"Kaya"` | Gösterilen isim |
+| `MaxHP` | 10.0 | Kaç tick gerekir |
+| `DamagePerTick` | 1.0 | Tick başına hasar |
+| `BaseYield` | 5.0 | Yok edilince verilen altın |
+| `AwardYieldPerTick` | true | true = her tick'te altın |
+| `RespawnSeconds` | 4.0 | Kaç saniyede geri döner |
+| `ComboContribution` | 1.0 | Combo katkısı |
+| `YieldCurrencyId` | `"gold"` | Ödül para birimi |
+
+Birden fazla node tipi için birden fazla HarvestNodeConfigSO oluştur. `HarvestLoopBootstrap` component'ının Inspector'ındaki `_nodeConfigs` array'ine ekle.
 
 ---
 
 ### 7.3 Idle-vs / RPG ve Tower Defense (Wave Oyunları)
 
-**Wave Config** (`Assets/[OyunAdın]/Configs/WaveConfig.asset`):
-```
-BaseEnemyCountPerWave:      3
-EnemyCountScalingFactor:    1.2       (her dalgada %20 daha fazla düşman)
-HardCapEnemiesOnScreen:     20
-WaveDurationSeconds:        8.0
-WaveTransitionDelaySeconds: 2.0
-UpgradeSelectionWaveInterval: 5       (her 5 dalgada upgrade seç)
-```
+**WaveConfigSO** — `Assets/[OyunAdın]/Configs/WaveConfig.asset`
 
-**Enemy Stat Config** (`Assets/[OyunAdın]/Configs/EnemyStatConfig.asset`):
-```
-BaseHealth:              20.0
-HealthScalingFactor:     1.15          (her dalgada HP ×1.15)
-BaseDamage:              5.0
-DamageScalingFactor:     1.10
-BaseGoldDrop:            (EconomyConfig'den gelir)
-```
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `BaseEnemyCountPerWave` | 3 | Dalga başı düşman sayısı (base) |
+| `EnemyCountScalingFactor` | 1.2 | Her dalgada %20 daha fazla düşman |
+| `HardCapEnemiesOnScreen` | 20 | Aynı anda maksimum düşman |
+| `SpawnIntervalSeconds` | 0.5 | Düşmanlar arası spawn aralığı |
+| `WaveDurationSeconds` | 8.0 | Dalga süresi |
+| `WaveTransitionDelaySeconds` | 2.0 | Dalgalar arası geçiş süresi |
+| `UpgradeSelectionWaveInterval` | 5 | Her 5 dalgada upgrade seçimi |
+| `TotalWavesPerRun` | 50 | Run başına toplam dalga sayısı |
+| `WaveSaveMilestoneInterval` | 10 | Her 10 dalgada otomatik kayıt |
+| `EliteWaveInterval` | 10 | Her 10 dalgada bir elite wave |
+| `EliteStatMultiplier` | 2.0 | Elite wave'de düşman stat çarpanı |
+| `BossWaveInterval` | 25 | Her 25 dalgada bir boss wave |
 
-**Run Config** (`Assets/[OyunAdın]/Configs/RunConfig.asset`):
-```
-RunDurationSeconds:      120           (2 dakikalık run)
-```
+**EnemyStatConfigSO** — `Assets/[OyunAdın]/Configs/EnemyStatConfig.asset`
+
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `BaseMaxHP` | 20.0 | Temel can (1. dalga) |
+| `BaseAttackDamage` | 5.0 | Temel saldırı hasarı |
+| `BaseContactDamage` | 2.0 | Temas hasarı (tick başına) |
+| `MoveSpeed` | 3.0 | Hareket hızı |
+| `AttackRange` | 2.0 | Saldırı menzili (world unit) |
+| `AttackInterval` | 1.5 | Saldırılar arası süre (saniye) |
+| `WaveScalingExponent` | 1.5 | HP ve hasar için dalga ölçekleme katsayısı |
+| `HardCapEnemiesOnScreen` | 200 | Maksimum eş zamanlı düşman |
+
+> **Not:** `WaveScalingExponent` hem HP hem hasara uygulanır. Dalga N'de HP = `BaseMaxHP × N^WaveScalingExponent`
 
 **Wave Upgrade'leri için istatistikler:**
 - `StatType.Damage` — saldırı gücü
@@ -416,76 +528,118 @@ RunDurationSeconds:      120           (2 dakikalık run)
 
 ### 7.4 Merge Idle
 
-**İtem tanımları (ItemConfigSO):**
+**ItemConfigSO** — `Assets/[OyunAdın]/Configs/Items/CoinT1.asset` vb.
+
+Yeni asset: `Assets → Create → Endless Engine → Loot → Item Config`
+
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `ItemId` | `"coin_t1"` | Benzersiz ID (yayın sonrası değiştirme) |
+| `DisplayName` | `"Bronz Para"` | Gösterilen isim |
+| `Description` | `"..."` | Açıklama metni |
+| `Rarity` | `Common` | `Common` / `Uncommon` / `Rare` / `Epic` / `Legendary` |
+| `MaxStackSize` | 99 | Stack sınırı (1 = stack'lenemez) |
+| `MergeGroupId` | `"coins"` | Aynı grup birbirleriyle birleşir |
+| `MergeTier` | 1 | Tier 1 + Tier 1 = Tier 2 |
+
+**MergeConfigSO** — `Assets/[OyunAdın]/Configs/MergeConfig_Coins.asset`
+
+Yeni asset: `Assets → Create → Endless Engine → Merge → Merge Config`
+
+| Field | Açıklama |
+|-------|----------|
+| `ConfigId` | Benzersiz config ID |
+| `MergeGroupId` | Hangi item grubu için (ItemConfigSO.MergeGroupId ile eşleşmeli) |
+| `Rules` | `List<MergeRule>` — her tier için birleştirme kuralları |
+
+**MergeRule** (Rules listesindeki her eleman):
+
+| Field | Açıklama |
+|-------|----------|
+| `InputTier` | Birleştirilecek item'ların tier'ı (0-based) |
+| `ResultItem` | Üretilecek ItemConfigSO asset referansı |
+| `GoldBonus` | Birleştirme başına altın bonusu |
+
+**Örnek merge hiyerarşisi:**
 ```
-ItemId:          "coin_t1"
-MergeGroupId:    "coins"         (aynı grup birbiriyle birleşir)
-MergeTier:       1               (tier 1 + tier 1 = tier 2)
-BaseYield:       5               (satışta verilen altın)
-DisplayName:     "Bronz Madeni"
+Rules listesi:
+  Rule 0: InputTier=1, ResultItem=CoinT2.asset, GoldBonus=0
+  Rule 1: InputTier=2, ResultItem=CoinT3.asset, GoldBonus=10
+  Rule 2: InputTier=3, ResultItem=CoinT4.asset, GoldBonus=50
 ```
 
-**Birleştirme kuralları (MergeConfigSO):**
-```
-MergeGroupId:    "coins"
-TierProgressions: [
-  {InputTier:1, OutputItemId:"coin_t2"},
-  {InputTier:2, OutputItemId:"coin_t3"},
-  {InputTier:3, OutputItemId:"coin_t4"},
-]
-GoldBonusPerMerge: 10
-```
-
-**Starter Merge Config:** Wizard `StarterMergeConfig.asset` oluşturur, bunu düzenle.
+Yani: Bronz Para (T1) + Bronz Para (T1) → Gümüş Para (T2)
 
 ---
 
 ### 7.5 Research Idle
 
-**Research Tree Config** (`Assets/[OyunAdın]/Configs/ResearchDatabase.asset`):
+**ResearchTreeConfigSO** — `Assets/[OyunAdın]/Configs/ResearchTree.asset`
 
-```
-TreeId: "tech_tree"
-Nodes: [
-  {
-    NodeId: "basic_income",
-    DisplayName: "Temel Gelir",
-    ResearchTicks: 60,         (60 saniye = 1 dakika araştırma)
-    GoldCost: 500,
-    StatBonus: {Stat: IdleYieldRate, Value: 0.1}
-  },
-  {
-    NodeId: "advanced_income",
-    DisplayName: "Gelişmiş Gelir",
-    ResearchTicks: 300,        (5 dakika)
-    GoldCost: 5000,
-    PrerequisiteNodeIds: ["basic_income"],
-    StatBonus: {Stat: IdleYieldRate, Value: 0.25}
-  }
-]
-```
+Yeni asset: `Assets → Create → Endless Engine → Research → Research Tree Config`
+
+| Field | Açıklama |
+|-------|----------|
+| `TreeId` | Benzersiz tree ID |
+| `DisplayName` | Görünen isim |
+| `Nodes` | `ResearchNodeConfigSO[]` — tree'deki tüm node'lar |
+
+**ResearchNodeConfigSO** — `Assets/[OyunAdın]/Configs/Research/BasicIncome.asset`
+
+Yeni asset: `Assets → Create → Endless Engine → Research → Research Node Config`
+
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `NodeId` | `"basic_income"` | Benzersiz ID (yayın sonrası değiştirme) |
+| `DisplayName` | `"Temel Gelir"` | Oyuncunun gördüğü isim |
+| `Description` | `"Geliri %10 artırır"` | Kısa açıklama |
+| `Tier` | 0 | Tier 0 = root. Önceki tier tamamlanmadan bu tier kuyruğa alınamaz |
+| `PrerequisiteIds` | `["basic_income"]` | Önce tamamlanması gereken node ID'leri |
+| `GoldCost` | 500 | Kuyruğa alma maliyeti |
+| `SecondaryCurrencyId` | `""` | İkincil para birimi ID'si (boş = yok) |
+| `SecondaryCurrencyCost` | 0 | İkincil maliyet |
+| `ResearchTicks` | 60 | Tamamlanma süresi (saniye — TickEngine 1 Hz'dir) |
+| `Effects` | `List<SkillEffect>` | Tamamlandığında uygulanan etkiler |
 
 **Araştırmayı başlatmak:**
 ```csharp
 researchService.TryEnqueue("tech_tree", "basic_income");
 ```
 
+**ResearchTreeConfigSO'yu ResearchService'e bağlamak:**
+Sahnedeki `ResearchService` component'ının Inspector'ında `_treeConfig` alanına drag et.
+
 ---
 
 ### 7.6 Building Idle
 
-**Building Config** (`Assets/[OyunAdın]/Configs/StarterBuilding.asset`):
-```
-BuildingId:           "house"
-DisplayName:          "Ev"
-BaseCost:             200
-ProductionPerSecond:  2.0
-MaxUpgradeTier:       5
-UpgradeCostMultiplier: 2.0    (her tier 2x daha pahalı)
-UpgradeProductionMultiplier: 1.5  (her tier %50 daha fazla üretim)
-GridWidth:            1
-GridHeight:           1
-```
+**BuildingConfigSO** — `Assets/[OyunAdın]/Configs/Buildings/House.asset`
+
+Yeni asset: `Assets → Create → Endless Engine → Building Config`
+
+| Field | Örnek Değer | Açıklama |
+|-------|------------|----------|
+| `BuildingId` | `"house"` | Benzersiz ID |
+| `DisplayName` | `"Ev"` | Görünen isim |
+| `Description` | `"..."` | Açıklama |
+| `GridWidth` | 1 | Grid genişliği (hücre sayısı) |
+| `GridHeight` | 1 | Grid yüksekliği (hücre sayısı) |
+| `PlacementCost` | 200 | Yerleştirme maliyeti |
+| `PlacementCurrencyId` | `"gold"` | Yerleştirme para birimi |
+| `ProductionCurrencyId` | `"gold"` | Üretilen para birimi |
+| `ProductionPerTick` | 2 | Tick başına üretim (1 tick = 1 saniye) |
+| `MaxInstances` | 0 | Maksimum kopya sayısı (0 = sınırsız) |
+| `UpgradeTiers` | `BuildingUpgradeTier[]` | Upgrade seviyeleri |
+
+**BuildingUpgradeTier** (UpgradeTiers listesindeki her eleman):
+
+| Field | Açıklama |
+|-------|----------|
+| `DisplayLabel` | "Level 2", "Tier II" vb. |
+| `UpgradeCost` | Bu tier'a upgrade maliyeti |
+| `UpgradeCurrencyId` | Upgrade para birimi |
+| `ProductionBonusPerTick` | Base production'a eklenen bonus (flat) |
+| `ProductionMultiplier` | Bonus üzerine çarpan |
 
 **Bina yerleştirme:**
 ```csharp
@@ -499,7 +653,7 @@ buildingService.TryPlace("house", gridX: 0, gridY: 0);
 ### Yeni Generator Ekleme
 
 1. `Tools → Endless Engine → Generator Editor`
-2. `+ Add` → yeni generator oluştur
+2. `+ Add` → yeni GeneratorConfigSO asset oluştur
 3. İsim, yield, maliyet, scale gir
 4. `Save`
 5. Simülatörde yeniden test et
@@ -507,37 +661,45 @@ buildingService.TryPlace("house", gridX: 0, gridY: 0);
 ### Yeni Upgrade Node Ekleme
 
 1. `Tools → Endless Engine → Upgrade Tree Editor`
-2. Mevcut tree'yi yükle veya yenisini oluştur
+2. Mevcut tree'yi yükle
 3. `+ Add Node` → node oluştur
-4. Inspector'da stat, etki, maliyet gir
-5. Bağlantıları çiz
+4. Inspector'da `AffectedStat`, `EffectPerRank`, `BaseCost`, `CostScalingFactor` gir
+5. `PrerequisiteNodeIDs` ile bağlantıları kur
 6. `Save`
-
-### Çoklu Upgrade Tree
-
-Farklı içerik alanları için farklı tree'ler oluşturabilirsin:
-- `UpgradeTreeConfig_Production.asset` — üretim upgrade'leri
-- `UpgradeTreeConfig_Combat.asset` — savaş upgrade'leri
-- `UpgradeTreeConfig_Prestige.asset` — prestige bonusları
-
-Her tree'yi AutoSetupBootstrap'ın `_upgradeConfigs` array'ine ekle.
 
 ### Yeni Research Node Ekleme
 
-`ResearchDatabase.asset` dosyasını Inspector'da aç → `Nodes` listesine yeni eleman ekle.
+1. Yeni `ResearchNodeConfigSO` asset oluştur: `Assets → Create → Endless Engine → Research → Research Node Config`
+2. `NodeId`, `DisplayName`, `Tier`, `GoldCost`, `ResearchTicks`, `Effects` doldur
+3. `ResearchTreeConfigSO.Nodes` array'ine sürükle
 
 ### Prestige Katmanı Ekleme (Prestige-Heavy)
 
-1. `AscensionDatabase.asset` aç
-2. Yeni `AscensionLayerConfig` ekle
-3. Katmanın çarpanını, reset kuralını ve kilit koşulunu tanımla
+1. `Assets/[OyunAdın]/Configs/AscensionDatabase.asset` aç
+2. `Layers` listesine yeni `PrestigeLayerConfigSO` asset oluştur ve ekle
+3. `LayerIndex`, `RequiredPreviousLayerCount`, `BaseMultiplierPerTrigger` doldur
 
 ### İkincil Para Birimi Ekleme
 
-1. Yeni `CurrencyConfigSO` oluştur: `Assets → Create → Endless Engine → Config → Currency`
-2. CurrencyId, DisplayName, HardCap, ResetOnPrestige ayarla
-3. `CurrencyDatabase.asset` dosyasına ekle
-4. HUD'da göstermek için `CurrencyService.OnBalanceChanged` event'ine abone ol
+1. Yeni asset: `Assets → Create → Endless Engine → Config → Currency`
+2. Alanları doldur:
+
+| Field | Açıklama |
+|-------|----------|
+| `CurrencyId` | Benzersiz ID |
+| `DisplayName` | Görünen isim |
+| `HardCap` | Maksimum miktar |
+| `ResetsOnPrestige` | true = prestige'de sıfırlanır |
+
+3. `CurrencyDatabase.asset` dosyasına bu asset'i ekle
+4. HUD'da göstermek için:
+
+```csharp
+CurrencyService.OnBalanceChanged += (currencyId, newBalance) =>
+{
+    if (currencyId == "gems") gemsText.text = newBalance.ToString();
+};
+```
 
 ---
 
@@ -556,16 +718,16 @@ saveService.NotifyUpgradePurchased(); // 5 saniye debounce ile kaydeder
 
 ### Yeni Sistem için Kayıt Ekleme
 
-Eğer özel bir sistem yazıyorsan ve kayıt etmek istiyorsan:
+Kendi özel sisteminizi kaydetmek istiyorsanız `ISaveStateProvider` implemente edin:
 
 ```csharp
 public class MyCustomService : MonoBehaviour, ISaveStateProvider
 {
-    public int ProviderOrder => 95; // diğer sistemlerden sonra
+    public int ProviderOrder => 95; // daha yüksek = daha sonra çalışır
 
     public void OnBeforeSave(SaveData saveData)
     {
-        saveData.CustomField = myData; // SaveData'ya alan ekle
+        saveData.CustomField = myData;
     }
 
     public void OnAfterLoad(SaveData saveData)
@@ -574,7 +736,7 @@ public class MyCustomService : MonoBehaviour, ISaveStateProvider
     }
 }
 
-// Bootstrap'ta:
+// Bootstrap'ta (Start veya Awake'te):
 saveService.RegisterStateProvider(myService);
 ```
 
@@ -612,43 +774,64 @@ Wizard'ın oluşturduğu sahnede `GeneratedGameHUD` component'ı zaten şu olayl
 - Combo → `ComboLabel`
 - Research ilerlemesi → `ResearchLabel`
 
-Bunlar, sahnedeki GameObject isimlerine göre otomatik bulunur. GameObject ismini değiştirme.
+Bunlar sahnedeki GameObject isimlerine göre otomatik bulunur. GameObject ismini değiştirme.
 
-### Özel UI Eklemek
+### Özel UI — Event İmzaları
 
-Kendi UI'ını eklemek istiyorsan, event'lere abone ol:
+Aşağıdaki event imzaları kaynak koddan doğrulanmıştır:
 
 ```csharp
-// Altın değişti
+// Altın değişti — Action<double current, double delta>
 EconomyService.OnResourcesChanged += (current, delta) =>
 {
     goldText.text = FormatGold(current);
 };
 
-// Generator satın alındı
+// Generator satın alındı — Action<string generatorId>
 GeneratorSystem.OnGeneratorPurchased += generatorId =>
 {
     RefreshGeneratorPanel();
 };
 
-// Prestige tamamlandı
+// Prestige tamamlandı — Action<int count, float multiplier>
 PrestigeStateManager.OnPrestigeComplete += (count, multiplier) =>
 {
     prestigeCountText.text = $"Prestige: {count}";
     multiplierText.text = $"×{multiplier:F1}";
 };
 
-// Wave başladı
-WaveSpawnManager.OnWaveStarted += wave =>
+// Wave başladı — Action<int waveNumber>
+WaveSpawnManager.OnWaveStarted += waveNumber =>
 {
-    waveText.text = $"Dalga {wave}";
+    waveText.text = $"Dalga {waveNumber}";
 };
 
-// Research ilerledi
-ResearchService.OnResearchProgress += (treeId, nodeId, tick, total) =>
+// Research ilerledi — Action<string treeId, string nodeId, int ticksDone, int ticksTotal>
+ResearchService.OnResearchProgress += (treeId, nodeId, ticksDone, ticksTotal) =>
 {
-    researchBar.fillAmount = (float)tick / total;
+    researchBar.fillAmount = (float)ticksDone / ticksTotal;
 };
+
+// İkincil para birimi değişti — Action<string currencyId, double newBalance>
+CurrencyService.OnBalanceChanged += (currencyId, newBalance) =>
+{
+    if (currencyId == "gems") gemsText.text = newBalance.ToString("N0");
+};
+```
+
+### Generator Kartı Güncelleme
+
+```csharp
+void RefreshCard(string generatorId)
+{
+    // GetNextCost → long (long döner, BigDouble backend için GetNextCostBig() kullan)
+    long cost  = generators.GetNextCost(generatorId);
+    int  count = generators.GetCount(generatorId);
+
+    costLabel.text  = $"Maliyet: {FormatGold(cost)}";
+    countLabel.text = $"Sahip: {count}";
+    buyButton.interactable = economy.CurrentResources >= cost;
+}
 ```
 
 ### Prestige Butonunu Aktif/Pasif Yapma
@@ -661,69 +844,78 @@ void Update()
 }
 ```
 
-### Generator Kartı Güncelleme
-
-```csharp
-void RefreshCard(string generatorId)
-{
-    double cost = generators.GetNextCost(generatorId);
-    int count   = generators.GetCount(generatorId);
-
-    costLabel.text  = $"Maliyet: {FormatGold(cost)}";
-    countLabel.text = $"Sahip: {count}";
-    buyButton.interactable = economy.CurrentResources >= cost;
-}
-```
-
 ---
 
 ## 11. ADIM 10 — STEAM ENTEGRASYONU
 
 ### Kurulum
 
-1. `Steamworks.NET` paketini yükle (veya `com.rlabrecque.steamworks.net`)
-2. `steam_appid.txt` dosyasını proje kökünde oluştur (App ID'ni yaz)
+1. `Steamworks.NET` paketini projeye ekle (`com.rlabrecque.steamworks.net`)
+2. `steam_appid.txt` dosyasını proje kökünde oluştur → App ID'ni yaz
 3. `SteamService.Initialize()` çağrısını oyun başlangıcına ekle
 
-### Achievement
+### Achievement Sistemi — Nasıl Çalışır
+
+Achievement sistemi **MilestoneTracker** üzerine kuruludur:
+1. `MilestoneConfigSO` oluştur → `MilestoneId`'yi Steam achievement API adıyla eşleştir
+2. `SteamAchievementBridge` component'ını sahnedeki Bootstrap GameObject'ine ekle
+3. `bridge.Initialize(steamService)` çağır
+4. `MilestoneTracker.OnMilestoneCompleted` tetiklendiğinde bridge otomatik olarak `_steam.UnlockAchievement(apiName)` çağırır
 
 ```csharp
-// Achievement kilidini aç
-SteamAchievementBridge.UnlockAchievement("ACH_FIRST_PRESTIGE");
+// Achievement ID'lerini override etmek istiyorsan (Steam API adı farklıysa):
+// SteamAchievementBridge Inspector'ında _mappings listesine ekle:
+// MilestoneId: "first_prestige"  →  SteamApiName: "ACH_FIRST_PRESTIGE"
 
-// Prestige olduğunda otomatik achievement
-PrestigeStateManager.OnPrestigeComplete += (count, mult) =>
-{
-    if (count == 1) SteamAchievementBridge.UnlockAchievement("ACH_FIRST_PRESTIGE");
-    if (count == 10) SteamAchievementBridge.UnlockAchievement("ACH_PRESTIGE_10");
-};
+// Doğrudan ISteamService ile:
+_steam.UnlockAchievement("ACH_FIRST_PRESTIGE");
 ```
 
 ### Leaderboard
 
 ```csharp
-// Skor gönder (örn: toplam prestige sayısı)
-SteamLeaderboardService.SubmitScore(prestigeStateManager.PrestigeCount);
+// Skor gönder — boardId, playerName, score (long)
+steamLeaderboardService.SubmitScore(
+    boardId:    "main_leaderboard",
+    playerName: "Player",
+    score:      (long)prestigeStateManager.PrestigeCount);
 
-// Skor tablosunu al
-var entries = await SteamLeaderboardService.GetTopEntries(count: 10);
+// Liderlik tablosunu al — boardId, entryCount, callback
+steamLeaderboardService.FetchGlobalLeaderboard(
+    boardId:    "main_leaderboard",
+    entryCount: 10,
+    onComplete: entries =>
+    {
+        foreach (var e in entries)
+            Debug.Log($"{e.Rank}. {e.PlayerName}: {e.Score}");
+    });
 ```
 
 ### Cloud Save
 
-```csharp
-// Kayıt dosyasını Steam Cloud'a yükle
-SteamCloudSaveSync.Upload(
-    Path.Combine(Application.persistentDataPath, "save.json")
-);
+Cloud save **otomatik** çalışır — `SaveService.OnSaveCompleted` her tetiklendiğinde `SteamCloudSaveSync` dosyayı Steam Cloud'a yükler.
 
-// İndir (oyun başlangıcında, yerel kayıtla birleştir)
-await SteamCloudSaveSync.Download();
+```csharp
+// Başlangıçta cloud save kontrolü (SaveService.LoadAsync()'ten ÖNCE çağır):
+cloudSync.Initialize(saveService, steamService);
+cloudSync.CheckForNewerCloudSave();
+
+// CheckForNewerCloudSave, cloud kayıt daha yeniyse bu event'i tetikler:
+SteamCloudSaveSync.OnCloudSaveNewerThanLocal += () =>
+{
+    // Oyuncuya "Cloud kayıtı daha yeni, yüklensin mi?" diye sor
+    // Onaylarsa:
+    cloudSync.RestoreFromCloud(success =>
+    {
+        if (success) Debug.Log("Cloud kayıtı yüklendi.");
+    });
+};
 ```
 
 ### Steam Olmadan Test
 
-`NullSteamService` sınıfı tüm Steam çağrılarını no-op olarak karşılar. Geliştirme sırasında Steam SDK olmadan çalışmaya devam eder.
+`NullSteamService.Instance` tüm Steam çağrılarını no-op olarak karşılar.
+`Initialize(steamService: null)` çağırırsan otomatik olarak `NullSteamService` devreye girer.
 
 ---
 
@@ -736,21 +928,25 @@ await SteamCloudSaveSync.Download();
 **Hedef:** Cookie Clicker / Adventure Capitalist tarzı
 
 **Adımlar:**
-1. New Game Wizard → Pure Idle
-2. Generator Editor'de 8-12 generator oluştur (her biri öncekinin 10x maliyeti, 5x güçlü)
-3. Upgrade Tree Editor'de 30-50 node ekle:
-   - Production category: GeneratorYield stat (+10%, MaxRank=5)
-   - Economy category: IdleYieldRate stat
-   - Prestige category: prestige çarpanı artışı (PrestigeGate=1)
-4. Economy Simulator: 30 oturum simüle et, ilk prestige 5-8. oturumda gelmeli
-5. PrestigeConfig: BaseMultiplier=1.5, MinGold=prestige anındaki gold miktarının %90'ı
-6. Tekrar simüle et, dengeli mi kontrol et
+1. New Game Wizard → Pure Idle → Generate
+2. Play'e bas, çalıştığını doğrula
+3. **Generator Editor** — 8-12 generator oluştur:
+   - Her biri öncekinin ~10x maliyeti, ~5x daha yüksek yield
+   - `CostScalingFactor = 1.15`
+4. **Upgrade Tree Editor** — 30-50 node ekle:
+   - `Category=Production`, `AffectedStat=GeneratorYield`, `EffectType=PercentBonus`, `EffectPerRank=0.10`, `MaxRank=5`
+   - `Category=Economy`, `AffectedStat=IdleYieldRate`
+   - `Category=Prestige`, `PrestigeGateRequirement=1` (prestige çarpanı bonusları)
+5. **Economy Simulator** — 30 oturum simüle et:
+   - İlk prestige 5-8. oturumda gelmeli
+   - `PrestigeConfig.BaseMultiplierPerPrestige = 1.5`
+   - `PrestigeConfig.MinGoldToPrestige` = prestige anındaki gold'un %80-90'ı
+6. Simülatörde dengeli görünene kadar generator yield ve prestige değerlerini ayarla
 
 **İçerik hacmi (yayın için minimum):**
 - 10+ generator
 - 50+ upgrade node
-- 5+ araştırma node'u (opsiyonel)
-- 20+ prestige (simülatörde test et)
+- 20+ prestige simüle edilmiş (simülatörde test et)
 
 ---
 
@@ -759,21 +955,27 @@ await SteamCloudSaveSync.Download();
 **Hedef:** Clicker Heroes / Tap Titans tarzı
 
 **Adımlar:**
-1. New Game Wizard → Click Loop
-2. 3 ClickTarget config oluştur (farklı HP/yield/renk)
-3. ClickLoopConfig: BaseCritChance=0.05, BaseAutoClickRate=0 (başta 0)
-4. Generator Database: 5-8 pasif generator ekle
-5. Upgrade Tree: hem Click hem Production stat'ları için node'lar
-   - ClickDamage +10% (Production category, orange)
-   - ClickCritChance +2% (Combat category, red)
-   - ClickAutoRate +0.5 (Economy category, blue — her rank'ta saniyede 0.5 auto-click)
-   - GeneratorYield +15% (Production category)
-6. Economy Simulator'de test et
+1. New Game Wizard → Click Loop → Generate
+2. **3 ClickTargetConfigSO oluştur** (farklı HP/yield/renk):
+   - `Target_Rock`: MaxHP=5, BaseYield=1, RespawnSeconds=2
+   - `Target_Tree`: MaxHP=15, BaseYield=5, RespawnSeconds=4
+   - `Target_Crystal`: MaxHP=30, BaseYield=15, RespawnSeconds=8
+3. **ClickLoopConfigSO düzenle:**
+   - `BaseCritChance = 0.05`
+   - `BaseAutoClickRate = 0` (başta 0, upgrade ile açılır)
+   - `MaxComboMultiplier = 5.0`
+4. **Generator Database** — 5-8 pasif generator ekle (aktif tıklama yanında pasif gelir)
+5. **Upgrade Tree** — hem Click hem Production node'ları:
+   - `AffectedStat=ClickDamage`, `EffectPerRank=0.10` (her rankta %10 hasar)
+   - `AffectedStat=ClickCritChance`, `EffectPerRank=0.02`
+   - `AffectedStat=ClickAutoRate`, `EffectPerRank=0.5`
+   - `AffectedStat=GeneratorYield`, `EffectPerRank=0.15`
+6. **Economy Simulator** ile test et
 
 **İçerik hacmi:**
-- 3-5 click target (farklı HP/renkler/yield)
+- 3-5 ClickTarget (farklı HP/renk/yield)
 - 8+ generator
-- 40+ upgrade node (click odaklı + pasif gelir)
+- 40+ upgrade node (click + pasif karışık)
 
 ---
 
@@ -782,18 +984,28 @@ await SteamCloudSaveSync.Download();
 **Hedef:** Idle Heroes / AFK Arena tarzı
 
 **Adımlar:**
-1. New Game Wizard → Idle-vs / RPG
-2. WaveConfig: BaseEnemyCount=3, ScalingFactor=1.2, WaveInterval=5
-3. EnemyStatConfig: BaseHealth=20, HealthScale=1.15
-4. Upgrade Tree: savaş odaklı (Damage, Health, CritChance, CritMultiplier)
-5. PrestigeConfig: MinWaveForPrestige=10
-6. Wave upgrade selection card'larını ayarla (UpgradeSelectionConfigSO)
-7. Düşman loot tablosu (DropTableConfigSO) oluştur
+1. New Game Wizard → Idle-vs / RPG → Generate
+2. **WaveConfigSO düzenle:**
+   - `BaseEnemyCountPerWave = 3`
+   - `EnemyCountScalingFactor = 1.2`
+   - `UpgradeSelectionWaveInterval = 5`
+3. **EnemyStatConfigSO düzenle:**
+   - `BaseMaxHP = 20`
+   - `BaseAttackDamage = 5`
+   - `WaveScalingExponent = 1.5`
+4. **PrestigeConfigSO:**
+   - `MinWaveForPrestige = 10`
+   - `BaseMultiplierPerPrestige = 2.0`
+5. **Upgrade Tree** — savaş odaklı:
+   - `AffectedStat=Damage`, `EffectPerRank=0.10`
+   - `AffectedStat=Health`, `EffectPerRank=0.15`
+   - `AffectedStat=CritChance`, `EffectPerRank=0.02`
+   - `AffectedStat=Armor`, `EffectPerRank=0.05`
+6. **Economy Simulator** — wave parametrelerini de bağla
 
 **İçerik hacmi:**
-- 5+ generator
+- 5+ generator (pasif gelir, dalga arasında satın alma için)
 - 40+ upgrade node (savaş ağırlıklı)
-- 3 farklı düşman tipi (EnemyStatConfig çoğalt)
 - 50+ wave hedefi (simülatörle test et)
 
 ---
@@ -803,19 +1015,27 @@ await SteamCloudSaveSync.Download();
 **Hedef:** Merge Dragons / Merge Mansion tarzı
 
 **Adımlar:**
-1. New Game Wizard → Merge Idle
-2. 3-5 merge grubu oluştur (coins, gems, items vb.)
-3. Her grup için 5-8 tier ItemConfigSO oluştur
-4. Her grup için MergeConfigSO oluştur (tier progressions)
-5. StarterMergeConfig.asset'i düzenle
-6. Board grid boyutunu artır (SceneSetupUtility'de MergeBoard boyutu)
+1. New Game Wizard → Merge Idle → Generate
+2. **Merge grubu tasarla** — örnek: "coins" grubu için 5 tier:
+   - `ItemConfigSO`: ItemId=`coin_t1`, MergeGroupId=`coins`, MergeTier=1, DisplayName="Bronz Para"
+   - `ItemConfigSO`: ItemId=`coin_t2`, MergeGroupId=`coins`, MergeTier=2, DisplayName="Gümüş Para"
+   - `ItemConfigSO`: ItemId=`coin_t3`, MergeGroupId=`coins`, MergeTier=3, DisplayName="Altın Para"
+   - `ItemConfigSO`: ItemId=`coin_t4`, MergeGroupId=`coins`, MergeTier=4, DisplayName="Platin Para"
+   - `ItemConfigSO`: ItemId=`coin_t5`, MergeGroupId=`coins`, MergeTier=5, DisplayName="Elmas"
+3. **MergeConfigSO oluştur** (`MergeConfig_Coins.asset`):
+   - `MergeGroupId = "coins"`
+   - `Rules` listesi:
+     - Rule: InputTier=1, ResultItem=coin_t2, GoldBonus=0
+     - Rule: InputTier=2, ResultItem=coin_t3, GoldBonus=5
+     - Rule: InputTier=3, ResultItem=coin_t4, GoldBonus=20
+     - Rule: InputTier=4, ResultItem=coin_t5, GoldBonus=100
+4. Bu MergeConfigSO'yu `MergeService` component'ının Inspector'ına ekle
+5. İstersen 2-3 farklı merge grubu (coins, gems, items) ile çeşitlendirme yap
 
-**Örnek merge hiyerarşisi:**
-```
-Bronz Para (T1) + Bronz Para (T1) → Gümüş Para (T2)
-Gümüş Para (T2) + Gümüş Para (T2) → Altın Para (T3)
-Altın Para (T3) + Altın Para (T3) → Elmas (T4)
-```
+**İçerik hacmi:**
+- 3-5 merge grubu
+- Her grup için 5-8 tier
+- Her tier için ayrı ItemConfigSO
 
 ---
 
@@ -824,11 +1044,24 @@ Altın Para (T3) + Altın Para (T3) → Elmas (T4)
 **Hedef:** Universal Paperclips / Kittens Game tarzı
 
 **Adımlar:**
-1. New Game Wizard → Research Idle
-2. ResearchDatabase.asset: 20-30 araştırma node'u oluştur
-3. Node süreleri: başta 30-60 saniye, sonra 5-30 dakika
-4. Her node bir stat bonusu veya içerik kilidi açsın
-5. Generator geliri araştırma unlock'larına bağlı: `UnlockPrerequisite = research_node_X`
+1. New Game Wizard → Research Idle → Generate
+2. **ResearchTreeConfigSO** oluştur veya wizard'ınkini düzenle
+3. **20-30 ResearchNodeConfigSO** oluştur:
+   - Tier 0 node'lar (root): ResearchTicks=60, GoldCost=500
+   - Tier 1 node'lar: ResearchTicks=300, GoldCost=5000
+   - Tier 2 node'lar: ResearchTicks=1800, GoldCost=50000 (30 dakika)
+   - Tier 3 node'lar: ResearchTicks=7200, GoldCost=500000 (2 saat)
+4. Her node'un `Effects` listesine bir `SkillEffect` ekle (stat bonusu veya unlock)
+5. Gerekli `PrerequisiteIds`'leri tanımla (zincir oluştur)
+6. `ResearchTreeConfigSO.Nodes` array'ine hepsini ekle
+7. Generator gelirini araştırma unlock'larına bağlamak için:
+   ```csharp
+   ResearchService.OnResearchCompleted += (treeId, nodeId) =>
+   {
+       if (nodeId == "unlock_generator_2")
+           generatorService.UnlockGenerator("factory");
+   };
+   ```
 
 ---
 
@@ -837,61 +1070,67 @@ Altın Para (T3) + Altın Para (T3) → Elmas (T4)
 **Hedef:** Antimatter Dimensions / Realm Grinder tarzı
 
 **Adımlar:**
-1. New Game Wizard → Prestige-Heavy
-2. AscensionDatabase: 3 katman oluştur
-   - Katman 1 (Normal Prestige): BaseMultiplier=1.5, unlock=0
-   - Katman 2 (Ascension): BaseMultiplier=3.0, unlock=prestige10
-   - Katman 3 (Transcension): BaseMultiplier=10.0, unlock=ascension5
-3. Her katman için ayrı skill tree oluştur
-4. Katman geçişleri farklı şeyleri sıfırlar (AscensionLayerConfig'de tanımla)
-5. Economy Simulator'de 100 oturum simüle et
+1. New Game Wizard → Prestige-Heavy → Generate
+2. **AscensionDatabaseSO** düzenle — 3 katman oluştur:
+   - **Katman 0** (`PrestigeLayerConfigSO`): DisplayName="Prestige", LayerIndex=0, BaseMultiplierPerTrigger=1.5, RequiredPreviousLayerCount=0
+   - **Katman 1** (`PrestigeLayerConfigSO`): DisplayName="Ascension", LayerIndex=1, BaseMultiplierPerTrigger=3.0, RequiredPreviousLayerCount=10 (10 prestige gerekir)
+   - **Katman 2** (`PrestigeLayerConfigSO`): DisplayName="Transcension", LayerIndex=2, BaseMultiplierPerTrigger=10.0, RequiredPreviousLayerCount=5 (5 ascension gerekir)
+3. Her katman için farklı `ResetScope` tanımla
+4. Her katman için ayrı **SkillTree** veya **UpgradeTree** oluştur (katmana özgü kalıcı bonuslar)
+5. **Economy Simulator'de 100 oturum simüle et** — çok katmanlı prestige'de denge çok önemli
 
 ---
 
 ## GENEL İPUÇLARI
 
 ### "Oyun çok hızlı bitiyor" sorunu
-→ Generator cost scale'i artır (1.15 → 1.20)
-→ Prestige kapısını yükselt
+→ `GeneratorConfigSO.CostScalingFactor` artır (1.15 → 1.20)
+→ `PrestigeConfigSO.MinGoldToPrestige` yükselt
 → Daha fazla upgrade node ekle (ilerlemeyi yavaşlatır)
 
 ### "Oyun çok sıkıcı / çok yavaş" sorunu
 → İlk generator maliyetini düşür
-→ İlk prestige için gereken altını düşür
-→ Offline gelir cap'ini artır (daha çok geri dönüş ödülü)
+→ `PrestigeConfigSO.MinGoldToPrestige` değerini düşür
+→ `EconomyConfigSO.OfflineCapHours` değerini artır (daha fazla geri dönüş ödülü)
 
 ### "Ekonomi patlıyor, hard cap'e çarpıyor" sorunu
-→ `EconomyConfig.ResourceHardCap` değerini 10x artır
-→ `NumberBackend = BigDouble` yap (aşırı büyük sayılar için)
+→ `EconomyConfigSO.ResourceHardCap` değerini 10x artır
+→ `EconomyConfigSO.NumberBackend = BigDouble` yap (aşırı büyük sayılar için)
 
 ### "Config değiştirdim ama oyunda görünmüyor" sorunu
 → Play modundayken yapılan config değişiklikleri Play durduğunda kaybolur
 → Config'i Play modundan ÖNCE değiştir
 
-### ID çakışması uyarısı alıyorum
+### "ID çakışması uyarısı alıyorum"
 → `Tools → Endless Engine → ID Registry` aç → çakışan ID'yi bul → düzelt
 
-### Yeni sahne/içerik ekledim, kayıt çalışmıyor
+### "Yeni sahne/içerik ekledim, kayıt çalışmıyor"
 → `Tools → Endless Engine → Schema Bump Utility` çalıştır
 → Migration dosyasını doldur
 → `ISaveStateProvider` implemente et ve `RegisterStateProvider` çağır
+
+### "BigDouble ne zaman kullanmalıyım?"
+→ Oyununda altın değerleri 1 katrilyon (1e15) üzerini geçecekse
+→ `EconomyConfigSO.NumberBackend = BigDouble` yap
+→ `GeneratorSystem.GetNextCostBig(generatorId)` metodunu kullan (long yerine IBigNumber döner)
 
 ---
 
 ## STEAM YAYINI ÖNCESİ KONTROL LİSTESİ
 
 - [ ] Economy Simulator'de 50+ oturum simüle edildi, denge sağlandı
-- [ ] Config Validator'da sıfır hata
-- [ ] ID Registry'de sıfır çakışma
+- [ ] Config Validator'da sıfır hata (`Tools → Endless Engine → Config Validator`)
+- [ ] ID Registry'de sıfır çakışma (`Tools → Endless Engine → ID Registry`)
 - [ ] Tüm oyun tipleri Play'e basınca çalışıyor
 - [ ] Kayıt/yükleme test edildi (Play → Stop → Play → veri kaldı mı?)
 - [ ] Offline gelir test edildi (zaman at, geri dön, altın geldi mi?)
 - [ ] Prestige crash-safety test edildi (prestige sırasında Play durdur, geri dönünce rollback oldu mu?)
-- [ ] Steam achievement'ları tanımlandı
-- [ ] Steam leaderboard entegrasyonu test edildi
+- [ ] `SteamAchievementBridge._mappings` listesi dolduruldu (milestone ID → Steam API adı)
+- [ ] `SteamLeaderboardService.SubmitScore(boardId, playerName, score)` test edildi
+- [ ] `SteamCloudSaveSync.CheckForNewerCloudSave()` oyun başlangıcında çağrılıyor
 - [ ] Build Settings'te doğru sahne var
-- [ ] Tüm gereksiz debug log'ları kapatıldı (`Debug.Log` → Development Build only)
+- [ ] Tüm gereksiz debug log'ları kapatıldı (Development Build only)
 
 ---
 
-*Endless Engine v1.3.4 — Oyun Üretim Rehberi*
+*Endless Engine v1.3.4 — Oyun Üretim Rehberi (kaynak koddan doğrulanmış)*
