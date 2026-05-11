@@ -355,47 +355,65 @@ namespace EndlessEngine.Editor
             {
                 string configPath = $"{opts.ConfigsPath}/ClickTarget_{i}.asset";
                 targetConfigs[i] = AssetDatabase.LoadAssetAtPath<EndlessEngine.ClickLoop.ClickTargetConfigSO>(configPath);
-                BuildClickTarget(positions[i], colors[i], targetConfigs[i]);
+                BuildClickTarget(positions[i], colors[i], targetConfigs[i], i);
             }
 
             BuildWorldLabel(new Vector3(0, -2.8f, 0), "Click the targets!", Color.white, 0.22f);
         }
 
-        private static void BuildClickTarget(Vector3 pos, Color color, EndlessEngine.ClickLoop.ClickTargetConfigSO cfg)
+        private static void BuildClickTarget(Vector3 pos, Color color,
+            EndlessEngine.ClickLoop.ClickTargetConfigSO cfg, int colorIndex = 0)
         {
-            var go = new GameObject("ClickTarget");
-            go.transform.position = pos;
-            go.transform.localScale = Vector3.one * 1.2f;
+            // Try to use the package prefab (avoids temporary texture allocations)
+            string[] prefabNames = { "ClickTarget_Red", "ClickTarget_Blue", "ClickTarget_Green" };
+            string pkgName = colorIndex < prefabNames.Length ? prefabNames[colorIndex] : prefabNames[0];
+            string pkgPath = $"Packages/com.endlessengine.idle/Runtime/Prefabs/ClickLoop/{pkgName}.prefab";
+            var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(pkgPath);
 
-            var sr = go.AddComponent<SpriteRenderer>();
-            sr.sprite = MakeCircle(64, color);
-            sr.sortingOrder = 2;
+            GameObject go;
+            if (prefabAsset != null)
+            {
+                go = (GameObject)PrefabUtility.InstantiatePrefab(prefabAsset);
+                go.transform.position = pos;
+            }
+            else
+            {
+                go = new GameObject("ClickTarget");
+                go.transform.position = pos;
+                go.transform.localScale = Vector3.one * 1.2f;
 
-            var col = go.AddComponent<CircleCollider2D>();
-            col.radius = 0.5f;
+                var sr = go.AddComponent<SpriteRenderer>();
+                sr.sprite = MakeCircle(64, color);
+                sr.sortingOrder = 2;
 
-            // Disable before AddComponent so ClickTarget.Awake() doesn't fire with null _config.
-            // Config is set via SerializedObject, then the GO is re-enabled to let Awake run.
-            go.SetActive(false);
-            var ct = go.AddComponent<EndlessEngine.ClickLoop.ClickTarget>();
+                var col = go.AddComponent<CircleCollider2D>();
+                col.radius = 0.5f;
+            }
+
+            // Wire config to ClickTarget component (may already exist on prefab)
             if (cfg != null)
             {
+                go.SetActive(false);
+                var ct = go.GetComponent<EndlessEngine.ClickLoop.ClickTarget>()
+                         ?? go.AddComponent<EndlessEngine.ClickLoop.ClickTarget>();
                 var ctso = new SerializedObject(ct);
                 SetSORef(ctso, "_config", cfg);
                 ctso.ApplyModifiedPropertiesWithoutUndo();
+                go.SetActive(true);
             }
-            go.SetActive(true);
 
-            // Glow ring
-            var glow = new GameObject("Glow");
-            glow.transform.SetParent(go.transform, false);
-            var gsr = glow.AddComponent<SpriteRenderer>();
-            gsr.sprite = MakeCircle(64, new Color(color.r, color.g, color.b, 0.18f));
-            gsr.sortingOrder = 1;
-            glow.transform.localScale = Vector3.one * 1.35f;
+            // Only add glow/HP bar if not instantiated from prefab (prefab already has them)
+            if (prefabAsset == null)
+            {
+                var glow = new GameObject("Glow");
+                glow.transform.SetParent(go.transform, false);
+                var gsr = glow.AddComponent<SpriteRenderer>();
+                gsr.sprite = MakeCircle(64, new Color(color.r, color.g, color.b, 0.18f));
+                gsr.sortingOrder = 1;
+                glow.transform.localScale = Vector3.one * 1.35f;
 
-            // HP bar
-            BuildWorldHPBar(go, new Color(0f, 0.7f, 0f), new Vector3(0, 0.75f, 0), 1f);
+                BuildWorldHPBar(go, new Color(0f, 0.7f, 0f), new Vector3(0, 0.75f, 0), 1f);
+            }
         }
 
         // ── HarvestIdle: harvest nodes in scene ───────────────────────────────────
@@ -456,46 +474,64 @@ namespace EndlessEngine.Editor
         private static void BuildHarvestNode(Vector3 pos, Color color,
             EndlessEngine.Harvest.HarvestNodeConfigSO cfg, int index)
         {
-            // Tree/rock like shape: circle body + smaller circle top
-            var rootGO = new GameObject($"HarvestNode_{index}");
-            rootGO.transform.position = pos;
+            // Try to use the package prefab variant based on index
+            string[] harvestPrefabs = { "HarvestNode_Green", "HarvestNode_Stone", "HarvestNode_Green",
+                                        "HarvestNode_Golden", "HarvestNode_Green" };
+            string pkgPrefabName = index < harvestPrefabs.Length ? harvestPrefabs[index] : "HarvestNode_Green";
+            string pkgPath = $"Packages/com.endlessengine.idle/Runtime/Prefabs/Harvest/{pkgPrefabName}.prefab";
+            var prefabAsset = AssetDatabase.LoadAssetAtPath<GameObject>(pkgPath);
 
-            // Body
-            var body = new GameObject("Body");
-            body.transform.SetParent(rootGO.transform, false);
-            body.transform.localScale = Vector3.one * 1.1f;
-            var bsr = body.AddComponent<SpriteRenderer>();
-            bsr.sprite = MakeCircle(48, color);
-            bsr.sortingOrder = 2;
+            GameObject rootGO;
+            if (prefabAsset != null)
+            {
+                rootGO = (GameObject)PrefabUtility.InstantiatePrefab(prefabAsset);
+                rootGO.name = $"HarvestNode_{index}";
+                rootGO.transform.position = pos;
+            }
+            else
+            {
+                // Fallback: build procedurally — tree/rock like shape
+                rootGO = new GameObject($"HarvestNode_{index}");
+                rootGO.transform.position = pos;
 
-            // "Crown" top
-            var crown = new GameObject("Crown");
-            crown.transform.SetParent(rootGO.transform, false);
-            crown.transform.localPosition = new Vector3(0, 0.55f, 0);
-            crown.transform.localScale = Vector3.one * 0.7f;
-            var csr = crown.AddComponent<SpriteRenderer>();
-            csr.sprite = MakeCircle(48, new Color(color.r * 0.8f, color.g, color.b * 0.8f));
-            csr.sortingOrder = 3;
+                var body = new GameObject("Body");
+                body.transform.SetParent(rootGO.transform, false);
+                body.transform.localScale = Vector3.one * 1.1f;
+                var bsr = body.AddComponent<SpriteRenderer>();
+                bsr.sprite = MakeCircle(48, color);
+                bsr.sortingOrder = 2;
 
-            // Collider for cursor overlap detection
-            var col = rootGO.AddComponent<CircleCollider2D>();
-            col.radius = 0.55f;
-            col.isTrigger = true;
+                var crown = new GameObject("Crown");
+                crown.transform.SetParent(rootGO.transform, false);
+                crown.transform.localPosition = new Vector3(0, 0.55f, 0);
+                crown.transform.localScale = Vector3.one * 0.7f;
+                var csr = crown.AddComponent<SpriteRenderer>();
+                csr.sprite = MakeCircle(48, new Color(color.r * 0.8f, color.g, color.b * 0.8f));
+                csr.sortingOrder = 3;
 
-            // Disable before AddComponent so HarvestNode.Awake() doesn't fire with null _config.
-            // Config is set via SerializedObject, then the GO is re-enabled to let Awake run.
-            rootGO.SetActive(false);
-            var hn = rootGO.AddComponent<EndlessEngine.Harvest.HarvestNode>();
+                var col = rootGO.AddComponent<CircleCollider2D>();
+                col.radius = 0.55f;
+                col.isTrigger = true;
+            }
+
+            // Wire config to HarvestNode component (may already exist on prefab)
             if (cfg != null)
             {
+                rootGO.SetActive(false);
+                var hn = rootGO.GetComponent<EndlessEngine.Harvest.HarvestNode>()
+                         ?? rootGO.AddComponent<EndlessEngine.Harvest.HarvestNode>();
                 var hnso = new SerializedObject(hn);
                 SetSORef(hnso, "_config", cfg);
                 hnso.ApplyModifiedPropertiesWithoutUndo();
+                rootGO.SetActive(true);
             }
-            rootGO.SetActive(true);
+            else if (prefabAsset == null)
+            {
+                rootGO.AddComponent<EndlessEngine.Harvest.HarvestNode>();
+            }
 
-            // HP bar
-            BuildWorldHPBar(rootGO, new Color(0.2f, 0.8f, 0.2f), new Vector3(0, 0.9f, 0), 0.9f);
+            if (prefabAsset == null)
+                BuildWorldHPBar(rootGO, new Color(0.2f, 0.8f, 0.2f), new Vector3(0, 0.9f, 0), 0.9f);
         }
 
         private static void BuildCursorRadiusVisual()
@@ -516,21 +552,32 @@ namespace EndlessEngine.Editor
             // Arena background
             BuildArenaBackground(new Color(0.10f, 0.03f, 0.03f), new Color(0.15f, 0.06f, 0.06f));
 
-            // Enemy prefab (in disabled holder)
+            // Enemy prefab (in disabled holder) — prefer package prefab
             var holder = new GameObject("EnemyPrefabHolder");
             holder.SetActive(false);
-            var enemy = new GameObject("Enemy");
-            enemy.transform.SetParent(holder.transform, false);
 
-            var esr = enemy.AddComponent<SpriteRenderer>();
-            esr.sprite = MakeCircle(48, new Color(0.9f, 0.15f, 0.15f));
-            esr.sortingOrder = 3;
-            var rb = enemy.AddComponent<Rigidbody2D>();
-            rb.gravityScale = 0; rb.freezeRotation = true;
-            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
-            enemy.AddComponent<CircleCollider2D>();
-            // EnemyAgent is a plain C# class (not MonoBehaviour) — managed by EnemyManager, not added as component
-            BuildWorldHPBar(enemy, new Color(0.1f, 0.8f, 0.1f), new Vector3(0, 0.7f, 0), 0.8f);
+            const string enemyPkgPath = "Packages/com.endlessengine.idle/Runtime/Prefabs/Combat/Enemy_Default.prefab";
+            var enemyPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(enemyPkgPath);
+
+            GameObject enemy;
+            if (enemyPrefab != null)
+            {
+                enemy = (GameObject)PrefabUtility.InstantiatePrefab(enemyPrefab);
+                enemy.transform.SetParent(holder.transform, false);
+            }
+            else
+            {
+                enemy = new GameObject("Enemy");
+                enemy.transform.SetParent(holder.transform, false);
+                var esr = enemy.AddComponent<SpriteRenderer>();
+                esr.sprite = MakeCircle(48, new Color(0.9f, 0.15f, 0.15f));
+                esr.sortingOrder = 3;
+                var rb = enemy.AddComponent<Rigidbody2D>();
+                rb.gravityScale = 0; rb.freezeRotation = true;
+                rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+                enemy.AddComponent<CircleCollider2D>();
+                BuildWorldHPBar(enemy, new Color(0.1f, 0.8f, 0.1f), new Vector3(0, 0.7f, 0), 0.8f);
+            }
 
             // Player visual (blue diamond)
             var playerGO = new GameObject("Player");
@@ -597,7 +644,11 @@ namespace EndlessEngine.Editor
             gsr.sortingOrder = -2;
             grass.transform.localScale = new Vector3(12f, 10f, 1f);
 
-            // 3 tower slot placeholders
+            // 3 tower slot placeholders — prefer package prefab
+            const string towerSlotPkgPath =
+                "Packages/com.endlessengine.idle/Runtime/Prefabs/TowerDefense/TowerSlot_Default.prefab";
+            var towerSlotPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(towerSlotPkgPath);
+
             var towerPositions = new Vector3[]
             {
                 new Vector3(-3f,  1.5f, 0),
@@ -606,22 +657,30 @@ namespace EndlessEngine.Editor
             };
             foreach (var tp in towerPositions)
             {
-                var slot = new GameObject("TowerSlot");
-                slot.transform.position = tp;
-                var sr = slot.AddComponent<SpriteRenderer>();
-                sr.sprite = MakeRect(new Color(0.3f, 0.25f, 0.1f));
-                sr.sortingOrder = 1;
-                slot.transform.localScale = Vector3.one * 0.9f;
-                slot.AddComponent<BoxCollider2D>();
+                GameObject slot;
+                if (towerSlotPrefab != null)
+                {
+                    slot = (GameObject)PrefabUtility.InstantiatePrefab(towerSlotPrefab);
+                    slot.transform.position = tp;
+                }
+                else
+                {
+                    slot = new GameObject("TowerSlot");
+                    slot.transform.position = tp;
+                    var tsSr = slot.AddComponent<SpriteRenderer>();
+                    tsSr.sprite = MakeRect(new Color(0.3f, 0.25f, 0.1f));
+                    tsSr.sortingOrder = 1;
+                    slot.transform.localScale = Vector3.one * 0.9f;
+                    slot.AddComponent<BoxCollider2D>();
 
-                // Tower placeholder (grey turret)
-                var tower = new GameObject("Tower");
-                tower.transform.SetParent(slot.transform, false);
-                tower.transform.localPosition = Vector3.zero;
-                var tsr = tower.AddComponent<SpriteRenderer>();
-                tsr.sprite = MakeCircle(32, new Color(0.5f, 0.5f, 0.55f));
-                tsr.sortingOrder = 2;
-                tower.transform.localScale = Vector3.one * 0.7f;
+                    var tower = new GameObject("Tower");
+                    tower.transform.SetParent(slot.transform, false);
+                    tower.transform.localPosition = Vector3.zero;
+                    var tsr = tower.AddComponent<SpriteRenderer>();
+                    tsr.sprite = MakeCircle(32, new Color(0.5f, 0.5f, 0.55f));
+                    tsr.sortingOrder = 2;
+                    tower.transform.localScale = Vector3.one * 0.7f;
+                }
             }
 
             // Spawn enemies along the path via combat system
