@@ -2,137 +2,288 @@
 
 > Bu rehber GUIDE_01–06'daki oyun rehberlerinden **önce** okunmalıdır.  
 > Unity'nin temel kullanımını (sahne oluşturma, GameObject, Component, Inspector)  
-> bildiğinizi varsayar. Endless Engine paketine özgü kurulum, evrensel sistemler  
-> (menü, settings, build, Steam) ve kapsamlı troubleshooting burada ele alınır.
+> bildiğinizi varsayar. Bölüm I: kurulum ve evrensel sistemler. Bölüm II: her sistemin detaylı entegrasyon rehberi.
 
 ---
 
-## İçindekiler
+## İçindekiler — Bölüm I
 
-1. [Package Kurulumu — Scoped Registry](#1-package-kurulumu)
-2. [İlk Proje Kurulumu](#2-ilk-proje-kurulumu)
-3. [Prefab Instantiate Kullanımı](#3-prefab-instantiate-kullanımı)
-4. [Ana Menü Sistemi](#4-ana-menü-sistemi)
-5. [Settings Screen](#5-settings-screen)
-6. [Pause Screen](#6-pause-screen)
-7. [Gerçek Oyun Döngüsü Tasarımı](#7-gerçek-oyun-döngüsü-tasarımı)
-8. [Build Alma — Windows ve Mac](#8-build-alma)
-9. [Steam SDK Entegrasyonu](#9-steam-sdk-entegrasyonu)
-10. [Kapsamlı Troubleshooting](#10-kapsamlı-troubleshooting)
+1. [Package Kurulumu](#1-package-kurulumu)
+2. [Sıfırdan Oyun Başlatma İş Akışı](#2-sıfırdan-oyun-başlatma-iş-akışı)
+3. [Editor Araçları — Ne İşe Yarar, Ne Zaman Kullanılır](#3-editor-araçları)
+4. [Prefab Instantiate Kullanımı](#4-prefab-instantiate-kullanımı)
+5. [Ana Menü Sistemi](#5-ana-menü-sistemi)
+6. [Settings Screen](#6-settings-screen)
+7. [Pause Screen](#7-pause-screen)
+8. [Gerçek Oyun Döngüsü Tasarımı](#8-gerçek-oyun-döngüsü-tasarımı)
+9. [Build Alma — Windows ve Mac](#9-build-alma)
+10. [Steam SDK Entegrasyonu](#10-steam-sdk-entegrasyonu)
+11. [Kapsamlı Troubleshooting](#11-kapsamlı-troubleshooting)
 
 ---
 
 ## 1. Package Kurulumu
 
-### 1.1 Scoped Registry Ekleme
+Endless Engine, bu repoda **yerel paket** olarak zaten kurulu gelir (`Packages/com.endlessengine.idle/`).  
+Mevcut projeyi kullanıyorsanız kurulum adımını atlayın — paket hazır.
 
-Endless Engine, Unity'nin varsayılan Package Registry'sinde değildir. Kendi registry'sinden kurulur.
+**Sıfırdan yeni bir Unity projesi açıp paketi yüklemek istiyorsanız** üç yöntem vardır:
 
-**Adımlar:**
+---
 
-1. Unity'yi açın, üst menüden **Edit → Project Settings** açın
-2. Sol panelden **Package Manager** seçin
-3. **Scoped Registries** bölümünde **+** butonuna tıklayın
-4. Şu bilgileri girin:
+### Yöntem A — Git URL (En Kolay)
 
+1. Unity'de **Window → Package Manager** açın
+2. Sol üstteki **+** butonuna tıklayın → **Add package from git URL...**
+3. Şu URL'yi yapıştırın:
+   ```
+   https://github.com/agobrik/endless-engine.git?path=Packages/com.endlessengine.idle
+   ```
+4. **Add** butonuna tıklayın
+5. Unity paketi indirip kurar — `Packages/com.endlessengine.idle/` klasörü oluşur
+
+---
+
+### Yöntem B — OpenUPM (Komut Satırı)
+
+OpenUPM CLI kuruluysa terminal açın ve proje klasöründe çalıştırın:
 ```
-Name:    Endless Engine
-URL:     https://registry.endlessengine.com
-Scopes:  com.endlessengine
+openupm add com.endlessengine.idle
 ```
 
-5. **Save** butonuna tıklayın
-6. Project Settings penceresini kapatın
+---
 
-### 1.2 Paketi Yükleme
+### Yöntem C — Diskten (Yerel Klasör)
 
-1. Üst menüden **Window → Package Manager** açın
-2. Sol üstteki dropdown'dan **My Registries** seçin
-3. Listede **Endless Engine Idle** paketini bulun
-4. Sağ alttaki **Install** butonuna tıklayın
-5. Kurulum tamamlandığında `Packages/com.endlessengine.idle/` klasörü oluşur
+Paketi zip olarak indirip çıkardıysanız:
+1. **Window → Package Manager → + → Add package from disk...**
+2. `com.endlessengine.idle/package.json` dosyasını seçin
 
-### 1.3 Bağımlılıklar
+---
 
-Endless Engine şu paketlere ihtiyaç duyar — genellikle otomatik kurulur, kurulmadıysa Package Manager'dan manuel ekleyin:
+### 1.1 Bağımlılıklar
 
-| Paket | Minimum Versiyon |
+Paket kurulunca şu bağımlılıklar otomatik indirilir:
+
+| Paket | Versiyon |
 |---|---|
-| TextMeshPro | 3.0.6 |
-| Unity UI | 1.0.0 |
-| Newtonsoft Json | 3.2.1 |
+| Unity Input System | 1.14.2 |
+| Addressables | 2.7.6 |
+| Unity UI (uGUI) | 2.0.0 |
+| Newtonsoft JSON | 3.2.2 |
 
-**TextMeshPro Essential Resources kurulumu (ilk kullanımda sorulur):**  
-Window → TextMeshPro → Import TMP Essential Resources → Import
-
----
-
-## 2. İlk Proje Kurulumu
-
-### 2.1 Önerilen Klasör Yapısı
-
-```
-Assets/
-├── _Game/
-│   ├── Configs/          ← ScriptableObject dosyaları
-│   │   ├── Economy/
-│   │   ├── Generators/
-│   │   ├── Upgrades/
-│   │   └── Prestige/
-│   ├── Scripts/
-│   │   ├── Bootstrap/
-│   │   ├── UI/
-│   │   └── Gameplay/
-│   ├── Prefabs/
-│   │   ├── UI/
-│   │   └── Gameplay/
-│   ├── Scenes/
-│   │   ├── MainMenu.unity
-│   │   └── Game.unity
-│   └── Art/
-│       ├── Sprites/
-│       └── Fonts/
-```
-
-Assets klasöründe sağ tık → **Create → Folder** ile bu yapıyı oluşturun.
-
-### 2.2 Build Settings'e Sahneleri Ekleme
-
-1. **File → Build Settings** açın
-2. Her sahneyi **Add Open Scenes** ile veya sürükleyerek ekleyin
-3. Sıralama şöyle olmalı:
-   - Index 0: `MainMenu`
-   - Index 1: `Game`
-
-Bu sıra `SceneManager.LoadScene(1)` gibi çağrılar için kritiktir.
-
-### 2.3 ScriptableObject Oluşturma (Genel Yöntem)
-
-Her rehberde "şu SO'yu oluştur" denildiğinde bu yöntemi kullanın:
-
-1. Project panelinde hedef klasöre gidin (örn. `Assets/_Game/Configs/Economy/`)
-2. Sağ tık → **Create** → Endless Engine menüsünden ilgili tipi seçin
-3. Oluşan dosyaya anlamlı bir isim verin (örn. `EconomyConfig_MyGame`)
-4. Inspector'da field'ları doldurun
-
-> **Not:** Bazı SO tipleri Create menüsünde görünmeyebilir. Bu durumda Project panelinde  
-> sağ tık → **Create → ScriptableObject** yerine script'i seçmeniz gerekebilir.  
-> Troubleshooting bölümü 10.1'e bakın.
+**TextMeshPro Essential Resources** — ilk kullanımda Unity sorarsa **Import** deyin.  
+Sormadıysa: **Window → TextMeshPro → Import TMP Essential Resources → Import**
 
 ---
 
-## 3. Prefab Instantiate Kullanımı
+## 2. Sıfırdan Oyun Başlatma İş Akışı
+
+Endless Engine'de bir oyun yapmanın **tek doğru sırası** vardır. Bu sıradan saparsanız  
+sahne eksik oluşur, config'ler yüklenmez veya upgrade tree boş kalır.
+
+---
+
+### ADIM 1 — New Game Wizard'ı Aç
+
+Üst menüden: **Tools → Endless Engine → New Game Wizard**
+
+Bu pencere oyununuzun iskeletini üretir. Bir kez, projenin başında çalıştırılır.
+
+**Game Name:** Oyununuzun adını yazın (örn. `MineIdleEmpire`).  
+Bu isim klasör adı ve sahne adı olarak kullanılır.
+
+**Game Type seçin:**
+
+| Seçenek | Hangi oyun için |
+|---|---|
+| Pure Idle | Generator tabanlı, tıklamasız (AdCap, Cookie Clicker tarzı) |
+| Wave RPG | Otomatik savaş + dalga sistemi (Tower Defense dahil) |
+| Clicker Idle | Aktif tıklama + generator kombini |
+| Harvest Idle | İmleç/alan hasat mekaniği |
+| Merge Idle | Merge board mekaniği |
+| Building Idle | Izgara bazlı bina + üretim |
+
+> Kendi fikrinize en yakın olanı seçin. Wizard seçtiğiniz türe göre farklı config dosyaları  
+> ve farklı sahne layout'u üretir. Sonradan **istediğiniz sistemi ekleyebilirsiniz** —  
+> örn. Wave RPG seçip sonradan Harvest sistemi veya Upgrade Tree ekleyebilirsiniz.
+
+**Generate Skeleton** butonuna tıklayın.
+
+---
+
+### ADIM 2 — Wizard'ın Ürettiğini Anlayın
+
+Wizard şu dosyaları üretir ve `Assets/[GameName]/` klasörüne koyar:
+
+```
+Assets/MineIdleEmpire/
+├── Configs/
+│   ├── EconomyConfig.asset       ← Altın ayarları
+│   ├── SchemaVersion.asset       ← Kayıt versiyonu
+│   ├── GeneratorDatabase.asset   ← Generator listesi
+│   ├── GoldMine.asset            ← 1 adet örnek generator
+│   └── PrestigeConfig.asset      ← Prestige ayarları (varsa)
+└── Scenes/
+    └── MineIdleEmpire.unity      ← Oyun sahnesi (otomatik açılır)
+```
+
+**Sahne açılınca:** Bootstrap GameObject'inde `AutoSetupBootstrap` component'i var.  
+Bu, core servisler (EconomyService, GeneratorSystem, UpgradeTreeService, SaveService) için  
+sıfır-config otomatik bootstrap'tır. Play'e basıldığında temel ekonomi çalışır.
+
+**Wizard'ın üretmediği şeyler:**
+- Upgrade tree node'ları (içi boş, sizin eklemeniz gerekir)
+- İkincil currency (gem, shard vs.) — siz eklersiniz
+- Ana menü sahnesi — siz yaparsınız (Bölüm I, Adım 7)
+- Research, Building, Harvest gibi ek sistemler — siz eklersiniz (Bölüm II)
+
+---
+
+### ADIM 3 — Sahneyi Test Edin (Şu Haliyle)
+
+**Play** butonuna basın. Şunları görmelisiniz:
+- HUD'da altın sayacı görünür
+- GoldMine varsa pasif gelir başlar
+- Prestige butonu görünür (henüz aktif olmaz — şart sağlanmamış)
+
+Görünmüyorsa troubleshooting Bölüm 11'e gidin.
+
+---
+
+### ADIM 4 — Upgrade Tree Ekleyin (İlk Öncelik)
+
+Wizard upgrade node oluşturmaz. Bölüm II → S3'teki adımları izleyin:
+
+1. `Assets/[GameName]/Configs/Upgrades/` klasörü oluşturun
+2. Her upgrade için UpgradeNodeConfigSO oluşturun
+3. Bootstrap'taki `ConfigRegistry.InjectForTesting` çağrısına `upgrades:` parametresini ekleyin
+4. Upgrade UI (UpgradeCard prefab + panel) kurun
+
+---
+
+### ADIM 5 — İstediğiniz Ek Sistemleri Ekleyin
+
+Upgrade Tree'den sonra hangi sistemleri istiyorsanız Bölüm II'deki ilgili bölümü okuyun:
+
+| Eklemek istediğiniz | Bölüm II referansı |
+|---|---|
+| İkincil currency (gem, shard) | S5 |
+| Harvest mekaniği | S8 |
+| Wave ve combat | S10 |
+| Research ağacı | S12 |
+| Prestige | S13 |
+| Bina sistemi | S11 |
+| Skill tree | S4 |
+
+Her bölüm "mevcut Bootstrap'a şunları ekle" şeklinde tam adımlar içerir.
+
+---
+
+### ADIM 6 — Sample'ları Doğru Kullanın
+
+**Window → Package Manager → Endless Engine → Samples** sekmesi
+
+Sample'lar bağımsız referans projeleridir — Wizard çıktısıyla birleşmez.  
+Her sample kendi sahnesini, kendi bootstrap'ını, kendi config'lerini getirir.
+
+**Doğru kullanım:** Bir sample'ı import edip `Samples/[SampleName]/` içindeki sahneyi açın,  
+orada çalışan kodu inceleyin, kendi projenize manuel olarak kopyalayın.
+
+| Sample | Ne gösterir |
+|---|---|
+| MinimalIdle | Generator + 1 upgrade'in tam bootstrap'ı |
+| ClickerIdle | ClickLoopService full wiring |
+| HarvestLoop | HarvestLoopService + HarvestCursor kurulumu |
+| WaveIdle | Wave + AutoBattle + event wiring |
+| PrestHeavy | Çok katmanlı prestige sistemi |
+| MergeIdle | MergeService (new MergeService() — component değil) |
+
+---
+
+### ADIM 7 — Ana Menü Sahnesi Ekleyin
+
+Oyun sahnesi hazır olunca ana menü ekleyin (Bölüm I, Bölüm 5).  
+**File → Build Settings** — MainMenu sahnesini Index 0, Game sahnesini Index 1 yapın.
+
+---
+
+### ADIM 8 — Balance ve Test
+
+Bölüm I → 8. bölüm (Gerçek Oyun Döngüsü Tasarımı) rehberini okuyun.  
+Economy Simulator aracını kullanın: **Tools → Endless Engine → Economy Simulator**
+
+---
+
+### ADIM 9 — Build Alma
+
+Bölüm I → 9. bölüm.
+
+---
+
+### ADIM 10 — Steam Yayını
+
+Bölüm I → 10. bölüm.
+
+---
+
+## 3. Editor Araçları
+
+**Tools → Endless Engine** menüsü altında 11 araç bulunur. Her birinin ne zaman kullanılacağı:
+
+| Araç | Ne Yapar | Ne Zaman Kullanılır |
+|---|---|---|
+| **New Game Wizard** | Oyun iskeleti üretir | Projenin başında, bir kez |
+| **Content Pack Wizard** | Config paketleri toplu üretir | Çok sayıda content eklerken |
+| **Upgrade Tree Editor** | Upgrade node'larını görsel olarak bağlar | Upgrade ağacı tasarlarken |
+| **Skill Tree Editor** | Skill node'larını görsel düzenler | Skill tree tasarlarken |
+| **Generator Editor** | Generator config'leri GUI ile düzenler | Generator balance yaparken |
+| **Economy Simulator** | Oyunun para akışını simüle eder | Balance test yaparken |
+| **Economy Tuning** | Economy config field'larını canlı ayarlar | Play mode'da balance |
+| **Config Validator** | Tüm config'lerde hata arar | Build öncesi kontrol |
+| **ID Registry** | Tüm node/currency/generator ID'lerini listeler | ID çakışması kontrolü |
+| **Schema Bump** | Kayıt şema versiyonunu günceller | Breaking config değişikliği sonrası |
+| **Trait Tree Editor** | Trait (özellik) ağacı düzenler | Trait sistemi kullanıyorsanız |
+
+### Upgrade Tree Editor — Nasıl Kullanılır
+
+1. **Tools → Endless Engine → Upgrade Tree Editor** açın
+2. Sol panelden mevcut UpgradeNodeConfigSO'ları görürsünüz
+3. Node'ları sürükleyerek bağlantı kurun (önkoşul zinciri)
+4. Sağ tık → **Create Node** ile yeni node ekleyin
+5. Her node'un field'larını sağ panelden doldurun
+6. **Save** ile değişiklikleri yazın
+
+Bu araç `PrerequisiteNodeIDs` bağlantılarını görsel olarak yönetir —  
+büyük ağaçları elle kod yazmak yerine buradan tasarlamak çok daha hızlıdır.
+
+### Economy Simulator — Nasıl Kullanılır
+
+1. **Tools → Endless Engine → Economy Simulator** açın
+2. Mevcut EconomyConfigSO ve GeneratorDatabase'i seçin
+3. Simülasyon süresi belirleyin (örn. 60 dakika, 8 saat)
+4. **Run Simulation** — grafik çizer: zaman vs. altın birikimi
+5. Prestige eşiğine ne kadar sürede ulaşıldığını görürsünüz
+
+Beklediğinizden çok daha erken veya çok daha geç prestige eşiğine ulaşıyorsa  
+`CostScalingFactor` ve `BaseYieldPerSecond` değerlerini buradan ayarlayın.
+
+---
+
+---
+
+## 4. Prefab Instantiate Kullanımı
 
 GUIDE_01–06'daki rehberlerde sıkça `Instantiate` ile dinamik olarak UI kartları veya  
 gameplay nesneleri oluşturulur. Temel pattern şudur:
 
-### 3.1 Prefab Hazırlama
+### 4.1 Prefab Hazırlama
 
 1. Sahneye bir GameObject yerleştirin ve istediğiniz Component'leri ekleyin
 2. Bu GameObject'i Project panelindeki `Prefabs/` klasörüne **sürükleyin**
 3. Sahmedeki kopya artık bir prefab instance'ıdır — silebilirsiniz (sahnede kalmasına gerek yok)
 
-### 3.2 Script'ten Instantiate
+### 4.2 Script'ten Instantiate
 
 ```csharp
 [SerializeField] private GeneratorCard _generatorCardPrefab; // Inspector'dan bağlanır
@@ -153,7 +304,7 @@ private void SpawnGeneratorCards()
 2. Inspector'da `_generatorCardPrefab` alanına Project panelinden prefab'ı **sürükleyin**
 3. `_cardContainer` alanına sahnedeki ScrollView → Viewport → Content nesnesini sürükleyin
 
-### 3.3 Instantiate Sonrası Temizlik
+### 4.3 Instantiate Sonrası Temizlik
 
 Listeyi yeniden oluşturmadan önce eski kartları silmek için:
 
@@ -168,7 +319,7 @@ private void ClearCards()
 }
 ```
 
-### 3.4 Object Pooling (Performans için)
+### 4.4 Object Pooling (Performans için)
 
 Çok fazla nesne oluşturup siliyorsanız (örn. düşman spawn, floating text) her Instantiate/Destroy  
 bir GC yükü oluşturur. Basit bir pool:
@@ -213,9 +364,9 @@ public class SimplePool<T> where T : Component
 
 ---
 
-## 4. Ana Menü Sistemi
+## 5. Ana Menü Sistemi
 
-### 4.1 Sahne Yapısı
+### 5.1 Sahne Yapısı
 
 `MainMenu` sahnesini açın ve şu hiyerarşiyi oluşturun:
 
@@ -232,7 +383,7 @@ MainMenu (Scene)
     └── VersionText (TextMeshPro, sağ alt köşe)
 ```
 
-### 4.2 MainMenuController.cs
+### 5.2 MainMenuController.cs
 
 ```csharp
 using UnityEngine;
@@ -285,7 +436,7 @@ public class MainMenuController : MonoBehaviour
 5. `SettingsButton` OnClick → `MainMenuController.OnSettingsClicked`
 6. `QuitButton` OnClick → `MainMenuController.OnQuitClicked`
 
-### 4.3 Sahne Geçiş Animasyonu (Opsiyonel ama önerilir)
+### 5.3 Sahne Geçiş Animasyonu (Opsiyonel ama önerilir)
 
 ```csharp
 using System.Collections;
@@ -345,9 +496,9 @@ public class SceneTransition : MonoBehaviour
 
 ---
 
-## 5. Settings Screen
+## 6. Settings Screen
 
-### 5.1 UI Yapısı
+### 6.1 UI Yapısı
 
 Settings panelini `MainMenu` sahnesi Canvas'ına ve `Game` sahnesi Canvas'ına ayrı ayrı ekleyin:
 
@@ -362,7 +513,7 @@ SettingsPanel (Panel, başlangıçta SetActive(false))
 └── CloseButton (Button)
 ```
 
-### 5.2 SettingsManager.cs
+### 6.2 SettingsManager.cs
 
 ```csharp
 using UnityEngine;
@@ -446,9 +597,9 @@ public class SettingsManager : MonoBehaviour
 
 ---
 
-## 6. Pause Screen
+## 7. Pause Screen
 
-### 6.1 UI Yapısı
+### 7.1 UI Yapısı
 
 `Game` sahnesinin Canvas'ına ekleyin:
 
@@ -461,7 +612,7 @@ PausePanel (Panel, başlangıçta SetActive(false))
 └── QuitButton
 ```
 
-### 6.2 PauseController.cs
+### 7.2 PauseController.cs
 
 ```csharp
 using UnityEngine;
@@ -541,12 +692,12 @@ public class PauseController : MonoBehaviour
 
 ---
 
-## 7. Gerçek Oyun Döngüsü Tasarımı
+## 8. Gerçek Oyun Döngüsü Tasarımı
 
 Bu bölüm en kritik bölümdür. Mekanik çalışan ama sıkıcı bir oyun ile insanların  
 100 saat oynadığı bir oyun arasındaki fark tamamen burada.
 
-### 7.1 Progression Eğrisi — Temel İlke
+### 8.1 Progression Eğrisi — Temel İlke
 
 Bir idle oyunda oyuncunun her üretim katlaması için harcadığı zaman **sabit veya artmalı** olmalı:
 
@@ -574,7 +725,7 @@ Maliyet(n) = BaseCost * GrowthRate^n
 
 `GeneratorConfigSO.CostGrowthRate` bu değeri kontrol eder. **1.07 ile başlayın.**
 
-### 7.2 Early / Mid / Late Game Sınırları
+### 8.2 Early / Mid / Late Game Sınırları
 
 **Early Game (İlk 30 dakika):**
 - Oyuncu her 30 saniyede bir yeni bir şey açmalı
@@ -594,7 +745,7 @@ Maliyet(n) = BaseCost * GrowthRate^n
 - Çarpanlar artık sayısal değil, konseptsel (notasyon değişir: K → M → B → T → Qa)
 - Oyuncu "bir sonraki hedefi" her zaman görmeli ama asla kolayca ulaşamamalı
 
-### 7.3 "One More Click" Hissini Yaratmak
+### 8.3 "One More Click" Hissini Yaratmak
 
 İdeal idle oyunda oyuncu şu döngüyü hisseder:
 
@@ -616,7 +767,7 @@ Bunu sağlamak için:
 3. **Prestige öncesi uyarı**: "X daha biriktirirsen prestige çarpanın 2.5x olacak"  
    mesajı oyuncuyu birkaç dakika daha bekletir.
 
-### 7.4 Sayı Notasyonu Geçişleri
+### 8.4 Sayı Notasyonu Geçişleri
 
 `BigNumber` formatı `EconomyConfigSO.NumberBackend` ile kontrol edilir.  
 Oyuncunun "büyük sayı gördüm" sürprizi her 3–4 saatte bir gelmeli:
@@ -633,7 +784,7 @@ Oyuncunun "büyük sayı gördüm" sürprizi her 3–4 saatte bir gelmeli:
 
 Her notasyon geçişi oyuncuya küçük bir "ilerliyorum" hissi verir.
 
-### 7.5 Offline Gelir Dengesi
+### 8.5 Offline Gelir Dengesi
 
 Offline gelir çok yüksek olursa oyuncu aktif oynamayı bırakır.  
 Çok düşük olursa geri dönme motivasyonu kalmaz.
@@ -653,7 +804,7 @@ ShowOfflineReport   = true    // Oyuna döndüğünde "8 saatte X kazandın" pop
 
 "8 saatte 2.4M altın kazandın!" popup'ı oyuncuyu oyuna geri çeken en güçlü mekanizmadır.
 
-### 7.6 Prestige Zamanlaması
+### 8.6 Prestige Zamanlaması
 
 Oyuncu ilk prestige'i **ne zaman yapmalı?**
 
@@ -673,9 +824,9 @@ Playtesting sonrası ayarlayın.
 
 ---
 
-## 8. Build Alma
+## 9. Build Alma
 
-### 8.1 Windows Build
+### 9.1 Windows Build
 
 1. **File → Build Settings** açın
 2. Platform: **PC, Mac & Linux Standalone** seçin (zaten seçiliyse geç)
@@ -693,12 +844,12 @@ Playtesting sonrası ayarlayın.
 > **IL2CPP için ek gereksinim:** Visual Studio ile "Game Development with Unity"  
 > bileşeni kurulu olmalı. Kurulu değilse Unity Hub → Installs → modülü ekleyin.
 
-### 8.2 Mac Build
+### 9.2 Mac Build
 
 Mac build için Mac üzerinde çalışmanız gerekir (veya Unity Cloud Build kullanın).  
 Windows'tan Mac build alamazsınız.
 
-### 8.3 Build Boyutunu Küçültme
+### 9.3 Build Boyutunu Küçültme
 
 | Ayar | Nerede | Değer |
 |---|---|---|
@@ -709,7 +860,7 @@ Windows'tan Mac build alamazsınız.
 
 Tipik idle oyun build boyutu: **50–150 MB** (grafikler olmadan daha az)
 
-### 8.4 Build Test Checklist
+### 9.4 Build Test Checklist
 
 Build aldıktan sonra kontrol edin:
 - [ ] Oyun masaüstünden çalışıyor (Unity Editor'siz)
@@ -721,16 +872,16 @@ Build aldıktan sonra kontrol edin:
 
 ---
 
-## 9. Steam SDK Entegrasyonu
+## 10. Steam SDK Entegrasyonu
 
-### 9.1 Gereksinimler
+### 10.1 Gereksinimler
 
 - Steam Yetkili Geliştirici hesabı (100$ ödeme)
 - Steamworks.NET paketi: `https://github.com/rlabrecque/Steamworks.NET`
 - AppID (Steam store sayfası oluşturulunca verilir)
 - Test için AppID yoksa `480` (Spacewar) kullanılır
 
-### 9.2 Steamworks.NET Kurulumu
+### 10.2 Steamworks.NET Kurulumu
 
 1. GitHub'dan en son `.unitypackage` dosyasını indirin
 2. Unity'de **Assets → Import Package → Custom Package** ile içe aktarın
@@ -738,14 +889,14 @@ Build aldıktan sonra kontrol edin:
    İçine sadece AppID yazın: `480`
 4. Unity'yi yeniden başlatın
 
-### 9.3 SteamManager.cs (Otomatik Gelir)
+### 10.3 SteamManager.cs (Otomatik Gelir)
 
 Steamworks.NET paketi ile birlikte gelen `SteamManager.cs` scripti otomatik olarak  
 projeye eklenir. Bu script DontDestroyOnLoad mantığıyla Steam API'yi başlatır.
 
 Sahnenizde bir boş GameObject oluşturun, adını `SteamManager` yapın ve bu scripti ekleyin.
 
-### 9.4 Temel Steam Entegrasyonu
+### 10.4 Temel Steam Entegrasyonu
 
 ```csharp
 using Steamworks;
@@ -779,7 +930,7 @@ public class SteamIntegration : MonoBehaviour
 }
 ```
 
-### 9.5 Önerilen Achievement Listesi (Idle Oyun için)
+### 10.5 Önerilen Achievement Listesi (Idle Oyun için)
 
 | Achievement ID | Tetikleyici |
 |---|---|
@@ -792,7 +943,7 @@ public class SteamIntegration : MonoBehaviour
 
 Achievement'ları Steamworks dashboard'unda bu ID'lerle tanımlayın.
 
-### 9.6 Build için Hazırlık
+### 10.6 Build için Hazırlık
 
 1. `steam_appid.txt` içindeki ID'yi gerçek AppID ile değiştirin
 2. Build aldıktan sonra `steam_appid.txt` dosyasını `.exe` ile aynı klasöre kopyalayın
@@ -800,9 +951,9 @@ Achievement'ları Steamworks dashboard'unda bu ID'lerle tanımlayın.
 
 ---
 
-## 10. Kapsamlı Troubleshooting
+## 11. Kapsamlı Troubleshooting
 
-### 10.1 Derleme Hataları
+### 11.1 Derleme Hataları
 
 ---
 
@@ -944,7 +1095,7 @@ sys?.DoSomething();
 
 ---
 
-### 10.2 Runtime Hataları
+### 11.2 Runtime Hataları
 
 ---
 
@@ -1122,7 +1273,7 @@ private void Awake()
 
 ---
 
-### 10.3 Inspector / Editor Sorunları
+### 11.3 Inspector / Editor Sorunları
 
 ---
 
@@ -1152,7 +1303,7 @@ veya Inspector'daki **Apply** butonunu kullanın.
 
 ---
 
-### 10.4 Performans Sorunları
+### 11.4 Performans Sorunları
 
 ---
 
