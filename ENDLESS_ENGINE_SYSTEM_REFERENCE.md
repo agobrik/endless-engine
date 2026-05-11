@@ -299,11 +299,14 @@ TickEngine.OnTick += myMethod;  // float dt parametresi
 TickEngine.OnTick -= myMethod;  // temizlik için OnDestroy'da
 
 // Pause/Resume
-TickEngine.Pause();
-TickEngine.Resume();
+tickEngine.Pause();
+tickEngine.Resume();
+tickEngine.IsPaused               // bool
 
-// Hız çarpanı
-TickEngine.SetTimeScale(2f); // 2x hız
+// Hız çarpanı — PUBLIC FIELD (metod değil):
+tickEngine.TimeScale = 2f;        // 2x hız — doğrudan field'a yaz
+tickEngine.TickIntervalSeconds    // float — tick aralığı (varsayılan 1.0)
+tickEngine.TotalEffectiveTime     // float — toplam geçen efektif süre
 ```
 
 ---
@@ -316,9 +319,22 @@ Oyun durumları arası geçişleri yönetir.
 **Durumlar:** `Menu → Run → PostRun`
 
 ```csharp
-GameFlowStateMachine.OnStateChanged += HandleStateChange;
-GameFlowStateMachine.TransitionTo(GameFlowState.Run);
-GameFlowStateMachine.CurrentState   // GameFlowState
+// Durum okuma
+flow.CurrentState    // GameFlowState (Menu / InRun / PostRun)
+flow.IsInMenu        // bool
+flow.IsInRun         // bool
+flow.IsPostRun       // bool
+
+// Geçişler (TransitionTo() yok — her geçişin kendi metodu var):
+flow.StartRun()      // Menu → InRun
+flow.EndRun()        // InRun → PostRun
+flow.ReturnToMenu()  // PostRun → Menu
+
+// Statik eventler
+GameFlowStateMachine.OnStateChanged  += (from, to) => { };  // Action<GameFlowState, GameFlowState>
+GameFlowStateMachine.OnEnteredMenu   += () => { };
+GameFlowStateMachine.OnEnteredRun    += () => { };
+GameFlowStateMachine.OnEnteredPostRun += () => { };
 ```
 
 ---
@@ -535,11 +551,19 @@ recipe.CooldownSeconds   // 0 = cooldown yok
 Upgrade tree yönetimi, satın alma, stat hesaplama.
 
 ```csharp
-upgradeTree.TryPurchase(string nodeId)     // bool
-upgradeTree.GetRank(string nodeId)         // int (kaç kez alındı)
-upgradeTree.IsMaxRank(string nodeId)       // bool
-upgradeTree.GetNextCost(string nodeId)     // double
-upgradeTree.CanPurchase(string nodeId)     // bool (prerequisite + altın kontrolü)
+upgradeTree.GetNode(string nodeId)            // UpgradeNode (null = bulunamadı)
+upgradeTree.GetNodeCost(string nodeId)        // long — sonraki rank maliyeti
+upgradeTree.IsNodeAvailable(string nodeId)    // bool — prerequisite + prestige gate + max rank kontrolü
+upgradeTree.GetAvailableNodes()               // List<UpgradeNode> — satın alınabilir tüm node'lar
+upgradeTree.IsReady                           // bool — config + save yüklendi mi
+upgradeTree.RebuildForPrestige()              // prestige sonrası tüm rank'ları sıfırlar
+
+// UpgradeNode (runtime wrap):
+node.Config          // UpgradeNodeDefinition
+node.CurrentRank     // int
+
+// Satın alma EconomyService.TryPurchase(nodeId) üzerinden yapılır:
+economyService.TryPurchase(string nodeId)     // void — altın yeterliyse satın alır, event fırlatır
 ```
 
 **UpgradeApplicationSystem (statik):**
@@ -604,9 +628,19 @@ prestige.MaxPrestigeCount           // 0 = sınırsız
 Prestige-Heavy oyunlar için birden fazla prestige katmanı yönetir.
 
 ```csharp
-ascension.CurrentLayer      // int
-ascension.AscendToNextLayer() // bool
-ascension.GetLayerMultiplier(int layer) // float
+// Katman tetikleme (TryTrigger(layerIndex, currentWaveNumber) → bool):
+ascension.CanTrigger(int layerIndex, int currentWaveNumber) // bool
+ascension.TryTriggerAsync(int layerIndex, int currentWaveNumber) // Task<bool>
+
+// Sayım ve çarpan sorguları:
+ascension.GetCount(int layerIndex)    // int — bu katman kaç kez tetiklendi
+ascension.GetLayer0Count()            // int — layer 0 = PrestigeStateManager.PrestigeCount
+ascension.GetCascadeMultiplier()      // float — tüm katmanların birleşik çarpanı
+
+// Statik eventler
+AscensionStateManager.OnAscensionStarted  += layerIndex => { };
+AscensionStateManager.OnAscensionComplete += (layerIndex, newCount, cascadeMult) => { };
+AscensionStateManager.OnAscensionResetRequested += () => { };
 ```
 
 ---
