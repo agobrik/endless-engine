@@ -352,10 +352,15 @@ clickService.OnCrit          += mult => { };    // crit oldu
 
 **Config (ClickLoopConfigSO):**
 ```csharp
-config.BaseAutoClickRate    // saniyede otomatik tıklama (0 = kapalı)
-config.BaseCritChance       // 0.0-1.0
-config.BaseCritMultiplier   // örn. 2.0f
-config.ComboDecaySeconds    // combo kaç saniyede sıfırlanır
+config.BaseAutoClickRate        // saniyede otomatik tıklama (0 = kapalı)
+config.BaseCritChance           // 0.0-1.0
+config.BaseCritMultiplier       // örn. 2.0f
+config.ComboDecayDelay          // tıklama durduğunda combo azalmaya başlamadan önce bekleme süresi (saniye)
+config.ComboDecayRate           // saniyede azalan combo puanı
+config.ComboPointsPerStep       // her tıkta kazanılan combo puanı
+config.MaxComboMultiplier       // combo tavanı çarpanı
+config.OfflineCapHours          // çevrimdışı auto-click kazancı tavanı
+config.OfflineEfficiency        // çevrimdışı verimlilik (0-1)
 ```
 
 **ClickTarget (ClickTargetConfigSO):**
@@ -393,9 +398,13 @@ harvestService.OnNodeDepleted += node => { };
 
 **Config (HarvestAreaConfigSO):**
 ```csharp
-area.BaseTickInterval    // saniyede kaç tick
-area.ComboDecaySeconds
-area.MaxComboMultiplier
+area.BaseTickInterval           // saniyede kaç tick (0.1 = 10/s)
+area.ComboDecayDelay            // tıklama durduğunda combo azalmadan önce bekleme (saniye)
+area.ComboDecayRate             // saniyede azalan combo
+area.ComboPointsPerMultiplierStep // bir sonraki çarpan seviyesi için gereken puan
+area.MaxComboMultiplier         // combo tavanı çarpanı
+area.OfflineCapHours            // çevrimdışı kazanç tavanı
+area.OfflineEfficiency          // çevrimdışı verimlilik
 ```
 
 **Node Config (HarvestNodeConfigSO):**
@@ -450,7 +459,8 @@ Generator satın alma ve sayım sistemi. Altın ÜRETMİYOR — o `PassiveIncome
 ```csharp
 generators.TryPurchase(string generatorId) // bool
 generators.GetCount(string generatorId)    // int
-generators.GetNextCost(string generatorId) // double
+generators.GetNextCost(string generatorId)    // long (backend-bağımsız)
+generators.GetNextCostBig(string generatorId) // IBigNumber (BigDouble backend için)
 generators.TotalGeneratorsOwned()          // int
 generators.Configs                         // List<GeneratorConfigSO>
 
@@ -483,11 +493,13 @@ currencyService.Add(string currencyId, long amount)
 currencyService.TrySpend(string currencyId, long amount) // bool
 
 // Config (CurrencyConfigSO)
-currency.CurrencyId        // "gems"
-currency.DisplayName       // "Gems"
-currency.StartingAmount    // 0
-currency.HardCap           // 999_999
-currency.ResetOnPrestige   // bool
+currency.CurrencyId           // "gems"
+currency.DisplayName          // "Gems"
+currency.Symbol               // "💎" (kısa gösterim)
+currency.StartingAmount       // 0
+currency.HardCap              // 0 = sınırsız, >0 = tavan
+currency.ResetsOnPrestige     // bool (ResetOnPrestige DEĞİL)
+currency.UnlockAtPrestigeCount // int (0 = her zaman görünür)
 ```
 
 ---
@@ -627,8 +639,8 @@ node.NodeId
 node.DisplayName
 node.ResearchTicks           // kaç tick sürer
 node.GoldCost                // araştırmayı başlatma maliyeti
-node.PrerequisiteNodeIds     // string[]
-node.StatBonus               // StatType + float
+node.PrerequisiteIds         // List<string>
+node.Effects                 // List<SkillEffect> (tamamlandığında uygulanan etkiler)
 ```
 
 ---
@@ -642,8 +654,15 @@ Izgara bazlı bina yerleştirme ve üretim.
 ```csharp
 building.TryPlace(string buildingId, int x, int y) // PlaceResult
 building.TryUpgrade(string instanceId)             // bool
-building.TryRemove(string instanceId)              // bool
-building.GetInstance(string instanceId)            // BuildingInstance
+building.Remove(string instanceId)                 // bool  (TryRemove değil — Remove)
+building.GetInstance(string instanceId)            // BuildingInstance (varsa)
+
+// Statik eventler
+BuildingService.OnBuildingPlaced    += instance => { };
+BuildingService.OnBuildingUpgraded  += instance => { };
+BuildingService.OnBuildingRemoved   += instanceId => { };
+BuildingService.OnBuildingProduced  += (instanceId, amount) => { };
+BuildingService.OnPlaceFailed       += (buildingId, reason) => { };
 
 // PlaceResult
 result.Success      // bool
@@ -651,10 +670,11 @@ result.FailReason   // string
 result.Instance     // BuildingInstance
 
 // BuildingInstance
-inst.BuildingId
+inst.InstanceId               // GUID string (runtime ID)
+inst.BuildingId               // BuildingConfigSO.BuildingId ile eşleşir
 inst.GridX, inst.GridY
-inst.UpgradeTier
-inst.GetProductionPerSecond() // float
+inst.UpgradeTier              // 0 = base tier
+inst.GetProductionPerTick(BuildingConfigSO config) // long
 ```
 
 ---
@@ -678,8 +698,8 @@ skillTree.CanPurchase(string nodeId)  // bool
 Prestige sayısı, wave sayısı, toplam kaynak gibi koşullara göre milestone kilidini açar.
 
 ```csharp
-// Event
-MilestoneTracker.OnMilestoneUnlocked += milestoneId => { };
+// Event — Action<MilestoneConfigSO>
+MilestoneTracker.OnMilestoneCompleted += milestone => { };
 ```
 
 **Config (MilestoneConfigSO):**
@@ -736,11 +756,15 @@ inventory.IsFull                       // bool
 
 **Config (ItemConfigSO):**
 ```csharp
-item.ItemId
-item.MergeGroupId    // aynı grup = birleştirilebilir
-item.MergeTier       // 1, 2, 3...
-item.BaseYield       // satışta verilen altın
+item.ItemId          // benzersiz ID (yayın sonrası değiştirme)
 item.DisplayName
+item.Description
+item.Rarity          // ItemRarity: Common / Uncommon / Rare / Epic / Legendary
+item.MaxStackSize    // 1 = stack'lenemez, 0 = sınırsız
+item.MergeGroupId    // aynı grup = birleştirilebilir (boş = birleşmez)
+item.MergeTier       // 0-based tier (0 = en düşük)
+// NOT: BaseYield alanı ItemConfigSO'da YOKTUR — satış geliri
+//      MergeRule.GoldBonus veya DropResolver üzerinden tanımlanır
 ```
 
 ---
@@ -1083,8 +1107,12 @@ notificationService.CancelAll();
 Skor gönderme ve sorgulama.
 
 ```csharp
-leaderboard.SubmitScore(long score)
-leaderboard.GetTopEntries(count: 10)  // Task<LeaderboardEntry[]>
+// Local LeaderboardService
+leaderboard.SubmitScore(string boardId, string playerName, long score) // bool
+leaderboard.GetBoard(string boardId)  // IReadOnlyList<LeaderboardEntry>
+
+// Event — Action<string boardId, LeaderboardEntry entry>
+LeaderboardService.OnScoreSubmitted += (boardId, entry) => { };
 ```
 
 ---
@@ -1093,22 +1121,71 @@ leaderboard.GetTopEntries(count: 10)  // Task<LeaderboardEntry[]>
 
 **Dosyalar:** `Runtime/Steam/`
 
+### SteamAchievementBridge
+**Dosya:** `Runtime/Steam/SteamAchievementBridge.cs`
+
+Achievement sistemi **MilestoneTracker** üzerine kuruludur. Doğrudan çağrı yoktur.
+
 ```csharp
-// Başlatma
-SteamService.Initialize();
+// Bootstrap:
+bridge.Initialize(steamService);  // null → NullSteamService
 
-// Achievement
-SteamAchievementBridge.UnlockAchievement("ACH_PRESTIGE_10");
+// Çalışma prensibi:
+// MilestoneTracker.OnMilestoneCompleted tetiklenince
+// bridge, MilestoneConfigSO.MilestoneId'yi Steam API adına çevirip
+// _steam.UnlockAchievement(apiName) çağırır.
 
-// Leaderboard
-SteamLeaderboardService.SubmitScore(myScore);
+// Inspector'da ID'leri override etmek için _mappings listesini doldur:
+// AchievementMapping { MilestoneId = "first_prestige", SteamApiName = "ACH_FIRST_PRESTIGE" }
 
-// Cloud Save
-SteamCloudSaveSync.Upload(saveFilePath);
-SteamCloudSaveSync.Download();
+// Doğrudan ISteamService üzerinden:
+_steam.UnlockAchievement("ACH_PRESTIGE_10");
 ```
 
-**Null-safe fallback:** `NullSteamService` — Steam yokken çalışır.
+### SteamLeaderboardService
+**Dosya:** `Runtime/Steam/SteamLeaderboardService.cs`
+
+```csharp
+// Bootstrap:
+steamLeaderboard.Initialize(leaderboardService, steamService, boardMappings);
+
+// Skor gönder (local + Steam aynı anda):
+steamLeaderboard.SubmitScore(
+    boardId:    "main_leaderboard",
+    playerName: "Player",
+    score:      1234L);             // long
+
+// Liderlik tablosunu al:
+steamLeaderboard.FetchGlobalLeaderboard(
+    boardId:    "main_leaderboard",
+    entryCount: 10,
+    onComplete: entries => { /* List<SteamLeaderboardEntry> */ });
+```
+
+### SteamCloudSaveSync
+**Dosya:** `Runtime/Steam/SteamCloudSaveSync.cs`
+
+```csharp
+// Bootstrap (SaveService.LoadAsync()'ten ÖNCE):
+cloudSync.Initialize(saveService, steamService);
+
+// Cloud save kontrolü (başlangıçta):
+cloudSync.CheckForNewerCloudSave();
+
+// Cloud kayıt daha yeniyse bu event tetiklenir:
+SteamCloudSaveSync.OnCloudSaveNewerThanLocal += () =>
+{
+    // Oyuncuya sor, onaylarsa:
+    cloudSync.RestoreFromCloud(success => { /* bool */ });
+};
+
+// Upload: OTOMATIK — SaveService.OnSaveCompleted her tetiklendiğinde
+// SteamCloudSaveSync arka planda dosyayı Steam Cloud'a yükler.
+// Manuel Upload() veya Download() metodu YOKTUR.
+```
+
+**Null-safe fallback:** `NullSteamService.Instance` — Steam olmadan da çalışır.
+`Initialize(steamService: null)` → otomatik olarak `NullSteamService` devreye girer.
 
 ---
 
@@ -1175,4 +1252,4 @@ SceneSetupUtility.BuildScene(opts);
 
 ---
 
-*Endless Engine v1.3.4 — Sistem Referans Dokümanı*
+*Endless Engine v1.3.4 — Sistem Referans Dokümanı (kaynak koddan doğrulanmış)*
