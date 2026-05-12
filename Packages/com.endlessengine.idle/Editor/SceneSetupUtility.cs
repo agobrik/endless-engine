@@ -4,7 +4,6 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
 using EndlessEngine.Bootstrap;
 using EndlessEngine.Prestige;
 using EndlessEngine.Economy;
@@ -838,7 +837,7 @@ namespace EndlessEngine.Editor
             // Position: wave/tower = top-right, others = center
             var bgGO  = new GameObject("HUDPanel");
             bgGO.transform.SetParent(canvasGO.transform, false);
-            var bgImg = bgGO.AddComponent<Image>();
+            var bgImg = bgGO.AddComponent<UnityEngine.UI.Image>();
             bgImg.color = new Color(0.03f, 0.03f, 0.05f, 0.90f);
             var bgRt  = bgGO.GetComponent<RectTransform>();
             if (isRight)
@@ -953,7 +952,7 @@ namespace EndlessEngine.Editor
         {
             // ── HUD ──────────────────────────────────────────────────────────────────
             const string hudUxmlPath = "Assets/UI/HUD/HUD.uxml";
-            var hudUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(hudUxmlPath);
+            var hudUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(hudUxmlPath);
             if (hudUxml != null)
             {
                 var hudGO   = new GameObject("Screen_HUD");
@@ -973,7 +972,7 @@ namespace EndlessEngine.Editor
             if (opts.HasGenerator)
             {
                 const string genUxmlPath = "Assets/UI/Generator/GeneratorScreen.uxml";
-                var genUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(genUxmlPath);
+                var genUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(genUxmlPath);
                 if (genUxml != null)
                 {
                     var genGO = new GameObject("Screen_Generator");
@@ -992,7 +991,7 @@ namespace EndlessEngine.Editor
             // ── Upgrade Screen ───────────────────────────────────────────────────────
             {
                 const string upgUxmlPath = "Assets/UI/Upgrade/UpgradeScreen.uxml";
-                var upgUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(upgUxmlPath);
+                var upgUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(upgUxmlPath);
                 if (upgUxml != null)
                 {
                     var upgGO   = new GameObject("Screen_Upgrades");
@@ -1016,7 +1015,7 @@ namespace EndlessEngine.Editor
             if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy)
             {
                 const string presUxmlPath = "Assets/UI/Prestige/PrestigeOverlay.uxml";
-                var presUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(presUxmlPath);
+                var presUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(presUxmlPath);
                 if (presUxml != null)
                 {
                     var presGO = new GameObject("Screen_Prestige");
@@ -1029,7 +1028,7 @@ namespace EndlessEngine.Editor
             if (opts.Type == GameType.ResearchIdle)
             {
                 const string resUxmlPath = "Assets/UI/Research/ResearchScreen.uxml";
-                var resUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(resUxmlPath);
+                var resUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(resUxmlPath);
                 if (resUxml != null)
                 {
                     var resGO = new GameObject("Screen_Research");
@@ -1042,7 +1041,7 @@ namespace EndlessEngine.Editor
             if (opts.HasBuilding)
             {
                 const string bldUxmlPath = "Assets/UI/Building/BuildingGridScreen.uxml";
-                var bldUxml = AssetDatabase.LoadAssetAtPath<VisualTreeAsset>(bldUxmlPath);
+                var bldUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(bldUxmlPath);
                 if (bldUxml != null)
                 {
                     var bldGO = new GameObject("Screen_Building");
@@ -1052,9 +1051,9 @@ namespace EndlessEngine.Editor
             }
         }
 
-        private static void AddUIDocument(GameObject go, VisualTreeAsset uxml)
+        private static void AddUIDocument(GameObject go, UnityEngine.UIElements.VisualTreeAsset uxml)
         {
-            var doc      = go.AddComponent<UIDocument>();
+            var doc      = go.AddComponent<UnityEngine.UIElements.UIDocument>();
             var docSO    = new SerializedObject(doc);
             var treeProp = docSO.FindProperty("m_VisualTreeAsset");
             if (treeProp != null) treeProp.objectReferenceValue = uxml;
@@ -1167,7 +1166,7 @@ namespace EndlessEngine.Editor
             tmp.color     = color;
             tmp.alignment = TMPro.TextAlignmentOptions.Center;
 #else
-            var lbl = go.AddComponent<Text>();
+            var lbl = go.AddComponent<UnityEngine.UI.Text>();
             lbl.text      = text;
             lbl.fontSize  = fontSize;
             lbl.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
@@ -1188,10 +1187,10 @@ namespace EndlessEngine.Editor
             rt.offsetMin = new Vector2(8, 3);
             rt.offsetMax = new Vector2(-8, -3);
 
-            var img = go.AddComponent<Image>();
+            var img = go.AddComponent<UnityEngine.UI.Image>();
             img.color = bgColor;
 
-            var btn    = go.AddComponent<Button>();
+            var btn    = go.AddComponent<UnityEngine.UI.Button>();
             var col    = btn.colors;
             col.normalColor      = bgColor;
             col.highlightedColor = bgColor * 1.4f;
@@ -1212,7 +1211,7 @@ namespace EndlessEngine.Editor
             tmp.color     = Color.white;
             tmp.alignment = TMPro.TextAlignmentOptions.Center;
 #else
-            var txt = lblGO.AddComponent<Text>();
+            var txt = lblGO.AddComponent<UnityEngine.UI.Text>();
             txt.text      = label;
             txt.fontSize  = 11;
             txt.color     = Color.white;
