@@ -329,6 +329,7 @@ namespace EndlessEngine.Editor
                     so.BaseMultiplierPerPrestige = 1.5f;
                     so.ResourceHardCap          = 10_000_000_000L;
                     so.OfflineCapHours          = 12f;
+                    so.StartingGold             = 100;
                     break;
                 case GameType.ClickerIdle:
                 case GameType.ClickLoop:
@@ -336,12 +337,14 @@ namespace EndlessEngine.Editor
                     so.BaseMultiplierPerPrestige = 1.5f;
                     so.ResourceHardCap          = 1_000_000_000L;
                     so.OfflineCapHours          = 8f;
+                    so.StartingGold             = 50;
                     break;
                 case GameType.HarvestIdle:
                     so.IdleYieldRateBase        = 0f;
                     so.BaseMultiplierPerPrestige = 1.5f;
                     so.ResourceHardCap          = 1_000_000_000L;
                     so.OfflineCapHours          = 8f;
+                    so.StartingGold             = 50;
                     break;
                 case GameType.IdleVsRPG:
                 case GameType.TowerDefense:
@@ -349,36 +352,42 @@ namespace EndlessEngine.Editor
                     so.BaseMultiplierPerPrestige = 2.0f;
                     so.ResourceHardCap          = 100_000_000_000L;
                     so.OfflineCapHours          = 8f;
+                    so.StartingGold             = 100;
                     break;
                 case GameType.MergeIdle:
                     so.IdleYieldRateBase        = 0f;
                     so.BaseMultiplierPerPrestige = 1.0f;
                     so.ResourceHardCap          = 1_000_000L;
                     so.OfflineCapHours          = 0f;
+                    so.StartingGold             = 0;
                     break;
                 case GameType.FarmIdle:
                     so.IdleYieldRateBase        = 0.4f;
                     so.BaseMultiplierPerPrestige = 1.6f;
                     so.ResourceHardCap          = 10_000_000_000L;
                     so.OfflineCapHours          = 16f;
+                    so.StartingGold             = 100;
                     break;
                 case GameType.ResearchIdle:
                     so.IdleYieldRateBase        = 0.3f;
                     so.BaseMultiplierPerPrestige = 1.8f;
                     so.ResourceHardCap          = 1_000_000_000_000L;
                     so.OfflineCapHours          = 24f;
+                    so.StartingGold             = 100;
                     break;
                 case GameType.BuildingIdle:
                     so.IdleYieldRateBase        = 0.4f;
                     so.BaseMultiplierPerPrestige = 1.6f;
                     so.ResourceHardCap          = 10_000_000_000L;
                     so.OfflineCapHours          = 12f;
+                    so.StartingGold             = 100;
                     break;
                 case GameType.PrestigeHeavy:
                     so.IdleYieldRateBase        = 0.5f;
                     so.BaseMultiplierPerPrestige = 3.0f;
                     so.ResourceHardCap          = 1_000_000_000_000_000L;
                     so.OfflineCapHours          = 8f;
+                    so.StartingGold             = 200;
                     break;
             }
         }
