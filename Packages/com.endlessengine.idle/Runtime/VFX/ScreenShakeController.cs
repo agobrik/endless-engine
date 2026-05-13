@@ -1,3 +1,4 @@
+#pragma warning disable CS0414
 using System.Collections;
 using UnityEngine;
 using EndlessEngine.Health;

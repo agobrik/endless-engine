@@ -80,8 +80,9 @@ namespace EndlessEngine.Harvest
         {
             _overlapping.Clear();
 
-            int count = Physics2D.OverlapCircleNonAlloc(WorldPosition, EffectiveRadius,
-                                                        _hitBuffer, _harvestLayer);
+            int count = Physics2D.OverlapCircle(WorldPosition, EffectiveRadius,
+                new UnityEngine.ContactFilter2D { layerMask = _harvestLayer, useLayerMask = true, useTriggers = true },
+                _hitBuffer);
             for (int i = 0; i < count; i++)
             {
                 var node = _hitBuffer[i].GetComponent<HarvestNode>();

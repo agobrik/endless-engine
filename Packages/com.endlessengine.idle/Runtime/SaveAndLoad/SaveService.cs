@@ -330,15 +330,14 @@ namespace EndlessEngine.SaveAndLoad
 
         private void OnApplicationQuit()
         {
+            if (_state != SaveServiceState.Ready || _currentSave == null) return;
 #if UNITY_EDITOR
-            // Skip blocking save in Editor — synchronous GetAwaiter().GetResult() deadlocks
-            // the Editor's main thread when stopping Play Mode. Production builds save normally.
-            return;
+            // In Editor, fire-and-forget async save to avoid deadlocking the main thread.
+            _ = SaveAsync();
+#else
+            // In builds, block on quit so progress is never lost.
+            SaveAsync().GetAwaiter().GetResult();
 #endif
-            // Synchronous save on quit so progress is never lost.
-            // Blocking is intentional and acceptable on the quit path.
-            if (_state == SaveServiceState.Ready && _currentSave != null)
-                SaveAsync().GetAwaiter().GetResult();
         }
 
         private void OnApplicationPause(bool pauseStatus)

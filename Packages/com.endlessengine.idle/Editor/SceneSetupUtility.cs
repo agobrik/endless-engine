@@ -925,19 +925,18 @@ namespace EndlessEngine.Editor
                     11, false, y, 0.07f, new Color(0.8f, 0.4f, 1f));
             }
 
-            if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy)
-            {
-                // Prestige button near bottom
-                AddButtonFixed(bgGO, "PrestigeButton", "✦ Prestige",
-                    0.02f, 0.11f, new Color(0.28f, 0.06f, 0.28f));
-
-                AddLabelFixed(bgGO, "PrestigeLabel", "×1.0  (0 prestiges)",
-                    10, false, 0.12f, 0.18f, new Color(0.8f, 0.5f, 1f));
-            }
-
             // Upgrades button — wired at runtime by GeneratedGameHUD to UpgradeScreenController.Show()
             y = AddButton(bgGO, "UpgradesButton", "▸ Upgrades",
                 y, 0.09f, new Color(0.08f, 0.12f, 0.28f));
+
+            if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy)
+            {
+                y = AddLabel(bgGO, "PrestigeLabel", "×1.0  (0 prestiges)",
+                    10, false, y, 0.07f, new Color(0.8f, 0.5f, 1f));
+
+                y = AddButton(bgGO, "PrestigeButton", "✦ Prestige",
+                    y, 0.10f, new Color(0.28f, 0.06f, 0.28f));
+            }
 
             // Save indicator
             AddLabelFixed(bgGO, "SaveLabel", "",

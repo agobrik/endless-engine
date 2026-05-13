@@ -32,7 +32,7 @@ namespace EndlessEngine.DevTools
         private string _input = string.Empty;
         private readonly List<string> _log   = new List<string>(64);
         private readonly List<string> _history = new List<string>(32);
-        private int    _historyIndex = -1;
+        private int    _historyIndex;
         private Vector2 _scrollPos;
 
         private EconomyService   _economy;
@@ -41,8 +41,8 @@ namespace EndlessEngine.DevTools
 
         private const int MaxLog = 100;
 
-        private static readonly GUIStyle _boxStyle   = null;
-        private static readonly GUIStyle _inputStyle = null;
+        private static GUIStyle _boxStyle;
+        private static GUIStyle _inputStyle;
 
         // ── Initialization ────────────────────────────────────────────────────────
 
@@ -162,7 +162,7 @@ namespace EndlessEngine.DevTools
 
         private void CmdPrestige()
         {
-            var mgr = FindObjectOfType<Prestige.PrestigeStateManager>();
+            var mgr = FindFirstObjectByType<Prestige.PrestigeStateManager>();
             if (mgr == null) { Log("PrestigeStateManager not found."); return; }
             bool ok = mgr.TryPrestige();
             Log(ok ? "Prestige triggered." : "Prestige conditions not met (CanPrestige=false).");
@@ -172,7 +172,7 @@ namespace EndlessEngine.DevTools
         {
             if (parts.Length < 2) { Log("Usage: setwave [n]"); return; }
             if (!int.TryParse(parts[1], out int n)) { Log("Invalid wave number."); return; }
-            var mgr = FindObjectOfType<Prestige.PrestigeStateManager>();
+            var mgr = FindFirstObjectByType<Prestige.PrestigeStateManager>();
             mgr?.SetCurrentWave(n);
             Log($"Wave set to {n}.");
         }
@@ -181,7 +181,7 @@ namespace EndlessEngine.DevTools
         {
             if (parts.Length < 2) { Log("Usage: setstreak [n]"); return; }
             if (!int.TryParse(parts[1], out int n)) { Log("Invalid streak count."); return; }
-            var svc = FindObjectOfType<Modules.SessionService>();
+            var svc = FindFirstObjectByType<Modules.SessionService>();
             if (svc == null) { Log("SessionService not found."); return; }
             svc.InjectForTesting(n, DateTime.UtcNow);
             Log($"Streak set to {n}.");

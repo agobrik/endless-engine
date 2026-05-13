@@ -1,3 +1,4 @@
+#pragma warning disable CS0414
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;

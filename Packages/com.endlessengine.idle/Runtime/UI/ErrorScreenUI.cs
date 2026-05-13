@@ -1,3 +1,4 @@
+#pragma warning disable CS0414
 using UnityEngine;
 using UnityEngine.UIElements;
 using Debug = UnityEngine.Debug;
