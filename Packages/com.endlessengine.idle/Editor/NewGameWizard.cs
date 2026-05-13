@@ -525,6 +525,7 @@ namespace EndlessEngine.Editor
         private void CreateConfigs(string dir)
         {
             var econ = CreateSO<EndlessEngine.Config.EconomyConfigSO>(dir, "EconomyConfig");
+            if (econ == null) econ = AssetDatabase.LoadAssetAtPath<EndlessEngine.Config.EconomyConfigSO>($"{dir}/EconomyConfig.asset");
             if (econ != null) { ApplyEconomyPreset(econ); EditorUtility.SetDirty(econ); }
 
             var schema = CreateSO<EndlessEngine.Config.SchemaVersionSO>(dir, "SchemaVersion");
