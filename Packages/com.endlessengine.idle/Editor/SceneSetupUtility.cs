@@ -1080,7 +1080,8 @@ namespace EndlessEngine.Editor
         {
             var doc   = go.AddComponent<UnityEngine.UIElements.UIDocument>();
             var docSO = new SerializedObject(doc);
-            var treeProp  = docSO.FindProperty("m_VisualTreeAsset");
+            // Unity 6: UIDocument uses "sourceAsset" for VisualTreeAsset, "m_PanelSettings" for PanelSettings
+            var treeProp  = docSO.FindProperty("sourceAsset") ?? docSO.FindProperty("m_VisualTreeAsset");
             var panelProp = docSO.FindProperty("m_PanelSettings");
             if (treeProp  != null) treeProp.objectReferenceValue  = uxml;
             if (panelProp != null && panelSettings != null)
