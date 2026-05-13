@@ -973,22 +973,27 @@ namespace EndlessEngine.Editor
         {
             var panelSettings = EnsurePanelSettings(opts.ConfigsPath);
 
-            // ── HUD ──────────────────────────────────────────────────────────────────
-            const string hudUxmlPath = "Assets/UI/HUD/HUD.uxml";
-            var hudUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(hudUxmlPath);
-            if (hudUxml != null)
+            // ── HUD — only for wave/run-based types that use GameFlowStateMachine ──────
+            bool needsWaveHUD = opts.HasWave || opts.Type == GameType.IdleVsRPG
+                                             || opts.Type == GameType.TowerDefense;
+            if (needsWaveHUD)
             {
-                var hudGO   = new GameObject("Screen_HUD");
-                AddUIDocument(hudGO, hudUxml, panelSettings);
-
-                var hudCtrl   = hudGO.AddComponent<EndlessEngine.UI.HUDController>();
-                var hudCtrlSO = new SerializedObject(hudCtrl);
-                if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy)
+                const string hudUxmlPath = "Assets/UI/HUD/HUD.uxml";
+                var hudUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(hudUxmlPath);
+                if (hudUxml != null)
                 {
-                    var psm = bootstrapGO.GetComponent<PrestigeStateManager>();
-                    if (psm != null) SetObjRef(hudCtrlSO, "_prestigeStateManager", psm);
+                    var hudGO   = new GameObject("Screen_HUD");
+                    AddUIDocument(hudGO, hudUxml, panelSettings);
+
+                    var hudCtrl   = hudGO.AddComponent<EndlessEngine.UI.HUDController>();
+                    var hudCtrlSO = new SerializedObject(hudCtrl);
+                    if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy)
+                    {
+                        var psm = bootstrapGO.GetComponent<PrestigeStateManager>();
+                        if (psm != null) SetObjRef(hudCtrlSO, "_prestigeStateManager", psm);
+                    }
+                    hudCtrlSO.ApplyModifiedPropertiesWithoutUndo();
                 }
-                hudCtrlSO.ApplyModifiedPropertiesWithoutUndo();
             }
 
             // ── Generator Screen ─────────────────────────────────────────────────────
