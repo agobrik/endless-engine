@@ -7,6 +7,7 @@ using EndlessEngine.Harvest;
 using EndlessEngine.ClickLoop;
 using EndlessEngine.Wave;
 using EndlessEngine.Research;
+using EndlessEngine.UI;
 
 namespace EndlessEngine.Bootstrap
 {
@@ -48,6 +49,7 @@ namespace EndlessEngine.Bootstrap
         private Component _researchLabel;
         private Button    _buyGeneratorButton;
         private Button    _prestigeButton;
+        private Button    _upgradesButton;
 
         private float  _saveTimer;
         private double _lastGold;
@@ -84,6 +86,7 @@ namespace EndlessEngine.Bootstrap
             _gemLabel            = FindLabel("GemLabel");
             _buyGeneratorButton  = FindButton("BuyGeneratorButton");
             _prestigeButton      = FindButton("PrestigeButton");
+            _upgradesButton      = FindButton("UpgradesButton");
             _researchLabel       = FindLabel("ResearchLabel");
 
             // Subscribe to events
@@ -112,6 +115,15 @@ namespace EndlessEngine.Bootstrap
             // Buttons
             _buyGeneratorButton?.onClick.AddListener(OnBuyGenerator);
             _prestigeButton?.onClick.AddListener(OnPrestige);
+
+            // Wire Upgrades button → UpgradeScreenController.Show() + inject EconomyService
+            var upgradeScreen = FindFirstObjectByType<EndlessEngine.UI.UpgradeScreenController>();
+            if (upgradeScreen != null)
+            {
+                upgradeScreen.InjectEconomy(_bootstrap.Economy);
+                if (_upgradesButton != null)
+                    _upgradesButton.onClick.AddListener(upgradeScreen.Show);
+            }
 
             // Initial state
             SetText(_goldLabel, "Gold: 0");

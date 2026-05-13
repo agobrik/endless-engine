@@ -186,6 +186,9 @@ namespace EndlessEngine.UI
 
         // ── Public ────────────────────────────────────────────────────────────────
 
+        /// <summary>Called at runtime by GeneratedGameHUD when EconomyService is available.</summary>
+        public void InjectEconomy(EconomyService economy) => _economy = economy;
+
         public void Show()
         {
             SetVisible(true);       // make visible FIRST so layout runs

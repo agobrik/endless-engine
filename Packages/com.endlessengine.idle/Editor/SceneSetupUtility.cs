@@ -934,6 +934,10 @@ namespace EndlessEngine.Editor
                     10, false, 0.12f, 0.18f, new Color(0.8f, 0.5f, 1f));
             }
 
+            // Upgrades button — wired at runtime by GeneratedGameHUD to UpgradeScreenController.Show()
+            y = AddButton(bgGO, "UpgradesButton", "▸ Upgrades",
+                y, 0.09f, new Color(0.08f, 0.12f, 0.28f));
+
             // Save indicator
             AddLabelFixed(bgGO, "SaveLabel", "",
                 8, false, 0.0f, 0.025f, new Color(0.3f, 0.3f, 0.3f));
