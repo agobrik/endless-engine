@@ -32,7 +32,6 @@ namespace EndlessEngine.DevTools
         private string _input = string.Empty;
         private readonly List<string> _log   = new List<string>(64);
         private readonly List<string> _history = new List<string>(32);
-        private int    _historyIndex;
         private Vector2 _scrollPos;
 
         private EconomyService   _economy;
@@ -109,7 +108,6 @@ namespace EndlessEngine.DevTools
             string trimmed = raw.Trim();
             _history.Insert(0, trimmed);
             if (_history.Count > 32) _history.RemoveAt(_history.Count - 1);
-            _historyIndex = -1;
             _input = string.Empty;
 
             Log($"> {trimmed}");

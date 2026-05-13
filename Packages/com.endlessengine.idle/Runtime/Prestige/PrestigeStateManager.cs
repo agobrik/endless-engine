@@ -1,4 +1,3 @@
-#pragma warning disable CS0067
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -43,7 +42,9 @@ namespace EndlessEngine.Prestige
         public static event Action<int, float> OnPrestigeComplete;
 
         /// <summary>Fires when a realm is unlocked by reaching a prestige threshold.</summary>
+#pragma warning disable CS0067
         public static event Action<string> OnRealmUnlocked;
+#pragma warning restore CS0067
 
         // ── State ─────────────────────────────────────────────────────────────────
 

@@ -1,4 +1,3 @@
-#pragma warning disable CS0067
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -37,7 +36,9 @@ namespace EndlessEngine.Quest
         public static event Action<QuestConfigSO> OnQuestCompleted;
 
         /// <summary>Fires when a repeatable quest resets and becomes available again.</summary>
+#pragma warning disable CS0067
         public static event Action<QuestConfigSO> OnQuestReset;
+#pragma warning restore CS0067
 
         // ── State ─────────────────────────────────────────────────────────────────
 
