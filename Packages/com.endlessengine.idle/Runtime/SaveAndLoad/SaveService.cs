@@ -56,6 +56,34 @@ namespace EndlessEngine.SaveAndLoad
         private enum SaveServiceState { Uninitialized, Loading, Ready, Saving }
         private SaveServiceState _state = SaveServiceState.Uninitialized;
 
+        private string _slotId = "slot_0"; // overridden by SetSaveSlot before LoadAsync
+
+        /// <summary>
+        /// Sets the save slot identifier used to name save files.
+        /// Must be called before LoadAsync(). Slug is sanitized to safe filename chars.
+        /// </summary>
+        public void SetSaveSlot(string slotId)
+        {
+            if (_state != SaveServiceState.Uninitialized)
+            {
+                Debug.LogWarning("[SaveService] SetSaveSlot called after load — ignoring.");
+                return;
+            }
+            _slotId = Slugify(slotId);
+        }
+
+        private string PrimaryFile  => $"save_{_slotId}.json";
+        private string TempFile     => $"save_{_slotId}.tmp";
+        private string BackupFile   => $"save_{_slotId}.bak";
+
+        private static string Slugify(string s)
+        {
+            var sb = new System.Text.StringBuilder();
+            foreach (char c in s.ToLowerInvariant())
+                sb.Append(char.IsLetterOrDigit(c) ? c : '_');
+            return sb.Length > 0 ? sb.ToString() : "slot_0";
+        }
+
         private SaveData _currentSave;
         private readonly List<ISaveStateProvider> _providers = new List<ISaveStateProvider>();
 
@@ -121,8 +149,8 @@ namespace EndlessEngine.SaveAndLoad
 
             _state = SaveServiceState.Loading;
 
-            string primaryPath = Path.Combine(Application.persistentDataPath, SaveConstants.PrimaryFile);
-            string bakPath     = Path.Combine(Application.persistentDataPath, SaveConstants.BackupFile);
+            string primaryPath = Path.Combine(Application.persistentDataPath, PrimaryFile);
+            string bakPath     = Path.Combine(Application.persistentDataPath, BackupFile);
             bool isNewGame = false;
             SaveData saveData;
 
@@ -228,9 +256,9 @@ namespace EndlessEngine.SaveAndLoad
 #endif
 
             string dir     = Application.persistentDataPath;
-            string tmpPath = Path.Combine(dir, SaveConstants.TempFile);
-            string bakPath = Path.Combine(dir, SaveConstants.BackupFile);
-            string jsonPath = Path.Combine(dir, SaveConstants.PrimaryFile);
+            string tmpPath  = Path.Combine(dir, TempFile);
+            string bakPath  = Path.Combine(dir, BackupFile);
+            string jsonPath = Path.Combine(dir, PrimaryFile);
 
             bool success = await Task.Run(() => AtomicWrite(json, tmpPath, bakPath, jsonPath));
 

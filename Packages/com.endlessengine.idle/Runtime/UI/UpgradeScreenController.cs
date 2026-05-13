@@ -189,6 +189,13 @@ namespace EndlessEngine.UI
         /// <summary>Called at runtime by GeneratedGameHUD when EconomyService is available.</summary>
         public void InjectEconomy(EconomyService economy) => _economy = economy;
 
+        /// <summary>Called at runtime by GeneratedGameHUD to register this screen as a save provider.</summary>
+        public void InjectSaveService(SaveService saveService)
+        {
+            _saveService = saveService;
+            saveService?.RegisterStateProvider(this);
+        }
+
         public void Show()
         {
             SetVisible(true);       // make visible FIRST so layout runs

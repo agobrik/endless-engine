@@ -264,6 +264,7 @@ namespace EndlessEngine.Editor
             SetSORef(so, "_schemaVersion",    schema);
             SetSORef(so, "_prestigeConfig",   prestige);
             SetBool(so, "_enableSave",        true);
+            SetString(so, "_saveSlotId",      opts.GameName);
 
             // Load UpgradeNodeConfigSO assets from <ConfigsPath>/Upgrades/ for UpgradeTreeService
             if (!string.IsNullOrEmpty(opts.UpgradeTreePath))
@@ -1100,15 +1101,16 @@ namespace EndlessEngine.Editor
 
         private static float CalcPanelHeight(SetupOptions opts)
         {
-            float h = 280f;
+            float h = 300f;
             if (opts.HasGenerator) h += 90f;
-            if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy) h += 80f;
+            if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy) h += 120f;
             if (opts.HasWave || opts.Type == GameType.IdleVsRPG) h += 60f;
             if (opts.HasHarvest || opts.Type == GameType.HarvestIdle) h += 60f;
             if (opts.HasClickLoop || opts.Type == GameType.ClickLoop) h += 60f;
             if (opts.Type == GameType.ResearchIdle) h += 40f;
             if (opts.HasMultiCurrency) h += 40f;
-            return Mathf.Clamp(h, 300f, 700f);
+            h += 60f; // Upgrades button
+            return Mathf.Clamp(h, 350f, 800f);
         }
 
         // ── World helpers ─────────────────────────────────────────────────────────
@@ -1304,6 +1306,9 @@ namespace EndlessEngine.Editor
 
         private static void SetBool(SerializedObject so, string field, bool val)
         { var p = so.FindProperty(field); if (p != null) p.boolValue = val; }
+
+        private static void SetString(SerializedObject so, string field, string val)
+        { var p = so.FindProperty(field); if (p != null) p.stringValue = val; }
 
         // ── File system helpers ───────────────────────────────────────────────────
 

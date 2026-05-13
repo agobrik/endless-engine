@@ -49,6 +49,9 @@ namespace EndlessEngine.Bootstrap
         [SerializeField] private UpgradeNodeConfigSO[] _upgradeNodeConfigs;
 
         [Header("Options")]
+        [Tooltip("Unique save slot name for this game. Each game should have a different name so saves don't collide. Auto-set by the New Game Wizard.")]
+        [SerializeField] private string _saveSlotId = "default";
+
         [Tooltip("Enable auto-save every 60 seconds")]
         [SerializeField] private bool _enableSave = true;
 
@@ -82,6 +85,7 @@ namespace EndlessEngine.Bootstrap
             UpgradeTree = GetOrAdd<UpgradeTreeService>();
             Tick        = GetOrAdd<TickEngine>();
             Save        = _enableSave ? GetOrAdd<SaveService>() : null;
+            Save?.SetSaveSlot(!string.IsNullOrEmpty(_saveSlotId) ? _saveSlotId : "default");
 
             var passiveIncome = GetOrAdd<PassiveIncomeService>();
 

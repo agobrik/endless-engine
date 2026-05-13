@@ -125,6 +125,7 @@ namespace EndlessEngine.Bootstrap
             if (upgradeScreen != null)
             {
                 upgradeScreen.InjectEconomy(_bootstrap.Economy);
+                upgradeScreen.InjectSaveService(_bootstrap.Save);
                 if (_upgradesButton != null)
                     _upgradesButton.onClick.AddListener(() => { SetHudPanelVisible(false); upgradeScreen.Show(); });
                 upgradeScreen.OnHide += () => SetHudPanelVisible(true);
