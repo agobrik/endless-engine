@@ -1101,7 +1101,10 @@ namespace EndlessEngine.Editor
         private static float CalcPanelHeight(SetupOptions opts)
         {
             float h = 300f;
-            if (opts.HasGenerator) h += 90f;
+            bool hasGeneratorBlock = opts.HasGenerator || opts.Type == GameType.PureIdle
+                || opts.Type == GameType.BuildingIdle || opts.Type == GameType.ResearchIdle
+                || opts.Type == GameType.PrestigeHeavy || opts.Type == GameType.FarmIdle;
+            if (hasGeneratorBlock) h += 90f;
             if (opts.HasPrestige || opts.Type == GameType.PrestigeHeavy) h += 120f;
             if (opts.HasWave || opts.Type == GameType.IdleVsRPG) h += 60f;
             if (opts.HasHarvest || opts.Type == GameType.HarvestIdle) h += 60f;

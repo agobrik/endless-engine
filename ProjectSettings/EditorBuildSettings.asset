@@ -8,6 +8,69 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/SampleScene.unity
     guid: 8c9cfa26abfee488c85f1582747f6a02
+  - enabled: 1
+    path: Assets/TestClick/Scenes/TestClick.unity
+    guid: c85df1bba3cb8d24785091483c3f1eb3
+  - enabled: 1
+    path: Assets/TestHarvest/Scenes/TestHarvest.unity
+    guid: 36fee84a9386c1b4992228ca0b171c9f
+  - enabled: 1
+    path: Assets/TestClick2/Scenes/TestClick2.unity
+    guid: c3e3a9b7fbb3bc14d92ae4c41f1746a0
+  - enabled: 1
+    path: Assets/TestClick3/Scenes/TestClick3.unity
+    guid: c97dc5747b0d6324abc85bc3d9f8b07d
+  - enabled: 1
+    path: Assets/TestClick4/Scenes/TestClick4.unity
+    guid: 60a0d482e32114942a378410d5708e1b
+  - enabled: 1
+    path: Assets/IdleVsRPG/Scenes/IdleVsRPG.unity
+    guid: 84a3f845886ef924dac103a5af6cffde
+  - enabled: 1
+    path: Assets/TestClick5/Scenes/TestClick5.unity
+    guid: 5d0038ac87e19ad4ebd918a2c51adda5
+  - enabled: 1
+    path: Assets/TestClick6/Scenes/TestClick6.unity
+    guid: a3588362479e91f4d936d09a12dc42c6
+  - enabled: 1
+    path: Assets/TestClick7/Scenes/TestClick7.unity
+    guid: 02bb7c66ef6b13e40b35f5801310f25f
+  - enabled: 1
+    path: Assets/TestPure/Scenes/TestPure.unity
+    guid: 6bff4673c7c685f4aa3f274214ea4580
+  - enabled: 1
+    path: Assets/TestClickLoop/Scenes/TestClickLoop.unity
+    guid: fe3479da08b7dee42a8ad8a259366deb
+  - enabled: 1
+    path: Assets/TestMerge/Scenes/TestMerge.unity
+    guid: e52131d51ae80814a82cc857092426eb
+  - enabled: 1
+    path: Assets/TestFarm/Scenes/TestFarm.unity
+    guid: 08229c961ba3e4c4db5a8e945debb918
+  - enabled: 1
+    path: Assets/TestBuilding/Scenes/TestBuilding.unity
+    guid: f60a9d0954dca2947a7f7ba5cc43593e
+  - enabled: 1
+    path: Assets/TestResearch/Scenes/TestResearch.unity
+    guid: c87701fd783daa64abf2c7b9dbcf6974
+  - enabled: 1
+    path: Assets/MyIdleGame/Scenes/MyIdleGame.unity
+    guid: b34d47b26b8096543b57b9f800e268f9
+  - enabled: 1
+    path: Assets/TestPrestige/Scenes/TestPrestige.unity
+    guid: 94cd23e440c027747aeaacbb3eaa9db1
+  - enabled: 1
+    path: Assets/TestTower/Scenes/TestTower.unity
+    guid: 1c18dc2a02c3e0f4e8a64cd5ef3aca47
+  - enabled: 1
+    path: Assets/TestClick8/Scenes/TestClick8.unity
+    guid: 0df58983e22168b43a88cf9d778285dd
+  - enabled: 1
+    path: Assets/TestPrestige2/Scenes/TestPrestige2.unity
+    guid: 6c1358ca0e4f41a4088d8df6120b1e7c
+  - enabled: 1
+    path: Assets/TestClick9/Scenes/TestClick9.unity
+    guid: e988b2a2156337745be56e3547cfe6d8
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0

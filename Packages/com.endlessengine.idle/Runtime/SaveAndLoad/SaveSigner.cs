@@ -23,8 +23,25 @@ namespace EndlessEngine.SaveAndLoad
     {
         // ── Key Material ──────────────────────────────────────────────────────────
 
-        private const int    _keyVersion  = 1;
-        private static readonly byte[] _currentKey = BuildKey(_keyVersion);
+        private const int _keyVersion = 1;
+
+        // Lazy — BuildKey calls Application.productName which must run on the main thread.
+        private static byte[] _currentKey;
+        private static readonly object _keyLock = new object();
+
+        private static byte[] CurrentKey
+        {
+            get
+            {
+                if (_currentKey != null) return _currentKey;
+                lock (_keyLock)
+                {
+                    if (_currentKey == null)
+                        _currentKey = BuildKey(_keyVersion);
+                }
+                return _currentKey;
+            }
+        }
 
         // Legacy keys from prior versions — verified in order when current key fails.
         private static readonly byte[][] _legacyKeys = Array.Empty<byte[]>();
@@ -36,7 +53,7 @@ namespace EndlessEngine.SaveAndLoad
         /// </summary>
         public static string Sign(string json)
         {
-            using var hmac = new HMACSHA256(_currentKey);
+            using var hmac = new HMACSHA256(CurrentKey);
             byte[] hash = hmac.ComputeHash(Encoding.UTF8.GetBytes(json));
             return BytesToHex(hash);
         }
@@ -54,7 +71,7 @@ namespace EndlessEngine.SaveAndLoad
             try
             {
                 byte[] sigBytes = HexToBytes(signature);
-                if (VerifyWithKey(json, sigBytes, _currentKey)) return true;
+                if (VerifyWithKey(json, sigBytes, CurrentKey)) return true;
 
                 foreach (var legacyKey in _legacyKeys)
                     if (VerifyWithKey(json, sigBytes, legacyKey)) return true;
