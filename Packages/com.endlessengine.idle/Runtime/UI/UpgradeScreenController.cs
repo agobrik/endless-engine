@@ -280,20 +280,20 @@ namespace EndlessEngine.UI
 
         private void ApplyCentreOnAwakening()
         {
-            if (_viewport == null) return;
+            if (_viewport == null || _upgradeTree == null || _upgradeTree.Nodes.Count == 0) return;
             float vpW = _viewport.resolvedStyle.width;
             float vpH = _viewport.resolvedStyle.height;
-            // If viewport hasn't resolved yet (NaN or 0), fall back to root minus topbar
             if (vpW <= 1f && _root != null)
             {
                 vpW = _root.resolvedStyle.width;
                 vpH = _root.resolvedStyle.height - 56f;
             }
-            if (vpW <= 1f) return; // still not ready
+            if (vpW <= 1f) return;
 
-            // Awakening: col 10, row 7
-            float nodeX = PadX + 10 * CellW + CellW * 0.5f;
-            float nodeY = PadY + 7  * CellH + CellH * 0.5f;
+            // Centre on the first node in the tree rather than a hardcoded position
+            var first = _upgradeTree.Nodes[0];
+            float nodeX = PadX + first.GridX * CellW + CellW * 0.5f;
+            float nodeY = PadY + first.GridY * CellH + CellH * 0.5f;
             SetPanRaw(new Vector2(vpW * 0.5f - nodeX * _zoom, vpH * 0.5f - nodeY * _zoom));
         }
 
