@@ -948,15 +948,38 @@ namespace EndlessEngine.Editor
             BuildUIToolkitScreens(opts, bootstrapGO);
         }
 
+        private static UnityEngine.UIElements.PanelSettings EnsurePanelSettings(string configsPath)
+        {
+            // configsPath = "Assets/TestClick/Configs"  →  root = "Assets/TestClick"
+            string root  = Path.GetDirectoryName(configsPath).Replace('\\', '/');
+            string uiDir  = $"{root}/UI";
+            string psPath = $"{uiDir}/PanelSettings.asset";
+
+            var ps = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.PanelSettings>(psPath);
+            if (ps != null) return ps;
+
+            string fullDir = Path.Combine(Application.dataPath, "..",
+                uiDir.Replace('/', Path.DirectorySeparatorChar));
+            if (!Directory.Exists(fullDir)) Directory.CreateDirectory(fullDir);
+
+            ps = UnityEngine.ScriptableObject.CreateInstance<UnityEngine.UIElements.PanelSettings>();
+            ps.scaleMode = UnityEngine.UIElements.PanelScaleMode.ScaleWithScreenSize;
+            AssetDatabase.CreateAsset(ps, psPath);
+            AssetDatabase.SaveAssets();
+            return ps;
+        }
+
         private static void BuildUIToolkitScreens(SetupOptions opts, GameObject bootstrapGO)
         {
+            var panelSettings = EnsurePanelSettings(opts.ConfigsPath);
+
             // ── HUD ──────────────────────────────────────────────────────────────────
             const string hudUxmlPath = "Assets/UI/HUD/HUD.uxml";
             var hudUxml = AssetDatabase.LoadAssetAtPath<UnityEngine.UIElements.VisualTreeAsset>(hudUxmlPath);
             if (hudUxml != null)
             {
                 var hudGO   = new GameObject("Screen_HUD");
-                AddUIDocument(hudGO, hudUxml);
+                AddUIDocument(hudGO, hudUxml, panelSettings);
 
                 var hudCtrl   = hudGO.AddComponent<EndlessEngine.UI.HUDController>();
                 var hudCtrlSO = new SerializedObject(hudCtrl);
@@ -976,7 +999,7 @@ namespace EndlessEngine.Editor
                 if (genUxml != null)
                 {
                     var genGO = new GameObject("Screen_Generator");
-                    AddUIDocument(genGO, genUxml);
+                    AddUIDocument(genGO, genUxml, panelSettings);
 
                     var genCtrl   = genGO.AddComponent<EndlessEngine.UI.GeneratorScreenController>();
                     var genCtrlSO = new SerializedObject(genCtrl);
@@ -995,7 +1018,7 @@ namespace EndlessEngine.Editor
                 if (upgUxml != null)
                 {
                     var upgGO   = new GameObject("Screen_Upgrades");
-                    AddUIDocument(upgGO, upgUxml);
+                    AddUIDocument(upgGO, upgUxml, panelSettings);
                     var upgCtrl   = upgGO.AddComponent<EndlessEngine.UI.UpgradeScreenController>();
                     var upgCtrlSO = new SerializedObject(upgCtrl);
 
@@ -1019,7 +1042,7 @@ namespace EndlessEngine.Editor
                 if (presUxml != null)
                 {
                     var presGO = new GameObject("Screen_Prestige");
-                    AddUIDocument(presGO, presUxml);
+                    AddUIDocument(presGO, presUxml, panelSettings);
                     presGO.AddComponent<EndlessEngine.UI.PrestigeScreenUI>();
                 }
             }
@@ -1032,7 +1055,7 @@ namespace EndlessEngine.Editor
                 if (resUxml != null)
                 {
                     var resGO = new GameObject("Screen_Research");
-                    AddUIDocument(resGO, resUxml);
+                    AddUIDocument(resGO, resUxml, panelSettings);
                     resGO.AddComponent<EndlessEngine.UI.ResearchScreenController>();
                 }
             }
@@ -1045,18 +1068,23 @@ namespace EndlessEngine.Editor
                 if (bldUxml != null)
                 {
                     var bldGO = new GameObject("Screen_Building");
-                    AddUIDocument(bldGO, bldUxml);
+                    AddUIDocument(bldGO, bldUxml, panelSettings);
                     bldGO.AddComponent<EndlessEngine.UI.BuildingScreenController>();
                 }
             }
         }
 
-        private static void AddUIDocument(GameObject go, UnityEngine.UIElements.VisualTreeAsset uxml)
+        private static void AddUIDocument(GameObject go,
+            UnityEngine.UIElements.VisualTreeAsset uxml,
+            UnityEngine.UIElements.PanelSettings panelSettings = null)
         {
-            var doc      = go.AddComponent<UnityEngine.UIElements.UIDocument>();
-            var docSO    = new SerializedObject(doc);
-            var treeProp = docSO.FindProperty("m_VisualTreeAsset");
-            if (treeProp != null) treeProp.objectReferenceValue = uxml;
+            var doc   = go.AddComponent<UnityEngine.UIElements.UIDocument>();
+            var docSO = new SerializedObject(doc);
+            var treeProp  = docSO.FindProperty("m_VisualTreeAsset");
+            var panelProp = docSO.FindProperty("m_PanelSettings");
+            if (treeProp  != null) treeProp.objectReferenceValue  = uxml;
+            if (panelProp != null && panelSettings != null)
+                panelProp.objectReferenceValue = panelSettings;
             docSO.ApplyModifiedPropertiesWithoutUndo();
         }
 
