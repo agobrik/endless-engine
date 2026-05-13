@@ -855,8 +855,11 @@ namespace EndlessEngine.Editor
                 bgRt.pivot            = new Vector2(0f, 0.5f);
                 bgRt.anchoredPosition = new Vector2(10, 0);
                 panelW = 340f;
+                // Full-height stretch: sizeDelta.y=0 so the panel fills screen height.
+                bgRt.sizeDelta = new Vector2(panelW, 0f);
             }
-            bgRt.sizeDelta = new Vector2(panelW, panelH);
+            if (isRight)
+                bgRt.sizeDelta = new Vector2(panelW, panelH);
 
             // Build rows from top down
             float y = 0.97f;
