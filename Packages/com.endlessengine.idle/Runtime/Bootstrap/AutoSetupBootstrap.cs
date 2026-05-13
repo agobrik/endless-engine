@@ -110,7 +110,7 @@ namespace EndlessEngine.Bootstrap
             // Call HandleConfigsLoaded manually so the tree builds before LoadAsync.
             UpgradeTree.HandleConfigsLoaded();
 
-            Economy.Initialize(upgradeTreeQuery: UpgradeTree, saveNotifier: Save);
+            Economy.Initialize(upgradeTreeQuery: UpgradeTree, saveNotifier: Save, config: _economyConfig);
 
             var generatorConfigs = _generatorDatabase != null
                 ? _generatorDatabase.Generators

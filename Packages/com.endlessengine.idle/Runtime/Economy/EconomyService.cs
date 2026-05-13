@@ -47,6 +47,7 @@ namespace EndlessEngine.Economy
 
         private IUpgradeTreeQuery _upgradeTreeQuery;
         private ISaveNotifier     _saveNotifier;
+        private EconomyConfigSO   _config;
 
         // ── Config cache ──────────────────────────────────────────────────────────
 
@@ -82,10 +83,11 @@ namespace EndlessEngine.Economy
         /// <summary>
         /// Inject dependencies. Call before SaveService fires OnSaveLoaded.
         /// </summary>
-        public void Initialize(IUpgradeTreeQuery upgradeTreeQuery, ISaveNotifier saveNotifier)
+        public void Initialize(IUpgradeTreeQuery upgradeTreeQuery, ISaveNotifier saveNotifier, EconomyConfigSO config = null)
         {
             _upgradeTreeQuery = upgradeTreeQuery;
             _saveNotifier     = saveNotifier;
+            _config           = config;
         }
 
         private void OnEnable()
@@ -131,7 +133,9 @@ namespace EndlessEngine.Economy
         /// <inheritdoc />
         public void OnAfterLoad(SaveData saveData)
         {
-            var economyConfig = ConfigRegistry.Economy;
+            EconomyConfigSO economyConfig = _config;
+            if (economyConfig == null) try { economyConfig = ConfigRegistry.Economy; } catch { }
+            if (economyConfig == null) { Debug.LogError("[EconomyService] No EconomyConfigSO — inject via Initialize(config:)."); return; }
             _resourceHardCap  = BigNumberFactory.Create((double)economyConfig.ResourceHardCap);
             _startingGold     = BigNumberFactory.Create((double)economyConfig.StartingGold);
 
@@ -248,7 +252,9 @@ namespace EndlessEngine.Economy
 
         private void RefreshConfigCache()
         {
-            var economyConfig = Config.ConfigRegistry.Economy;
+            EconomyConfigSO economyConfig = _config;
+            if (economyConfig == null) try { economyConfig = Config.ConfigRegistry.Economy; } catch { }
+            if (economyConfig == null) return;
             _resourceHardCap  = BigNumberFactory.Create((double)economyConfig.ResourceHardCap);
             _startingGold     = BigNumberFactory.Create((double)economyConfig.StartingGold);
 
