@@ -260,6 +260,10 @@ namespace EndlessEngine.SaveAndLoad
             string bakPath  = Path.Combine(dir, BackupFile);
             string jsonPath = Path.Combine(dir, PrimaryFile);
 
+            // Warm the signing key on the main thread before handing off to Task.Run.
+            // SaveSigner.WarmKey() calls Application.productName which must run on main thread.
+            SaveSigner.WarmKey();
+
             bool success = await Task.Run(() => AtomicWrite(json, tmpPath, bakPath, jsonPath));
 
             _state = SaveServiceState.Ready;

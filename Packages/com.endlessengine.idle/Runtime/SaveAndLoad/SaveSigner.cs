@@ -49,6 +49,13 @@ namespace EndlessEngine.SaveAndLoad
         // ── Public API ────────────────────────────────────────────────────────────
 
         /// <summary>
+        /// Pre-initialises the signing key. Must be called from the main thread before
+        /// any background-thread call to Sign() or Verify(). SaveService calls this
+        /// automatically inside SaveAsync() before Task.Run.
+        /// </summary>
+        public static void WarmKey() { _ = CurrentKey; }
+
+        /// <summary>
         /// Computes the HMAC-SHA256 signature of <paramref name="json"/> as a hex string.
         /// </summary>
         public static string Sign(string json)
