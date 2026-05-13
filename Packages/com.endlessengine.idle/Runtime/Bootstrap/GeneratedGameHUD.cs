@@ -50,6 +50,7 @@ namespace EndlessEngine.Bootstrap
         private Button    _buyGeneratorButton;
         private Button    _prestigeButton;
         private Button    _upgradesButton;
+        private GameObject _hudPanel;
 
         private float  _saveTimer;
         private double _lastGold;
@@ -116,13 +117,17 @@ namespace EndlessEngine.Bootstrap
             _buyGeneratorButton?.onClick.AddListener(OnBuyGenerator);
             _prestigeButton?.onClick.AddListener(OnPrestige);
 
+            // Cache HUD panel so it can be hidden when a full-screen UI Toolkit screen opens
+            _hudPanel = GameObject.Find("HUDPanel");
+
             // Wire Upgrades button → UpgradeScreenController.Show() + inject EconomyService
             var upgradeScreen = FindFirstObjectByType<EndlessEngine.UI.UpgradeScreenController>();
             if (upgradeScreen != null)
             {
                 upgradeScreen.InjectEconomy(_bootstrap.Economy);
                 if (_upgradesButton != null)
-                    _upgradesButton.onClick.AddListener(upgradeScreen.Show);
+                    _upgradesButton.onClick.AddListener(() => { SetHudPanelVisible(false); upgradeScreen.Show(); });
+                upgradeScreen.OnHide += () => SetHudPanelVisible(true);
             }
 
             // Initial state
@@ -275,6 +280,11 @@ namespace EndlessEngine.Bootstrap
         }
 
         // ── UI helpers ────────────────────────────────────────────────────────────
+
+        private void SetHudPanelVisible(bool visible)
+        {
+            if (_hudPanel != null) _hudPanel.SetActive(visible);
+        }
 
         private static string Fmt(double v)
         {
