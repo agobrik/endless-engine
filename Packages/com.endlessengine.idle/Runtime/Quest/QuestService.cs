@@ -245,7 +245,6 @@ namespace EndlessEngine.Quest
         public static void ClearSubscribersForTesting()
         {
             OnQuestCompleted = null;
-            OnQuestReset     = null;
         }
 
         public void InjectCompletedForTesting(string questId) => _completed.Add(questId);

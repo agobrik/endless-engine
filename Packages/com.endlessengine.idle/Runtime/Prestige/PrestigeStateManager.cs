@@ -269,7 +269,6 @@ namespace EndlessEngine.Prestige
         {
             OnPrestigeStarted  = null;
             OnPrestigeComplete = null;
-            OnRealmUnlocked    = null;
         }
 
         /// <summary>
