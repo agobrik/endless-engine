@@ -87,6 +87,7 @@ namespace EndlessEngine.Bootstrap
             Save        = _enableSave ? GetOrAdd<SaveService>() : null;
             Save?.SetSaveSlot(!string.IsNullOrEmpty(_saveSlotId) ? _saveSlotId : "default");
 
+
             var passiveIncome = GetOrAdd<PassiveIncomeService>();
 
             // 2. Configure numeric backend

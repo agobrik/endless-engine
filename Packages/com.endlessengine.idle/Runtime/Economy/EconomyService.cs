@@ -149,7 +149,6 @@ namespace EndlessEngine.Economy
             else
             {
                 IBigNumber loaded;
-                // Prefer mantissa+exponent pair (v4 BigDouble saves); fall back to double
                 bool hasBigDoubleFields = saveData.CurrentResourcesExponent != 0
                                        || saveData.CurrentResourcesMantissa != 0.0;
                 if (hasBigDoubleFields && BigNumberFactory.Backend == NumberBackend.BigDouble)
@@ -157,7 +156,6 @@ namespace EndlessEngine.Economy
                 else
                     loaded = BigNumberFactory.Create(saveData.CurrentResources);
 
-                // Clamp to current cap in case config was patched since last save
                 _currentResources = loaded.IsGreaterThan(_resourceHardCap) ? _resourceHardCap : loaded;
                 if (_currentResources.IsNegative) _currentResources = BigNumberFactory.Zero;
             }

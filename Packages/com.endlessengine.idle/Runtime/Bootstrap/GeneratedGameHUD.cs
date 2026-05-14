@@ -131,10 +131,10 @@ namespace EndlessEngine.Bootstrap
                 upgradeScreen.OnHide += () => SetHudPanelVisible(true);
             }
 
-            // Initial state
-            SetText(_goldLabel, "Gold: 0");
-            SetText(_incomeLabel, "Income: 0/s");
+            // Initial state — read current balance (already loaded by this point)
             _lastGold = _bootstrap.Economy?.CurrentResources ?? 0;
+            SetText(_goldLabel, $"Gold: {Fmt(_lastGold)}");
+            SetText(_incomeLabel, "Income: 0/s");
         }
 
         private void OnDestroy()
