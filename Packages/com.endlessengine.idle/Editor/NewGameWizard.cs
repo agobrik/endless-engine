@@ -337,7 +337,7 @@ namespace EndlessEngine.Editor
                     so.BaseMultiplierPerPrestige = 1.5f;
                     so.ResourceHardCap          = 1_000_000_000L;
                     so.OfflineCapHours          = 8f;
-                    so.StartingGold             = 50;
+                    so.StartingGold             = 100;
                     break;
                 case GameType.HarvestIdle:
                     so.IdleYieldRateBase        = 0f;
