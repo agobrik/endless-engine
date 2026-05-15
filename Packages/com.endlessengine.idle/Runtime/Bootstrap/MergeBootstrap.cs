@@ -14,6 +14,9 @@ namespace EndlessEngine.Bootstrap
     [AddComponentMenu("Endless Engine/Merge Bootstrap")]
     public class MergeBootstrap : MonoBehaviour
     {
+        [SerializeField] private EndlessEngine.Config.MergeConfigSO[] _mergeConfigs;
+        [SerializeField] private EndlessEngine.Config.ItemConfigSO[]  _starterItems;
+
         private IEnumerator Start()
         {
             var bootstrap = GetComponent<AutoSetupBootstrap>();
@@ -29,9 +32,8 @@ namespace EndlessEngine.Bootstrap
                 yield break;
             }
 
-            // Initialize with no items / no merge rules — functional skeleton ready for content
-            inventory.Initialize(new EndlessEngine.Config.ItemConfigSO[0]);
-            merge.Initialize(new EndlessEngine.Config.MergeConfigSO[0], inventory, bootstrap?.Economy);
+            inventory.Initialize(_starterItems ?? new EndlessEngine.Config.ItemConfigSO[0]);
+            merge.Initialize(_mergeConfigs ?? new EndlessEngine.Config.MergeConfigSO[0], inventory, bootstrap?.Economy);
 
             if (bootstrap?.Save != null)
             {
